@@ -1,0 +1,9 @@
+*.root
+*.swp
+Files/*
+Shift/*
+*.pdf
+*.png
+*.log
+codes/*
+__pycache__*
