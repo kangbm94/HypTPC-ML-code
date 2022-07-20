@@ -6,15 +6,16 @@ from tensorflow.keras import datasets, layers, models,optimizers,callbacks
 from keras.layers.convolutional import Conv2D
 lr=1.
 batch = 30 
-epoch = 30
+epoch = 10 
+cb=callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=3,min_lr=0.0001)
 
 X= layers.Input(shape=[nbin,nbin,max_depth])
 X=layers.BatchNormalization()(X)
 H= layers.Conv2D(3,kernel_size=7,activation='relu',padding = 'same')(X)
-H= layers.Conv2D(5,kernel_size=7,activation='relu',padding = 'same')(H)
+H= layers.Conv2D(10,kernel_size=7,activation='relu',padding = 'same')(H)
 H= layers.AveragePooling2D()(H)
-H= layers.Conv2D(5,kernel_size=3,activation='relu',padding = 'same')(H)
-H= layers.Conv2D(5,kernel_size=3,activation='relu',padding = 'same')(H)
+H= layers.Conv2D(10,kernel_size=3,activation='relu',padding = 'same')(H)
+H= layers.Conv2D(10,kernel_size=3,activation='relu',padding = 'same')(H)
 H= layers.AveragePooling2D()(H)
 H= layers.Conv2D(3,kernel_size=3,activation='relu',padding = 'same')(H)
 H= layers.Conv2D(1,kernel_size=3,activation='relu',padding = 'same')(H)

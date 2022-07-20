@@ -3,28 +3,37 @@ from Functions import *
 outfile = ROOT.TFile("out_test.root","recreate")
 outtree = ROOT.TTree("tree","tree")
 c_short_p=POINTER(c_short)
-event=np.zeros((nbin,nbin,max_depth))
+nbins=c_int(nbin)
 #event=array(c_short,[nbin][nbin][max_depth])
-print(type(event[0][0][0]))
 #event=event.astype(np.short)
 #event=event.ctypes.data_as(c_short_p)
-outtree.Branch("event",event,"event[{}][{}][{}]/I".format(nbin,nbin,max_depth))
 TPCEventTag=c_int(0);
 print(type(TPCEventTag))
-outtree.Branch("TPCEventTag",addressof(TPCEventTag),"TPCEventTag/I")
+event = array('f',[0]*nbin)
+a = array('d',[0])
+b = array('d',[0])
+c = array('i',[0])
+d = array('i',[0])
+outtree.Branch("a",a,"a/D")
+outtree.Branch("b",b,"b/D")
+outtree.Branch("c",c,"c/I")
+outtree.Branch("d",d,"d/I")
 for i in range(0,10):
-    event=np.zeros((nbin,nbin,max_depth),dtype=np.int16)
-#    event=event.ctypes.data_as(c_short_p)
-#    print(type(event[0][0][0]))
-    TPCEventTag=0
-#    event[i][i][0]=c_short(-202);
-    print(i)
-    event[int(i)][int(i)][0]=np.int16(-202);
-    event = event.ctypes.data_as(c_short_p)
-    TPCEventTag=c_int(i+5)
-#    outtree.TPCEventTag=c_int(TPCEventTag)
-#    event.ctypes.data_as(POINTER(c_short_p))
-#    outtree.event=event
+    '''
+    a=c_double(i)
+    b=c_double(i+10)
+    c=c_double(i+20)
+    d=c_double(i+30)
+    '''
+    
+    ad=i+0.
+    bd=i+10.
+    cd=i+20.
+    dd=i+30.
+    a[0]=float(ad)
+    b[0]=float(bd)
+    c[0]=int(cd)
+    d[0]=int(dd)
     outtree.Fill()
 outtree.Write()
 outfile.Close()

@@ -5,17 +5,18 @@
 TF1* f_gaus = new TF1("f_gaus","gaus");
 TF1* f_landau = new TF1("f_landau","landau");
 TF1* slew_func= new TF1("slew_func",SlewFunc,0,5,3);
+const int max_nh=2500;
 enum{
 	Else=0,
 	L2PPi=1,
 	L2NPi=2,
 	KBeam=3
 };
-const int nbin=250;const int depth=3;
+const int nbin=256;const int depth=1;
 const double tpc_size=250;
-int ToPixel(double x){
+short ToPixel(double x){
 	x+=250;
-	int x_pix = int(x* (double)nbin/tpc_size/2);
+	short x_pix = int(x* (double)nbin/tpc_size/2);
 	return x_pix;
 }
 int ToShort(double y){
@@ -42,9 +43,9 @@ class TPCManager:public FileManager{
 		int idtpc[nhtpcmax];
 		int ititpc[nhtpcmax];
 		int ntrk[nhtpcmax];
+		vector<double>* dlTpc;
 		int htofnhits;
-		int nhittpc;
-		double htofua[34];
+		int nhittpc; double htofua[34];
 		int gp = 0;
 		int gpb = 0;
 	public:
@@ -75,13 +76,13 @@ class TPCManager:public FileManager{
 			gp=0;
 		}
 		int GetNpad(){
-			return padTpc->size();
+			return Min(padTpc->size(),max_nh);
 		};
 		int GetPadID(int i){
 			return padTpc->at(i);
 		};
 		int GetNpadG4(){
-			return nhittpc;
+			return Min(nhittpc,max_nh);
 		}
 		int GetPadIDG4(int i){
 			return iPadtpc[i];
@@ -98,8 +99,12 @@ class TPCManager:public FileManager{
 		int GetTrackNum(){
 			return ntrk[nhittpc-1];
 		}
+		double GetDL(int i){
+			return dlTpc->at(i);
+		}
 		TVector3 GetPosition(int padID){
-			return tpc::getPosition(padID);
+			TVector3 pos =  tpc::getPosition(padID);
+			return pos;
 		}
 		TVector3 GetG4Position(int i){
 			return TVector3(xtpc[i],ytpc[i],ztpc[i]);
@@ -159,12 +164,13 @@ class TPCManager:public FileManager{
 		TVector3 GetRTheta(int padID);
 		TVector2 GetLayerRow(int padID);
 		int WhichEvent();
-		void AssignEvent(short TPCEvent[][nbin][depth]);
-		void AssignEvent(short * x,short* y,short* z);
+		void AssignG4Event(short * x,short* y,short* z);
+		void AssignRealEvent(short * x,short* y,short* z);
 };
 void TPCManager::LoadChain(TString ChainName ){
 	DataChain	= (TChain*) DataFile->Get(ChainName);
 	DataChain->SetBranchAddress("padTpc",&padTpc);
+	DataChain->SetBranchAddress("dlTpc",&dlTpc);
 	DataChain->SetBranchAddress("htofnhits",&htofnhits);
 	//	DataChain->SetBranchAddress("htofua",htofua);
 };
@@ -242,6 +248,7 @@ int TPCManager::WhichEvent(){
 		particle[Getntrk(j)]=Getidtpc(j);
 	}
 	for(int j=0;j<max_ntrk;++j){
+//		cout<<((particle[j]))<<endl;
 		switch(abs(particle[j])){
 			case PionID:
 				npi++;
@@ -258,7 +265,7 @@ int TPCManager::WhichEvent(){
 			case 0:
 				break;
 			default:
-//				cout<<Form("Warning! pid: %d",particle[j])<<endl;
+				//				cout<<Form("Warning! pid: %d",particle[j])<<endl;
 				break;
 		}
 	}
@@ -277,29 +284,27 @@ int TPCManager::WhichEvent(){
 	//	cout<<ThisEvent<<endl;
 	return ThisEvent;
 }
-void TPCManager::AssignEvent(short TPCEvent[][nbin][depth]){
-	for(int xx=0;xx<nbin;++xx){
-		for(int yy=0;yy<nbin;++yy){
-			for(int zz=0;zz<depth;++zz){
-				TPCEvent[xx][yy][zz]=0;
-			}
-		}
+void TPCManager::AssignG4Event( short* x,short* y,short* z){
+	for(int j=0;j<max_nh;++j){
+		x[j]=0;y[j]=0;z[j]=0;
 	}
+//	cout<<"Initialized"<<endl;
 	for(int j=0;j<GetNpadG4();++j){
 		TVector3 vec = GetG4Position(j);
-		double x = vec.X();double y=vec.Y();double z = vec.Z();
-		int x_pix=ToPixel(x);short y_short = ToShort(y);int z_pix=ToPixel(z);
-		for(int k=0;k<depth;++k){
-			if(TPCEvent[x_pix][z_pix][k]==0){
-				TPCEvent[x_pix][z_pix][k]=y_short;
-				break;
-			}
-		}
+		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
+		short x_pix=ToPixel(x_);short y_short = ToShort(y_);short z_pix=ToPixel(z_);
+		x[j]=x_pix;y[j]=y_short;z[j]=z_pix;
 	}
 }
-void TPCManager::AssignEvent( short* x,short* y,short* z){
-	for(int j=0;j<GetNpadG4();++j){
-		TVector3 vec = GetG4Position(j);
+void TPCManager::AssignRealEvent( short* x,short* y,short* z){
+	int nitr = Min(GetNpad(),max_nh);
+	for(int j=0;j<max_nh;++j){
+		x[j]=0;y[j]=0;z[j]=0;
+	}
+	for(int j=0;j<nitr;++j){
+		TVector3 vec = GetPosition(GetPadID(j));
+		double dl= GetDL(j);
+		vec.SetY(dl);
 		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
 		short x_pix=ToPixel(x_);short y_short = ToShort(y_);short z_pix=ToPixel(z_);
 		x[j]=x_pix;y[j]=y_short;z[j]=z_pix;
