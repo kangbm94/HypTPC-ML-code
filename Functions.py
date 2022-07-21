@@ -6,7 +6,7 @@ from Physics import *
 import ctypes
 from ctypes import *
 from array import array
-nbin = int(250)
+nbin = int(128)
 tpc_size = 250
 MaxNtr = 20
 max_depth=int(1)

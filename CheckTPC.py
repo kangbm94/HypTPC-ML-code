@@ -7,7 +7,7 @@ print("Starting...")
 filename = "TrainDataTagged3k.root"
 #filename = "TrainDataTagged_wo_bg.root"
 model = NeuralModel.model
-model.load_weights("./Model_3")
+model.load_weights("./Model_3/Model")
 cnt=0
 print("Loading Data...")
 file = ROOT.TFile.Open(filename,"READ")

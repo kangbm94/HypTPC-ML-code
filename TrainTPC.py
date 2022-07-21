@@ -8,7 +8,7 @@ from sklearn.utils import shuffle
 filename = "TrainDataFairlyTaggedS.root"
 #filename = "TrainDataTagged_wo_bg.root"
 cb=callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=3,min_lr=0.00001)
-cb=callbacks.ModelCheckpoint(filepath="./Model_3",save_weights_only=True,monitor='val_accuracy',mode='max',save_best_only=True)
+cb=callbacks.ModelCheckpoint(filepath="./Model_3/Model",save_weights_only=True,monitor='val_accuracy',mode='max',save_best_only=True)
 file = ROOT.TFile.Open(filename,"READ")
 tree = file.Get("tree")
 cnt=0
@@ -62,7 +62,10 @@ print("Tag = ",TrainLabel)
 ##########################Data Prepared###################
 model = NeuralModel.model
 fit_result = model.fit(TrainData,TrainLabel,epochs=epoch,batch_size=batch,validation_data=(ValiData,ValiLabel),callbacks=[cb])
-
+cb = [
+callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=3,min_lr=0.00001),
+callbacks.ModelCheckpoint(filepath="./Model_3/Model",verbose=1,save_weights_only=True,monitor='val_accuracy',mode='max',save_best_only=True)
+]
 
 predTrain=model.predict(TrainData)
 print(predTrain.shape)
