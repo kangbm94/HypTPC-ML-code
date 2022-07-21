@@ -4,7 +4,8 @@ import pandas as pd
 from sklearn.utils import shuffle
 
 
-filename = "TrainDataFairlyTagged.root"
+#filename = "Saved_codes/TrainDataFairlyTagged.root"
+filename = "TrainDataFairlyTaggedS.root"
 #filename = "TrainDataTagged_wo_bg.root"
 cb=callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=3,min_lr=0.00001)
 cb=callbacks.ModelCheckpoint(filepath="./Model_3",save_weights_only=True,monitor='val_accuracy',mode='max',save_best_only=True)
@@ -23,11 +24,13 @@ for i in range(0,TotEnt):
         print(i)
     ent=tree
     TPCEventTags[i]=ent.TPCEventTag
-    nhit = ent.ntrk
+    nhit = ent.nhtpc
     for nh in range(0,nhit):
         x=ent.x[nh]
         y=ent.y[nh]
         z=ent.z[nh]
+        x,z=ToPixel(x,z)
+        y=ToInt(y)
         for dep in range(0,max_depth):
             if TPCEvents[i,x,z,dep]==0:
                 TPCEvents[i,x,z,0]=y/650
@@ -70,24 +73,24 @@ fit_history = fit_result.history
 fig = plt.figure()
 fig,((a1t,a2t),(a3t,a4t)) = plt.subplots(2,2)
 a1t.hist(predVali[:,0],bins=20)
-a1t.set_title("Training_Class1")
+a1t.set_title("Validation_Class1")
 a2t.hist(predVali[:,1],bins=20)
-a2t.set_title("Training_Class2")
+a2t.set_title("Validation_Class2")
 a3t.hist(predVali[:,2],bins=20)
-a3t.set_title("Training_Class3")
+a3t.set_title("Validation_Class3")
 a4t.hist(predVali[:,3],bins=20)
-a4t.set_title("Training_Class4")
+a4t.set_title("Validation_Class4")
 
 fig2 = plt.figure()
 fig2,((a1v,a2v),(a3v,a4v)) = plt.subplots(2,2)
 a1v.hist(predTrain[:,0],bins=20)
-a1v.set_title("Validation_Class1")
+a1v.set_title("Traning_Class1")
 a2v.hist(predTrain[:,1],bins=20)
-a2v.set_title("Validation_Class2")
+a2v.set_title("Traning_Class2")
 a3v.hist(predTrain[:,2],bins=20)
-a3v.set_title("Validation_Class3")
+a3v.set_title("Traning_Class3")
 a4v.hist(predTrain[:,3],bins=20)
-a4v.set_title("Validation_Class4")
+a4v.set_title("Traning_Class4")
 
 loss=fit_history['loss']
 val_loss=fit_history['val_loss']

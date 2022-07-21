@@ -1,1 +1,1 @@
-rsync -av -P kek:~/k18geant4/beamthrough*.root .
+rsync -av -P kek:~/k18geant4/*_train.root .

@@ -126,21 +126,25 @@ void TagTPC(TString Filename){
 	T.LoadG4File(TPCFile);
 	int entries = T.GetNEvent();
 	//	TFile* outfile = new TFile("TrainDataTagged_wo_bg.root","recreate");
-	TFile* outfile = new TFile("TrainDataTagged3k.root","recreate");
+//	TFile* outfile = new TFile("TrainDataTagged3k.root","recreate");
+	TFile* outfile = new TFile("TrainDataFairlyTaggedS.root","recreate");
 	TTree* outtree = new TTree("tree","tree");
-	int evt_per_tag = 3000;
-	short x[max_nh];
-	short y[max_nh];
-	short z[max_nh];
+	int evt_per_tag = 10000;
+	double x[max_nh];
+	double y[max_nh];
+	double z[max_nh];
+//	short x[max_nh];
+//	short y[max_nh];
+//	short z[max_nh];
 	int TPCEventTag=0,nhtpc=0;
 	//	outtree->Branch("TPCEvent",TPCEvent,Form("TPCEvent[%d][%d][%d]/S",nbin,nbin,depth));
 	int evnum;
 	outtree->Branch("evnum",&evnum,"evnum/I");
 	outtree->Branch("TPCEventTag",&TPCEventTag,"TPCEventTag/I");
 	outtree->Branch("nhtpc",&nhtpc,"nhtpc/I");
-	outtree->Branch("x",x,"x[nhtpc]/S");
-	outtree->Branch("y",y,"y[nhtpc]/S");
-	outtree->Branch("z",z,"z[nhtpc]/S");
+	outtree->Branch("x",x,"x[nhtpc]/D");
+	outtree->Branch("y",y,"y[nhtpc]/D");
+	outtree->Branch("z",z,"z[nhtpc]/D");
 
 	int TagNumber[10] = {0};
 	cout<<"Processing..."<<endl;
@@ -151,7 +155,7 @@ void TagTPC(TString Filename){
 		nhtpc=T.GetNpadG4();
 		if(i%10000==0)cout<<i<<endl;
 		ThisEvent=T.WhichEvent();
-		T.AssignG4Event(x,y,z);
+		T.AssignG4EventD(x,y,z);
 //		cout<<"Assigned"<<endl;
 		TPCEventTag=ThisEvent;
 		if(TagNumber[ThisEvent]<evt_per_tag){

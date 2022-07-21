@@ -12,7 +12,7 @@ enum{
 	L2NPi=2,
 	KBeam=3
 };
-const int nbin=256;const int depth=1;
+const int nbin=250;const int depth=1;
 const double tpc_size=250;
 short ToPixel(double x){
 	x+=250;
@@ -165,6 +165,7 @@ class TPCManager:public FileManager{
 		TVector2 GetLayerRow(int padID);
 		int WhichEvent();
 		void AssignG4Event(short * x,short* y,short* z);
+		void AssignG4EventD(double * x,double* y,double* z);
 		void AssignRealEvent(short * x,short* y,short* z);
 };
 void TPCManager::LoadChain(TString ChainName ){
@@ -294,6 +295,17 @@ void TPCManager::AssignG4Event( short* x,short* y,short* z){
 		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
 		short x_pix=ToPixel(x_);short y_short = ToShort(y_);short z_pix=ToPixel(z_);
 		x[j]=x_pix;y[j]=y_short;z[j]=z_pix;
+	}
+}
+void TPCManager::AssignG4EventD( double* x,double* y,double* z){
+	for(int j=0;j<max_nh;++j){
+		x[j]=0;y[j]=0;z[j]=0;
+	}
+//	cout<<"Initialized"<<endl;
+	for(int j=0;j<GetNpadG4();++j){
+		TVector3 vec = GetG4Position(j);
+		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
+		x[j]=x_;y[j]=y_;z[j]=z_;
 	}
 }
 void TPCManager::AssignRealEvent( short* x,short* y,short* z){
