@@ -6,10 +6,13 @@ from Physics import *
 import ctypes
 from ctypes import *
 from array import array
-nbin = int(128)
+output_num = 7 
+nbin = int(256)
 tpc_size = 250
 MaxNtr = 20
 max_depth=int(1)
+dedx_norm = 0.02
+
 def ToPixel(x,z):
     x+=250
     z+=250
@@ -49,4 +52,30 @@ def EventTag(tree):
         return 4
     else:    
         return 0
-
+def CutMultiTrack(ntrk, cut):
+    if(ntrk>cut-2):
+        return cut-1
+    else:
+        return ntrk
+def MaxCh(tags):
+    a0 = 0
+    cnt=0
+    ch=0
+    for a in tags:
+        cnt+=1
+        if(a>a0):
+            a0 = a
+            ch+=cnt
+            cnt=0
+    return ch-1
+'''
+def Sort(tags,cont,multi):
+    lt = range(multi)
+    ll = np.array([np.array(list) for _ in lt])
+    listlength = tags.size
+    for i in range(listlength):
+        val = tags[i]
+        for j in range(multi):
+            ll[val].
+    return list_ex
+       ''' 

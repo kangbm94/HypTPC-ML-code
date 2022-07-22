@@ -5,7 +5,7 @@ from sklearn.utils import shuffle
 
 
 #filename = "Saved_codes/TrainDataFairlyTagged.root"
-filename = "TrainDataFairlyTaggedS.root"
+filename = "TaggedTrainData.root"
 #filename = "TrainDataTagged_wo_bg.root"
 cb=callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=3,min_lr=0.00001)
 cb=callbacks.ModelCheckpoint(filepath="./Model_3/Model",save_weights_only=True,monitor='val_accuracy',mode='max',save_best_only=True)
