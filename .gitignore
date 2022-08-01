@@ -1,3 +1,5 @@
+#gitignore
+
 *.root
 *.swp
 Files/*

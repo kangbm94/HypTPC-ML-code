@@ -6,23 +6,27 @@ from Physics import *
 import ctypes
 from ctypes import *
 from array import array
-output_num = 7 
-nbin = int(256)
+output_num = 9 
+nbin = int(128)
 tpc_size = 250
+dl = 650
 MaxNtr = 20
 max_depth=int(1)
-dedx_norm = 0.02
+dedx_norm = 0.001
+
 
 def ToPixel(x,z):
     x+=250
     z+=250
     x_pix = int(x* nbin/tpc_size/2)
     z_pix = int(z* nbin/tpc_size/2)
+    if x_pix>nbin-1 or z_pix>nbin-1:
+        print(x_pix,z_pix)
     return x_pix,z_pix
 def ToInt(y):
-    y+=350
-    y*=10
-    return int(y)
+    y+=dl/2
+    y_pix = int(y*nbin/dl/1.1)
+    return y_pix
 
 def EventTag(tree):
     nk=0
@@ -68,6 +72,16 @@ def MaxCh(tags):
             ch+=cnt
             cnt=0
     return ch-1
+def Cut(ent,cut):
+    if ent<cut:
+        return ent
+    else:
+        return cut
+def OneHotEncoding(a):
+    label = np.zeros((a.size,output_num))
+    for i in range(a.size):
+        label[i][a[i]]=1
+    return label
 '''
 def Sort(tags,cont,multi):
     lt = range(multi)

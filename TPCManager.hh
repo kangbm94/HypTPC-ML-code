@@ -45,6 +45,7 @@ class TPCManager:public FileManager{
 		int ititpc[nhtpcmax];
 		int ntrk[nhtpcmax];
 		vector<double>* dlTpc;
+		vector<double>* deTpc;
 		int htofnhits;
 		int nhittpc; double htofua[34];
 		int gp = 0;
@@ -101,6 +102,9 @@ class TPCManager:public FileManager{
 		double GetDL(int i){
 			return dlTpc->at(i);
 		}
+		double GetDE(int i){
+			return deTpc->at(i);
+		}
 		double Getdedxtpc(int i){
 			return dedxtpc[i];
 		}
@@ -141,10 +145,10 @@ class TPCManager:public FileManager{
 			PadHist->Draw("colz");
 		}
 		void DrawFlatHist(){
-			FlatHist->Draw("col");
+			FlatHist->Draw("colz");
 		}
 		void DrawPosHist(){
-			PosHist->Draw("col");
+			PosHist->Draw("colz");
 		}
 		void Draw3DHist(){
 			SpaceHist->Draw("colz");
@@ -157,7 +161,7 @@ class TPCManager:public FileManager{
 		int WhichEvent();
 		void AssignG4Event(short * x,short* y,short* z,double* dedx);
 		void AssignG4EventD(double * x,double* y,double* z,double* dedx);
-		void AssignRealEvent(short * x,short* y,short* z,double* dedx);
+		void AssignRealEvent(double * x,double* y,double* z,double* dedx);
 		void FillEvent();
 		int NumberOfTracks(int min_points=6);
 };
@@ -165,6 +169,7 @@ void TPCManager::LoadChain(TString ChainName ){
 	DataChain	= (TChain*) DataFile->Get(ChainName);
 	DataChain->SetBranchAddress("padTpc",&padTpc);
 	DataChain->SetBranchAddress("dlTpc",&dlTpc);
+	DataChain->SetBranchAddress("deTpc",&deTpc);
 	DataChain->SetBranchAddress("htofnhits",&htofnhits);
 	//	DataChain->SetBranchAddress("htofua",htofua);
 };
@@ -314,18 +319,17 @@ void TPCManager::AssignG4EventD( double* x,double* y,double* z,double* dedx){
 		x[j]=x_;y[j]=y_;z[j]=z_;dedx[j]=Getdedxtpc(j);
 	}
 }
-void TPCManager::AssignRealEvent( short* x,short* y,short* z,double* dedx){
+void TPCManager::AssignRealEvent( double* x,double* y,double* z,double* dedx){
 	int nitr = GetNpad();
 	for(int j=0;j<max_nh;++j){
-		x[j]=0;y[j]=0;z[j]=0;
+		x[j]=0;y[j]=0;z[j]=0;dedx[j]=0;
 	}
 	for(int j=0;j<nitr;++j){
 		TVector3 vec = GetPosition(GetPadID(j));
 		double dl= GetDL(j);
 		vec.SetY(dl);
 		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
-		short x_pix=ToPixel(x_);short y_short = ToShort(y_);short z_pix=ToPixel(z_);
-		x[j]=x_pix;y[j]=y_short;z[j]=z_pix;
+		x[j]=x_;y[j]=y_;z[j]=z_;dedx[j]=GetDE(j);
 	}
 }
 void TPCManager::FillEvent(){
