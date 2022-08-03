@@ -78,13 +78,23 @@ def LoadEventXYZ(filename,scale):
             y=ToInt(y)
             dedx=Rdedx[i][nh]/dedx_norm
             dedx=Cut(dedx,dedx_norm*3)
-            TPCEventsXZ[i,x,z,0]=y
-            TPCEventsYZ[i,y,z,0]=x
-            TPCEventsXY[i,x,y,0]=z
+            TPCEventsXZ[i,x,z,0]+=1
+            TPCEventsYZ[i,y,z,0]+=1
+            TPCEventsXY[i,x,y,0]+=1
+            #TPCEventsXZ[i,x,z,0]=y
+            #TPCEventsYZ[i,y,z,0]=x
+            #TPCEventsXY[i,x,y,0]=z
             if max_depth>1:
-               TPCEventsXZ[i,x,z,1]=dedx
-               TPCEventsYZ[i,y,z,1]=dedx
-               TPCEventsXY[i,x,y,1]=dedx
+                TPCEventsXZ[i,x,z,0]=y
+                TPCEventsYZ[i,y,z,0]=x
+                TPCEventsXY[i,x,y,0]=z
+            #   TPCEventsXZ[i,x,z,1]+=1
+            #   TPCEventsYZ[i,y,z,1]+=1
+            #   TPCEventsXY[i,x,y,1]+=1
+            if max_depth>2:
+               TPCEventsXZ[i,x,z,2]=dedx
+               TPCEventsYZ[i,y,z,2]=dedx
+               TPCEventsXY[i,x,y,2]=dedx
   #          TPCEventsXZ[i,x,z,0]=dedx
   #          TPCEventsYZ[i,y,z,0]=dedx
     return  TPCEventsXZ,TPCEventsYZ,TPCEventsXY,TPCEventTags,TPCNTrk,evnums,TotEnt 
@@ -122,11 +132,8 @@ def LoadRealEventXYZ(filename,scale,frag):
     tree = file.Get("tree")
     TotEnt=int(tree.GetEntries()/scale)
     df = ROOT.RDataFrame("tree",filename);
-#    npdf = df.AsNumpy(columns=["evnum","TPCEventTag","nhtpc","ntrk","x","y","z","dedx"]);
     npdf = df.AsNumpy(columns=["evnum","nhtpc","x","y","z","dedx"]);
     Revnum = npdf.get("evnum");
-#    Rntrk = npdf.get("ntrk");
-#    RTPCEventTag = npdf.get("TPCEventTag");
     Rnhtpc = npdf.get("nhtpc");
     Rx = npdf.get("x");
     Ry = npdf.get("y");
@@ -155,13 +162,17 @@ def LoadRealEventXYZ(filename,scale,frag):
             y=ToInt(y)
             dedx=Rdedx[event][nh]/dedx_norm
             dedx=Cut(dedx,dedx_norm*3)
-            TPCEventsXZ[i,x,z,0]=y
-            TPCEventsYZ[i,y,z,0]=x
-            TPCEventsXY[i,x,y,0]=z
+            TPCEventsXZ[i,x,z,0]+=1
+            TPCEventsYZ[i,y,z,0]+=1
+            TPCEventsXY[i,x,y,0]+=1
             if max_depth>1:
-               TPCEventsXZ[i,x,z,1]=dedx
-               TPCEventsYZ[i,y,z,1]=dedx
-               TPCEventsXY[i,x,y,1]=dedx
+                TPCEventsXZ[i,x,z,1]=y
+                TPCEventsYZ[i,y,z,1]=x
+                TPCEventsXY[i,x,y,1]=z
+            if max_depth>2:
+                TPCEventsXZ[i,x,z,1]=dedx
+                TPCEventsYZ[i,y,z,1]=dedx
+                TPCEventsXY[i,x,y,1]=dedx
   #          TPCEventsXZ[i,x,z,0]=dedx
   #          TPCEventsYZ[i,y,z,0]=dedx
     return  TPCEventsXZ,TPCEventsYZ,TPCEventsXY,TPCEventTags,TPCNTrk,evnums,TotEnt 

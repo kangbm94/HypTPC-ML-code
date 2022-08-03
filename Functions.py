@@ -3,13 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import Physics
 from Physics import *
-import ctypes
-from ctypes import *
 from array import array
+import sys
 output_num = 9 
 nbin = int(128)
 tpc_size = 250
-dl = 650
+dl = 665
+dl_offset=300
 MaxNtr = 20
 max_depth=int(1)
 dedx_norm = 0.001
@@ -24,8 +24,8 @@ def ToPixel(x,z):
         print(x_pix,z_pix)
     return x_pix,z_pix
 def ToInt(y):
-    y+=dl/2
-    y_pix = int(y*nbin/dl/1.1)
+    y+=dl_offset
+    y_pix = int(y*nbin/dl)
     return y_pix
 
 def EventTag(tree):

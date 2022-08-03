@@ -11,12 +11,13 @@ filename = "RealData05641.root"
 #filename = "tagged_beam.root"
 #filename = "tagged_train.root"
 scale = int(20)
-frag = 15
+frag = int(sys.argv[1])
 #TPCEventsXZ,TPCEventsYZ,TPCEventsXY,TPCEventTags,TPCNTrk,evnums,TotEnt = InputManager.LoadEventXYZ(filename,scale)
 TPCEventsXZ,TPCEventsYZ,TPCEventsXY,TPCEventTags,TPCNTrk,evnums,TotEnt = InputManager.LoadRealEventXYZ(filename,scale,frag)
 #TPCEvents,evnums,TotEnt = InputManager.LoadRealEventRDF(filename,scale)
 model = MODEL.model
-model.load_weights("./Model_5/Model_All")
+ModelPath="./Model_G4/Model_All"
+model.load_weights(ModelPath)
 
 predData=model.predict([TPCEventsXZ,TPCEventsYZ,TPCEventsXY])
 print(predData.shape)

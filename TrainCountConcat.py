@@ -9,6 +9,8 @@ import InputManager
 #filename = "tagged_beam.root"
 #filename = "tagged_beam.root"
 filename = "tagged_train.root"
+#filename = "taggedReal05641.root"
+ModelPath="./Model_G4/Model_All"
 cnt=0
 scale = int(1)
 print("Starting...")
@@ -47,7 +49,7 @@ plt.imshow(TPCEventsYZ[0,:,:,0],interpolation='nearest')
 model = MODEL.model
 cb = [
     callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=3,min_lr=0.00001),
-    callbacks.ModelCheckpoint(filepath="./Model_5/Model_All",verbose=1,save_weights_only=True,monitor='val_accuracy',mode='max',save_best_only=True)
+    callbacks.ModelCheckpoint(filepath=ModelPath,verbose=1,save_weights_only=True,monitor='val_accuracy',mode='max',save_best_only=True)
 ]
 fit_result = model.fit([TDXZ,TDYZ,TDXY],TrainLabel,epochs=epoch,batch_size=batch,validation_data=([VDXZ,VDYZ,VDXY],ValiLabel),callbacks=[cb])
 #fit_result = model.fit([TDXZ,TDYZ],TrainLabel,epochs=epoch,batch_size=batch,validation_data=([VDXZ,VDYZ],ValiLabel),callbacks=[cb])

@@ -47,6 +47,7 @@ class TPCManager:public FileManager{
 		vector<double>* dlTpc;
 		vector<double>* deTpc;
 		int htofnhits;
+		int htofhitpat[34];
 		int nhittpc; double htofua[34];
 		int gp = 0;
 		int gpb = 0;
@@ -118,6 +119,11 @@ class TPCManager:public FileManager{
 		int GetHTOFMT(){
 			return htofnhits;
 		}
+		void GetHTOFHitPat(int* hp){
+			for(int i=0;i<34;++i){
+				hp[i]=htofhitpat[i];
+			}
+		}
 		void SetTitle(TString title){
 			PadHist->SetTitle(title);
 			FlatHist->SetTitle(title);
@@ -171,6 +177,7 @@ void TPCManager::LoadChain(TString ChainName ){
 	DataChain->SetBranchAddress("dlTpc",&dlTpc);
 	DataChain->SetBranchAddress("deTpc",&deTpc);
 	DataChain->SetBranchAddress("htofnhits",&htofnhits);
+	DataChain->SetBranchAddress("htofhitpat",htofhitpat);
 	//	DataChain->SetBranchAddress("htofua",htofua);
 };
 void TPCManager::LoadG4Chain(TString ChainName ){
