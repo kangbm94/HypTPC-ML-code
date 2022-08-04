@@ -5,7 +5,7 @@ import Physics
 from Physics import *
 from array import array
 import sys
-output_num = 9 
+output_num = 2 
 nbin = int(128)
 tpc_size = 250
 dl = 665

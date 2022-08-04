@@ -81,8 +81,6 @@ void CheckRealTPCTraining(TString Filename,TString PredFile){
 	TH2D* hist3 = new TH2D("hist3","xy",128,-250,250,128,-300,350);
 	TCanvas* c1 = new TCanvas("c1","c1",1500,800);
 	c1->Divide(3,1);
-	TCanvas* c2 = new TCanvas("c2","c2",1500,800);
-	c2->Divide(3,2);
 	TH1I* nhhist1 = new TH1I("h1","nh=1",100,0,300);
 	TH1I* nhhist2 = new TH1I("h2","nh=2",100,0,300);
 	TH1I* nhhist3 = new TH1I("h3","nh=3",100,0,300);
@@ -110,7 +108,7 @@ void CheckRealTPCTraining(TString Filename,TString PredFile){
 		}
 		//		if(pred<trks&&pred!=0&&nh_cutm[pred-1]-1<nhtpc&&nhtpc<nh_cutM[pred-1]+1){
 		//	}
-		if(ntrk!=-1){
+		if(ntrk==1){
 			cout<<"Number of Hits: "<<nhtpc<<endl;
 			cout<<"Number of Tracks: "<<ntrk<<endl;
 			//			cout<<"Predicted Number of Tracks: "<<pred<<endl;
@@ -148,18 +146,6 @@ void CheckRealTPCTraining(TString Filename,TString PredFile){
 		hist2->Reset("ICES");
 		hist3->Reset("ICES");
 	}
-	c2->cd(1);
-	nhhist1->Draw();
-	c2->cd(2);
-	nhhist2->Draw();
-	c2->cd(3);
-	nhhist3->Draw();
-	c2->cd(4);
-	nhhist4->Draw();
-	c2->cd(5);
-	nhhist5->Draw();
-	c2->cd(6);
-	nhhist6->Draw();
 }
 void TagRealEvents(TString Filename,TString PredFile){
 	TFile* datafile = new TFile(Filename,"read");
@@ -456,10 +442,10 @@ void TestML(TString Filename="TrainData.root",TString TagName="PredictedData.roo
 
 
 
-void TagRealTPCByHand(TString Filename){
+void TagRealTPCByHand(int runnum , int mode){
+	TString Filename = "RealData0"+to_string(runnum)+".root";
 	TFile* datafile = new TFile(Filename,"read");
 	TTree* datatree = (TTree*)datafile->Get("tree");
-	int runnum = 5641;
 	TString Xidir = "../MayRun/RunSummary/CH2/";
 	TString XiFile = Xidir+Form("Xi_Production0%d.root",runnum);
 	TFile* file = new TFile(XiFile,"READ");
@@ -477,15 +463,24 @@ void TagRealTPCByHand(TString Filename){
 	double y[max_nh];
 	double z[max_nh];
 	double dedx[max_nh];
+	int htofnhits;
 	datatree->SetBranchAddress("nhtpc",&nhtpc);
 	datatree->SetBranchAddress("x",x);
 	datatree->SetBranchAddress("y",y);
 	datatree->SetBranchAddress("z",z);
+	datatree->SetBranchAddress("htofnhits",&htofnhits);
 
 
+	TString outfilename; 
 	int start = 0;
-
-	TFile* outfile = new TFile(Form("XiTaggedReal05641_%d.root",start),"recreate");
+	if(mode==1){
+		outfilename = "XiTaggedReal"+to_string(runnum)+".root";
+	}
+	else{
+		outfilename = "Background"+to_string(runnum)+".root";
+	}
+	//	TFile* outfile = new TFile(Form("XiTaggedReal05641_%d.root",start),"recreate");
+	TFile* outfile = new TFile(outfilename,"recreate");
 	TTree* outtree = new TTree("tree","tree");
 	outtree->Branch("evnum",&evnum,"evnum/I");
 	outtree->Branch("TPCEventTag",&TPCEventTag,"TPCEventTag/I");
@@ -502,60 +497,108 @@ void TagRealTPCByHand(TString Filename){
 	TCanvas* c1 = new TCanvas("c1","c1",1000,800);
 	c1->Divide(2,2);
 	TH1I* nhhist = new TH1I("h1","nh=1",10,0,10);
-//	int ent = datatree->GetEntries();
+	//	int ent = datatree->GetEntries();
 	int ent = tree->GetEntries();
 	bool force=false;
 	int cnt=0;
-	for(int i=start;i<ent;++i){
-		tree->GetEntry(i);
-		int evt = XiEv; 
-		if(cnt%100==0&&cnt!=0){
-			cout<<i<<endl;
-			outfile->Write();
-		}
-		datatree->GetEntry(evt);
-		evnum=i;
-		for(int j=0;j<nhtpc;++j){
-			hist->Fill(z[j],x[j]);
-			hist2->Fill(z[j],y[j]);
-			hist3->Fill(x[j],y[j]);
-		}
-		c1->cd(1);
-		hist2->Draw("colz");
-		c1->cd(2);
-		hist3->Draw("colz");
-		c1->cd(3);
-		hist->Draw("colz");
-		c1->Modified();
-		c1->Update();
-		cout<<"Number of Hits: "<<nhtpc<<endl;
-		gSystem->ProcessEvents();
-		cout<<"What's the number of Tracks?"<<endl;
-		cin>>ntrk;
-		if(ntrk<0){
-			cout<<"quitting..."<<endl;
-			break;
-		}
-		if(ntrk<11){
-			outtree->Fill();
-			cnt++;
-		}
-		else{
+	double xim = 1.317;
+	double xiw = 0.012;
+	double nsig = 3.;
+	if(mode==1){
+		for(int i=start;i<ent;++i){
+			tree->GetEntry(i);
+			int evt = XiEv; 
+			if( sqrt((XiM2-xim)*(XiM2-xim))>nsig*xiw){
+				continue;
+			}
+			if(cnt%100==0&&cnt!=0){
+				cout<<i<<endl;
+				outfile->Write();
+			}
+			datatree->GetEntry(evt);
+			evnum=i;
+			for(int j=0;j<nhtpc;++j){
+				hist->Fill(z[j],x[j]);
+				hist2->Fill(z[j],y[j]);
+				hist3->Fill(x[j],y[j]);
+			}
+			c1->cd(1);
+			hist2->Draw("colz");
+			c1->cd(2);
+			hist3->Draw("colz");
+			c1->cd(3);
+			hist->Draw("colz");
+			c1->Modified();
+			c1->Update();
+			cout<<"Number of Hits: "<<nhtpc<<endl;
+			cout<<"htofnhits : "<<htofnhits<<endl;
+			gSystem->ProcessEvents();
+			cout<<"What's the type of this event? : (0->BG, 1->Xi-like)"<<endl;
+			cin>>TPCEventTag;
+			cin.ignore();
+			if(ntrk<0){
+				cout<<"quitting..."<<endl;
+				break;
+			}
+			if(ntrk<11){
+				outtree->Fill();
+				cnt++;
+			}
+			else{
+				hist->Reset("ICES");
+				hist2->Reset("ICES");
+				hist3->Reset("ICES");
+				continue;
+			}
+			nhhist->Fill(ntrk);
+			c1->cd(4);
+			nhhist->SetTitle(Form("Evt%d",i));
+			nhhist->Draw();
+			c1->Modified();
+			c1->Update();
+			gSystem->ProcessEvents();
 			hist->Reset("ICES");
 			hist2->Reset("ICES");
 			hist3->Reset("ICES");
-			continue;
 		}
-		nhhist->Fill(ntrk);
-		c1->cd(4);
-		nhhist->SetTitle(Form("Evt%d",i));
-		nhhist->Draw();
-		c1->Modified();
-		c1->Update();
-		gSystem->ProcessEvents();
-		hist->Reset("ICES");
-		hist2->Reset("ICES");
-		hist3->Reset("ICES");
+		outfile->Write();
 	}
-	outfile->Write();
+	else{
+		for(int i=start;i<100;++i){
+			tree->GetEntry(i);
+			int evt = XiEv; 
+			datatree->GetEntry(1000*i);
+			for(int j=0;j<nhtpc;++j){
+				hist->Fill(z[j],x[j]);
+				hist2->Fill(z[j],y[j]);
+				hist3->Fill(x[j],y[j]);
+			}
+			c1->cd(1);
+			hist2->Draw("colz");
+			c1->cd(2);
+			hist3->Draw("colz");
+			c1->cd(3);
+			hist->Draw("colz");
+			c1->Modified();
+			c1->Update();
+			cout<<"Number of Hits: "<<nhtpc<<endl;
+			cout<<"htofnhits : "<<htofnhits<<endl;
+			gSystem->ProcessEvents();
+			
+			TPCEventTag=0;
+			outtree->Fill();
+			cnt++;
+			nhhist->Fill(ntrk);
+			c1->cd(4);
+			nhhist->SetTitle(Form("Evt%d",i));
+			nhhist->Draw();
+			c1->Modified();
+			c1->Update();
+			gSystem->ProcessEvents();
+			hist->Reset("ICES");
+			hist2->Reset("ICES");
+			hist3->Reset("ICES");
+		}
+		outfile->Write();
+	}
 }

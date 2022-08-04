@@ -1,4 +1,4 @@
 for i in {0..19}
 	do
-		python TestCount.py $i
+		python TestXi.py $i
 	done

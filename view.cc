@@ -2,10 +2,10 @@ TString ht[8]={"0track","1track","2tracks","3tracks","4tracks","5tracks","6track
 void view(){
 	TCanvas* c1 = new TCanvas("c1","c1",1500,800);
 	c1->Divide(4,2);
-//	TFile* file = new TFile("ValidationData.root","read");
+	TFile* file = new TFile("ValidationData.root","read");
 //	TFile* file = new TFile("TrainedData.root","read");
-TFile* file = new TFile("PredictedData.root","read");
-//	TFile* file = new TFile("PredictedData700.root","read");
+//	TFile* file = new TFile("PredictedData.root","read");
+	//	TFile* file = new TFile("PredictedData700.root","read");
 	TTree* tree = (TTree*)file->Get("tree");
 	const int ncl=8;
 	TH2D* hists[ncl];

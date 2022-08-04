@@ -8,7 +8,7 @@ from keras.layers import *
 lr=.1
 batch = 64 
 epoch = 100 
-depth = 8
+depth = 16
 
 def LowCNN(X):
     H= layers.Conv2D(depth,kernel_size=3,activation='relu')(X)
@@ -47,7 +47,8 @@ XYZ = layers.Concatenate()([B_XZ,B_YZ,B_XY])
 #XYZ = layers.Concatenate()([B_XZ,B_YZ])
 XYZ = layers.Dropout(0.5)(XYZ)
 DL= layers.Dense(output_num*10,activation='relu')(XYZ)
-DL= layers.Dense(output_num,activation='softmax')(DL)
+#DL= layers.Dense(output_num,activation='softmax')(DL)
+DL= layers.Dense(output_num,activation='sigmoid')(DL)
 #DL= layers.Dense(output_num,activation='softmax')(B_XZ)
 #DL= layers.Dense(output_num,activation='softmax')(DL)
 #model=models.Model(inputs=[XZ,YZ,XY],outputs=DL);
@@ -55,6 +56,7 @@ model=models.Model(inputs=[XZ,YZ,XY],outputs=DL);
 #model=models.Model(inputs=XZ,outputs=DL);
 #model.build(input_shape=[nbin,nbin,max_depth])
 model.summary()
-model.compile(loss='categorical_crossentropy',optimizer=optimizers.Adadelta(learning_rate=lr),metrics='accuracy')
+#model.compile(loss='categorical_crossentropy',optimizer=optimizers.Adadelta(learning_rate=lr),metrics='accuracy')
+model.compile(loss='binary_crossentropy',optimizer=optimizers.Adadelta(learning_rate=lr),metrics='accuracy')
 #model.compile(loss='categorical_crossentropy',optimizer=Adam(learn_rate),metrics='accuracy',ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=3,min_lr=0.004))
 
