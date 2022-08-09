@@ -1,7 +1,7 @@
 double XiMinusMass = 1.32171, XiMinusWidth = 1,XiStarMass = 1.530,XiStarWidth = 0.0099;
 
 class FileManager{
-	protected:
+	private:
 	protected:
 		TFile* DataFile;
 		fstream ParameterFile;
@@ -14,8 +14,9 @@ class FileManager{
 
 	public:
 		FileManager(){}
-		virtual void LoadFile(TString FileName){DataFile = new TFile(FileName,"READ");}
-		virtual void LoadChain(TString ChainName){DataChain = (TChain*)DataFile->Get(ChainName);}
+		void WriteTag(TString title, TString comment);
+		void LoadFile(TString FileName){DataFile = new TFile(FileName,"READ");}
+		void LoadChain(TString ChainName){DataChain = (TChain*)DataFile->Get(ChainName);}
 		void LoadParameterFile(TString FileName){OldParameterFile.open(FileName,fstream::in);}
 		TObject* GetHistogram(int HistNumber);
 		TObject* DrawHistogram(TString Argument, TCut Cut, TString Options = "");
@@ -56,6 +57,10 @@ void FileManager::WriteParameter(vector<int> ID,vector<double> Param){
 	ParameterFile<<Param[Param.size()-1]<<endl;
 }
 
+void FileManager::WriteTag(TString title, TString comment){
+	auto tag = new TNamed(title.Data(),comment.Data());
+	tag->Write();
+};
 /*
 void FileManager::LoadParamMap(TString FileName){
 	ifstream ParamFile(FileName);

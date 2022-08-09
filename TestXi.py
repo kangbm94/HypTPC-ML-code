@@ -7,23 +7,29 @@ import InputManager
 #filename = "TaggedTrainDataMerged.root"
 #filename = "TaggedTrainDataP500.root"
 #filename = "TaggedTrainDataP700.root"
-filename = "RealData05641.root"
 #filename = "tagged_beam.root"
 #filename = "tagged_train.root"
 scale = int(20)
 frag = int(sys.argv[1])
+runnum = int(sys.argv[2])
+filename = "RealData0"+str(runnum)+".root"
 #TPCEventsXZ,TPCEventsYZ,TPCEventsXY,TPCEventTags,TPCNTrk,evnums,TotEnt = InputManager.LoadEventXYZ(filename,scale)
+print("RunNumber : ",runnum," Frag : ",frag)
 TPCEventsXZ,TPCEventsYZ,TPCEventsXY,TPCEventTags,TPCNTrk,evnums,TotEnt = InputManager.LoadRealEventTestXYZ(filename,scale,frag)
 #TPCEvents,evnums,TotEnt = InputManager.LoadRealEventRDF(filename,scale)
+print("RunNumber : ",runnum," Frag : ",frag)
 model = MODEL.model
 ModelPath="./Model_Xi/Model"
 model.load_weights(ModelPath)
+Tag= "Xi_"+str(runnum)+"_"+str(frag+1)+"/20"
 
 predData=model.predict([TPCEventsXZ,TPCEventsYZ,TPCEventsXY])
 print(predData.shape)
-outfilename = "PredictedDataReal05641_"+str(frag)+".root"
+outfilename = "PredictedDataReal0"+str(runnum)+"_"+str(frag)+".root"
 outfile = ROOT.TFile.Open(outfilename,"recreate")
 outtree = ROOT.TTree("tree","tree")
+comment = ROOT.TNamed("Tag",Tag)
+comment.Write()
 evnum = array('i',[0])
 tag = array('i',[0])
 pred = array('i',[0])

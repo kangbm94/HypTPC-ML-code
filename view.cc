@@ -7,7 +7,7 @@ void view(){
 //	TFile* file = new TFile("PredictedData.root","read");
 	//	TFile* file = new TFile("PredictedData700.root","read");
 	TTree* tree = (TTree*)file->Get("tree");
-	const int ncl=8;
+	const int ncl=2;
 	TH2D* hists[ncl];
 	cout<<"Histo"<<endl;
 	for(int i=0;i<ncl;++i){

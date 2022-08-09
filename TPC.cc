@@ -15,12 +15,14 @@ void TPC(){
 void ConvertRealTPC(int runnum){
 	TString dir = "../MayRun/rootfiles/CH2/TPC";
 	TString tpcdir = dir+"/";
-	TString Filename = "TPCHit0"+to_string(runnum)+".root";
+//	TString Filename = "TPCHit0"+to_string(runnum)+".root";
+	TString Filename = "TPCCluster0"+to_string(runnum)+".root";
 	TString TPCFile = tpcdir+Filename;
-	T.LoadFile(TPCFile);
+	T.LoadClusterFile(TPCFile);
 	int ent =T.GetNEvent();
-	TString OutFileName = "RealData0"+to_string(runnum)+".root";
+	TString OutFileName = "RealClData0"+to_string(runnum)+".root";
 	TFile* outfile = new TFile(OutFileName,"recreate");
+	T.WriteTag("Data",TPCFile);
 	double x[max_nh];
 	double y[max_nh];
 	double z[max_nh];
@@ -31,8 +33,8 @@ void ConvertRealTPC(int runnum){
 	TTree* outtree = new TTree("tree","tree");
 	outtree->Branch("evnum",&evnum,"evnum/I");
 	outtree->Branch("nhtpc",&nhtpc,"nhtpc/I");
-	outtree->Branch("htofnhits",&htofnhits,"htofnhits/I");
-	outtree->Branch("htofhitpat",htofhitpat,"htofhitpat[34]/I");
+//	outtree->Branch("htofnhits",&htofnhits,"htofnhits/I");
+//	outtree->Branch("htofhitpat",htofhitpat,"htofhitpat[34]/I");
 	outtree->Branch("x",x,"x[nhtpc]/D");
 	outtree->Branch("y",y,"y[nhtpc]/D");
 	outtree->Branch("z",z,"z[nhtpc]/D");
@@ -42,9 +44,9 @@ void ConvertRealTPC(int runnum){
 		if(i%1000==0)cout<<Form("Processing %d th event...",i)<<endl;
 		T.SetEvent(i);	
 		evnum=i;
-		nhtpc =Min(T.GetNpad(), max_nh);
-		htofnhits=T.GetHTOFMT();
-		T.GetHTOFHitPat(htofhitpat);
+		nhtpc =Min(T.GetNhits(), max_nh);
+//		htofnhits=T.GetHTOFMT();
+//		T.GetHTOFHitPat(htofhitpat);
 		T.AssignRealEvent(x,y,z,dedx);
 		outtree->Fill();
 	}
@@ -282,7 +284,7 @@ void ViewTPC(TString Filename){
 			//			cout<<"Lambda -> N Pi"<<endl;
 		} 
 		T.AssignG4EventD(x,y,z,dedx);
-		for(int j=0;j<T.GetNpadG4();++j){
+		for(int j=0;j<T.GetNhitsG4();++j){
 			int padID= T.GetPadIDG4(j);
 			TVector3 vec = T.GetG4Position(j);
 			T.FillFlatHist(padID);
@@ -351,7 +353,7 @@ void TagTPCEvents(TString Filename,TString OutFileName){
 		//		evnum=(i+entries*i/3)%entries;
 		evnum=i;
 		T.SetEvent(evnum);//For mixing 3 files...
-		nhtpc=T.GetNpadG4();
+		nhtpc=T.GetNhitsG4();
 		if(i%1000==0)cout<<i<<endl;
 		ThisEvent=T.WhichEvent();
 		T.AssignG4EventD(x,y,z,dedx);
@@ -410,7 +412,7 @@ void TestML(TString Filename="TrainData.root",TString TagName="PredictedData.roo
 		T.SetEvent(evnum);
 		if(i%1000==0)cout<<i<<endl;
 		ThisEvent=T.WhichEvent();
-		for(int j=0;j<T.GetNpadG4();++j){
+		for(int j=0;j<T.GetNhitsG4();++j){
 			int padID= T.GetPadIDG4(j);
 			TVector3 vec = T.GetG4Position(j);
 			double x = vec.X();double z = vec.Z();
@@ -442,7 +444,8 @@ void TestML(TString Filename="TrainData.root",TString TagName="PredictedData.roo
 
 
 
-void TagRealTPCByHand(int runnum , int mode){
+void TagRealTPCByHand(int runnum , int mode,TString comment = "no comment"){
+//TString Filename = "RealClData0"+to_string(runnum)+".root";
 	TString Filename = "RealData0"+to_string(runnum)+".root";
 	TFile* datafile = new TFile(Filename,"read");
 	TTree* datatree = (TTree*)datafile->Get("tree");
@@ -479,8 +482,10 @@ void TagRealTPCByHand(int runnum , int mode){
 	else{
 		outfilename = "Background"+to_string(runnum)+".root";
 	}
-	//	TFile* outfile = new TFile(Form("XiTaggedReal05641_%d.root",start),"recreate");
 	TFile* outfile = new TFile(outfilename,"recreate");
+	T.WriteTag("Data",Filename);
+	T.WriteTag("Conf","XiTag");
+	T.WriteTag("misic",comment);
 	TTree* outtree = new TTree("tree","tree");
 	outtree->Branch("evnum",&evnum,"evnum/I");
 	outtree->Branch("TPCEventTag",&TPCEventTag,"TPCEventTag/I");

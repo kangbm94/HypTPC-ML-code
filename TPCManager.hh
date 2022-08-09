@@ -46,16 +46,25 @@ class TPCManager:public FileManager{
 		int ntrk[nhtpcmax];
 		vector<double>* dlTpc;
 		vector<double>* deTpc;
+		vector<double>* clxTpc;
+		vector<double>* clyTpc;
+		vector<double>* clzTpc;
+		vector<int>* clsize;
 		int htofnhits;
 		int htofhitpat[34];
 		int nhittpc; double htofua[34];
 		int gp = 0;
 		int gpb = 0;
+		bool cluster = false;
 	public:
 		TPCManager(){};
 		virtual void LoadFile(TString FileName){ DataFile = new TFile(FileName,"READ");
 			cout<<FileName<<" Opened"<<endl;
 			LoadChain("tpc");
+		}
+		virtual void LoadClusterFile(TString FileName){ DataFile = new TFile(FileName,"READ");
+			cout<<FileName<<" Opened"<<endl;
+			LoadClusterChain("tpc");
 		}
 		virtual void LoadG4File(TString FileName){
 			DataFile = new TFile(FileName,"READ");
@@ -63,6 +72,7 @@ class TPCManager:public FileManager{
 			LoadG4Chain("TPC_g");
 		}
 		void LoadChain(TString ChainName);
+		void LoadClusterChain(TString ChainName);
 		void LoadG4Chain(TString ChainName);
 		int GetNEvent(){
 			return DataChain->GetEntries();
@@ -76,13 +86,14 @@ class TPCManager:public FileManager{
 			FlatHist->Reset("ICE");
 			gp=0;
 		}
-		int GetNpad(){
-			return Min(padTpc->size(),max_nh);
+		int GetNhits(){
+			if(!cluster)	return Min(padTpc->size(),max_nh);
+			else 					return Min(clsize->size(),max_nh);
 		};
 		int GetPadID(int i){
 			return padTpc->at(i);
 		};
-		int GetNpadG4(){
+		int GetNhitsG4(){
 			return Min(nhittpc,max_nh);
 		}
 		int GetPadIDG4(int i){
@@ -109,8 +120,12 @@ class TPCManager:public FileManager{
 		double Getdedxtpc(int i){
 			return dedxtpc[i];
 		}
-		TVector3 GetPosition(int padID){
-			TVector3 pos =  tpc::getPosition(padID);
+		TVector3 GetPosition(int itr){
+			TVector3 pos(clxTpc->at(itr),clyTpc->at(itr),clzTpc->at(itr)); 
+			if(!cluster){ 
+				pos =  tpc::getPosition(GetPadID(itr));
+				pos.SetY(GetDL(itr));
+			}
 			return pos;
 		}
 		TVector3 GetG4Position(int i){
@@ -135,18 +150,6 @@ class TPCManager:public FileManager{
 		};
 		void FillHist(int padID);
 		void FillFlatHist(int padID);
-		void Fill3DHist(TVector3 vect){
-			SpaceHist->Fill(vect.Z(),vect.X(),vect.Y());	
-		}
-		void FillBaseGraph(TVector3 vect){
-			SpaceGraphBase->SetPoint(gpb,vect.Z(),vect.X(),vect.Y());	
-			gpb++;
-		}
-		void Fill3DGraph(TVector3 vect){
-			SpaceGraph->SetPoint(gp,vect.Z(),vect.X(),vect.Y());	
-			gp++;
-		}
-		void MakeTPCPad();
 		void DrawHist(){
 			PadHist->Draw("colz");
 		}
@@ -155,12 +158,6 @@ class TPCManager:public FileManager{
 		}
 		void DrawPosHist(){
 			PosHist->Draw("colz");
-		}
-		void Draw3DHist(){
-			SpaceHist->Draw("colz");
-		}
-		void Draw3DGraph(){
-			SpaceGraph->Draw("APSAME");
 		}
 		TVector3 GetRTheta(int padID);
 		TVector2 GetLayerRow(int padID);
@@ -172,6 +169,7 @@ class TPCManager:public FileManager{
 		int NumberOfTracks(int min_points=6);
 };
 void TPCManager::LoadChain(TString ChainName ){
+	cluster = false;
 	DataChain	= (TChain*) DataFile->Get(ChainName);
 	DataChain->SetBranchAddress("padTpc",&padTpc);
 	DataChain->SetBranchAddress("dlTpc",&dlTpc);
@@ -180,6 +178,15 @@ void TPCManager::LoadChain(TString ChainName ){
 	DataChain->SetBranchAddress("htofhitpat",htofhitpat);
 	//	DataChain->SetBranchAddress("htofua",htofua);
 };
+void TPCManager::LoadClusterChain(TString ChainName ){
+	cluster = true;
+	DataChain	= (TChain*) DataFile->Get(ChainName);
+	DataChain->SetBranchAddress("cluster_hitpos_x",&clxTpc);
+	DataChain->SetBranchAddress("cluster_hitpos_y",&clyTpc);
+	DataChain->SetBranchAddress("cluster_hitpos_z",&clzTpc);
+	DataChain->SetBranchAddress("cluster_de",&deTpc);
+	DataChain->SetBranchAddress("cluster_size",&clsize);
+}
 void TPCManager::LoadG4Chain(TString ChainName ){
 	DataChain	= (TChain*) DataFile->Get(ChainName);
 	DataChain->SetBranchAddress("nhittpc",&nhittpc);
@@ -235,21 +242,11 @@ void TPCManager::FillHist(int padID){
 	double z = hitv.Z();
 	PadHist->Fill(z,x);
 };
-void TPCManager::MakeTPCPad(){
-	for(int i=0;i<max_padid;++i){
-		TVector3 vect = GetPosition(i+1);
-		vect.SetY(-300);
-		FillBaseGraph(vect);
-	}
-	SpaceGraph->SetMarkerStyle(kCircle);
-	SpaceGraph->SetMarkerColor(kBlue);
-	SpaceGraph->SetMarkerSize(3);
-}
 int TPCManager::WhichEvent(){
 	const int max_ntrk=20;
 	int particle[max_ntrk]={0};
 	int ThisEvent=0,npi=0,nk=0,np=0;
-	int nh = GetNpadG4();
+	int nh = GetNhitsG4();
 	for(int j=0;j<nh;++j){
 		particle[Getntrk(j)]=Getidtpc(j);
 	}
@@ -293,7 +290,7 @@ int TPCManager::WhichEvent(){
 int TPCManager::NumberOfTracks(int min_points=6){
 	const int max_ntrk=20;
 	int counter[max_ntrk]={0};
-	int nh = GetNpadG4();
+	int nh = GetNhitsG4();
 	int TrackCount=0;
 	for(int j=0;j<nh;++j){
 		counter[Getntrk(j)]+=1;
@@ -308,7 +305,7 @@ void TPCManager::AssignG4Event( short* x,short* y,short* z,double* dedx){
 		x[j]=0;y[j]=0;z[j]=0;
 	}
 //	cout<<"Initialized"<<endl;
-	for(int j=0;j<GetNpadG4();++j){
+	for(int j=0;j<GetNhitsG4();++j){
 		TVector3 vec = GetG4Position(j);
 		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
 		short x_pix=ToPixel(x_);short y_short = ToShort(y_);short z_pix=ToPixel(z_);
@@ -320,27 +317,25 @@ void TPCManager::AssignG4EventD( double* x,double* y,double* z,double* dedx){
 		x[j]=0;y[j]=0;z[j]=0;
 	}
 //	cout<<"Initialized"<<endl;
-	for(int j=0;j<GetNpadG4();++j){
+	for(int j=0;j<GetNhitsG4();++j){
 		TVector3 vec = GetG4Position(j);
 		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
 		x[j]=x_;y[j]=y_;z[j]=z_;dedx[j]=Getdedxtpc(j);
 	}
 }
 void TPCManager::AssignRealEvent( double* x,double* y,double* z,double* dedx){
-	int nitr = GetNpad();
+	int nitr = GetNhits();
 	for(int j=0;j<max_nh;++j){
 		x[j]=0;y[j]=0;z[j]=0;dedx[j]=0;
 	}
 	for(int j=0;j<nitr;++j){
-		TVector3 vec = GetPosition(GetPadID(j));
-		double dl= GetDL(j);
-		vec.SetY(dl);
+		TVector3 vec = GetPosition(j);
 		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
 		x[j]=x_;y[j]=y_;z[j]=z_;dedx[j]=GetDE(j);
 	}
 }
 void TPCManager::FillEvent(){
-	int nitr = GetNpadG4();
+	int nitr = GetNhitsG4();
 	double x[max_nh],y[max_nh],z[max_nh],dedx[max_nh];
 	for(int j=0;j<max_nh;++j){
 		x[j]=0;y[j]=0;z[j]=0;
