@@ -11,6 +11,7 @@ import InputManager
 #filename = "tagged_train.root"
 filename = "TaggedReal.root"
 #filename = "taggedReal05641.root"
+#ModelPath="./Model_KPTag/Model"
 ModelPath="./Model_Xi/Model"
 cnt=0
 scale = int(1)

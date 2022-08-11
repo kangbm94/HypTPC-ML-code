@@ -28,8 +28,6 @@ print(predData.shape)
 outfilename = "PredictedDataReal0"+str(runnum)+"_"+str(frag)+".root"
 outfile = ROOT.TFile.Open(outfilename,"recreate")
 outtree = ROOT.TTree("tree","tree")
-comment = ROOT.TNamed("Tag",Tag)
-comment.Write()
 evnum = array('i',[0])
 tag = array('i',[0])
 pred = array('i',[0])
@@ -56,4 +54,6 @@ for i in range(TotEnt):
     for j in range(output_num):
         prb[j]=predData[i][j]
     outtree.Fill()
+comment = ROOT.TNamed("Tag",Tag)
+comment.Write()
 outfile.Write()

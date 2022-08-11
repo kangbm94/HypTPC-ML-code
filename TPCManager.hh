@@ -163,7 +163,7 @@ class TPCManager:public FileManager{
 		TVector2 GetLayerRow(int padID);
 		int WhichEvent();
 		void AssignG4Event(short * x,short* y,short* z,double* dedx);
-		void AssignG4EventD(double * x,double* y,double* z,double* dedx);
+		void AssignG4EventD(int* trkid,int* pid, double * x,double* y,double* z,double* dedx);
 		void AssignRealEvent(double * x,double* y,double* z,double* dedx);
 		void FillEvent();
 		int NumberOfTracks(int min_points=6);
@@ -312,15 +312,17 @@ void TPCManager::AssignG4Event( short* x,short* y,short* z,double* dedx){
 		x[j]=x_pix;y[j]=y_short;z[j]=z_pix;dedx[j]=Getdedxtpc(j);
 	}
 }
-void TPCManager::AssignG4EventD( double* x,double* y,double* z,double* dedx){
+void TPCManager::AssignG4EventD(int* trkid,int* pid, double* x,double* y,double* z,double* dedx){
 	for(int j=0;j<max_nh;++j){
-		x[j]=0;y[j]=0;z[j]=0;
+		trkid[j]=-999;x[j]=0;y[j]=0;z[j]=0;
 	}
 //	cout<<"Initialized"<<endl;
 	for(int j=0;j<GetNhitsG4();++j){
 		TVector3 vec = GetG4Position(j);
+		int trid = Getntrk(j);
+		int partid = Getidtpc(j);
 		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
-		x[j]=x_;y[j]=y_;z[j]=z_;dedx[j]=Getdedxtpc(j);
+		trkid[j]=trid;pid[j]=partid;x[j]=x_;y[j]=y_;z[j]=z_;dedx[j]=Getdedxtpc(j);
 	}
 }
 void TPCManager::AssignRealEvent( double* x,double* y,double* z,double* dedx){
@@ -337,10 +339,11 @@ void TPCManager::AssignRealEvent( double* x,double* y,double* z,double* dedx){
 void TPCManager::FillEvent(){
 	int nitr = GetNhitsG4();
 	double x[max_nh],y[max_nh],z[max_nh],dedx[max_nh];
+	int trkid[max_nh],pid[max_nh];
 	for(int j=0;j<max_nh;++j){
 		x[j]=0;y[j]=0;z[j]=0;
 	}
-	AssignG4EventD(x,y,z,dedx);
+	AssignG4EventD(trkid,pid,x,y,z,dedx);
 	for(int j=0;j<nitr;++j){
 		FillHist(z[j],x[j]);
 	}

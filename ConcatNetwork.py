@@ -47,16 +47,19 @@ XYZ = layers.Concatenate()([B_XZ,B_YZ,B_XY])
 #XYZ = layers.Concatenate()([B_XZ,B_YZ])
 XYZ = layers.Dropout(0.5)(XYZ)
 DL= layers.Dense(output_num*10,activation='relu')(XYZ)
-#DL= layers.Dense(output_num,activation='softmax')(DL)
-DL= layers.Dense(output_num,activation='sigmoid')(DL)
+if output_num==1:
+    DL= layers.Dense(output_num,activation='sigmoid')(DL)
+    model=models.Model(inputs=[XZ,YZ,XY],outputs=DL);
+    model.compile(loss='binary_crossentropy',optimizer=optimizers.Adadelta(learning_rate=lr),metrics='accuracy')
+else :
+    DL= layers.Dense(output_num,activation='softmax')(DL)
+    model=models.Model(inputs=[XZ,YZ,XY],outputs=DL);
+    model.compile(loss='categorical_crossentropy',optimizer=optimizers.Adadelta(learning_rate=lr),metrics='accuracy')
 #DL= layers.Dense(output_num,activation='softmax')(B_XZ)
 #DL= layers.Dense(output_num,activation='softmax')(DL)
 #model=models.Model(inputs=[XZ,YZ,XY],outputs=DL);
-model=models.Model(inputs=[XZ,YZ,XY],outputs=DL);
 #model=models.Model(inputs=XZ,outputs=DL);
 #model.build(input_shape=[nbin,nbin,max_depth])
 model.summary()
-#model.compile(loss='categorical_crossentropy',optimizer=optimizers.Adadelta(learning_rate=lr),metrics='accuracy')
-model.compile(loss='binary_crossentropy',optimizer=optimizers.Adadelta(learning_rate=lr),metrics='accuracy')
 #model.compile(loss='categorical_crossentropy',optimizer=Adam(learn_rate),metrics='accuracy',ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=3,min_lr=0.004))
 

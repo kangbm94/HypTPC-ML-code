@@ -15,7 +15,7 @@ void TPC(){
 void ConvertRealTPC(int runnum){
 	TString dir = "../MayRun/rootfiles/CH2/TPC";
 	TString tpcdir = dir+"/";
-//	TString Filename = "TPCHit0"+to_string(runnum)+".root";
+	//	TString Filename = "TPCHit0"+to_string(runnum)+".root";
 	TString Filename = "TPCCluster0"+to_string(runnum)+".root";
 	TString TPCFile = tpcdir+Filename;
 	T.LoadClusterFile(TPCFile);
@@ -33,8 +33,8 @@ void ConvertRealTPC(int runnum){
 	TTree* outtree = new TTree("tree","tree");
 	outtree->Branch("evnum",&evnum,"evnum/I");
 	outtree->Branch("nhtpc",&nhtpc,"nhtpc/I");
-//	outtree->Branch("htofnhits",&htofnhits,"htofnhits/I");
-//	outtree->Branch("htofhitpat",htofhitpat,"htofhitpat[34]/I");
+	//	outtree->Branch("htofnhits",&htofnhits,"htofnhits/I");
+	//	outtree->Branch("htofhitpat",htofhitpat,"htofhitpat[34]/I");
 	outtree->Branch("x",x,"x[nhtpc]/D");
 	outtree->Branch("y",y,"y[nhtpc]/D");
 	outtree->Branch("z",z,"z[nhtpc]/D");
@@ -45,8 +45,8 @@ void ConvertRealTPC(int runnum){
 		T.SetEvent(i);	
 		evnum=i;
 		nhtpc =Min(T.GetNhits(), max_nh);
-//		htofnhits=T.GetHTOFMT();
-//		T.GetHTOFHitPat(htofhitpat);
+		//		htofnhits=T.GetHTOFMT();
+		//		T.GetHTOFHitPat(htofhitpat);
 		T.AssignRealEvent(x,y,z,dedx);
 		outtree->Fill();
 	}
@@ -110,9 +110,14 @@ void CheckRealTPCTraining(TString Filename,TString PredFile){
 		}
 		//		if(pred<trks&&pred!=0&&nh_cutm[pred-1]-1<nhtpc&&nhtpc<nh_cutM[pred-1]+1){
 		//	}
-		if(ntrk==1){
+		if(ntrk!=-1){
 			cout<<"Number of Hits: "<<nhtpc<<endl;
-			cout<<"Number of Tracks: "<<ntrk<<endl;
+			if(ntrk==1){
+				cout<<"Xi"<<endl;
+			}
+			else{
+				cout<<"Other"<<endl;
+			}
 			//			cout<<"Predicted Number of Tracks: "<<pred<<endl;
 			c1->cd(1);
 			hist->Draw("colz");
@@ -266,6 +271,7 @@ void ViewTPC(TString Filename){
 	double y[max_nh];
 	double z[max_nh];
 	double dedx[max_nh];
+	int trkid[max_nh],pid[max_nh];
 	TCanvas* c1 = new TCanvas("c1","c1",1500,800);
 	c1->Divide(3,1);
 
@@ -283,7 +289,7 @@ void ViewTPC(TString Filename){
 		else if(ThisEvent==L2NPi){
 			//			cout<<"Lambda -> N Pi"<<endl;
 		} 
-		T.AssignG4EventD(x,y,z,dedx);
+		T.AssignG4EventD(trkid,pid,x,y,z,dedx);
 		for(int j=0;j<T.GetNhitsG4();++j){
 			int padID= T.GetPadIDG4(j);
 			TVector3 vec = T.GetG4Position(j);
@@ -329,6 +335,8 @@ void TagTPCEvents(TString Filename,TString OutFileName){
 	double y[max_nh];
 	double z[max_nh];
 	double dedx[max_nh];
+	int trkid[max_nh];
+	int pid[max_nh];
 	//	short x[max_nh];
 	//	short y[max_nh];
 	//	short z[max_nh];
@@ -339,6 +347,8 @@ void TagTPCEvents(TString Filename,TString OutFileName){
 	outtree->Branch("TPCEventTag",&TPCEventTag,"TPCEventTag/I");
 	outtree->Branch("nhtpc",&nhtpc,"nhtpc/I");
 	outtree->Branch("ntrk",&ntrk,"ntrk/I");
+	outtree->Branch("trkid",trkid,"trkid[nhtpc]/I");
+	outtree->Branch("pid",pid,"pid[nhtpc]/I");
 	outtree->Branch("x",x,"x[nhtpc]/D");
 	outtree->Branch("y",y,"y[nhtpc]/D");
 	outtree->Branch("z",z,"z[nhtpc]/D");
@@ -356,7 +366,7 @@ void TagTPCEvents(TString Filename,TString OutFileName){
 		nhtpc=T.GetNhitsG4();
 		if(i%1000==0)cout<<i<<endl;
 		ThisEvent=T.WhichEvent();
-		T.AssignG4EventD(x,y,z,dedx);
+		T.AssignG4EventD(trkid,pid,x,y,z,dedx);
 		TPCEventTag=ThisEvent;
 		ntrk = T.NumberOfTracks(3); 
 		if(TagNumber[ntrk]<evt_per_tag&&ntrk==0){
@@ -443,9 +453,8 @@ void TestML(TString Filename="TrainData.root",TString TagName="PredictedData.roo
 
 
 
-
 void TagRealTPCByHand(int runnum , int mode,TString comment = "no comment"){
-//TString Filename = "RealClData0"+to_string(runnum)+".root";
+	//TString Filename = "RealClData0"+to_string(runnum)+".root";
 	TString Filename = "RealData0"+to_string(runnum)+".root";
 	TFile* datafile = new TFile(Filename,"read");
 	TTree* datatree = (TTree*)datafile->Get("tree");
@@ -501,27 +510,56 @@ void TagRealTPCByHand(int runnum , int mode,TString comment = "no comment"){
 	TH2D* hist3 = new TH2D("hist3","xy",128,-250,250,128,-300,350);
 	TCanvas* c1 = new TCanvas("c1","c1",1000,800);
 	c1->Divide(2,2);
-	TH1I* nhhist = new TH1I("h1","nh=1",10,0,10);
+	TH1D* nhhist = new TH1D("h1","M2",100,1,2);
 	//	int ent = datatree->GetEntries();
 	int ent = tree->GetEntries();
 	bool force=false;
 	int cnt=0;
 	double xim = 1.317;
 	double xiw = 0.012;
+	double xistarm = 1.539;
+	double xistarw = 0.010;
 	double nsig = 3.;
 	if(mode==1){
 		for(int i=start;i<ent;++i){
 			tree->GetEntry(i);
 			int evt = XiEv; 
-			if( sqrt((XiM2-xim)*(XiM2-xim))>nsig*xiw){
-				continue;
+			datatree->GetEntry(evt);
+			evnum=XiEv;
+			bool Xi=false,XiStar=false;
+			if(nhtpc>10){
+				if( sqrt((XiM2-xim)*(XiM2-xim))<nsig*xiw ){
+					Xi=true;
+					cout<<"Xi, M2 = "<<XiM2<<endl;
+					TPCEventTag = 1;
+				}
+				if( sqrt((XiM2-xistarm)*(XiM2-xistarm))<nsig*xistarw ){
+					XiStar=true;
+					cout<<"XiStar, M2 = "<<XiM2<<endl;
+					TPCEventTag = 2;
+				}
+				if(!Xi&&!XiStar){
+					cout<<"BG, M2 = "<<XiM2<<endl;
+					TPCEventTag = 0;
+					if(cnt>80){
+						continue;
+					}
+					cout<<cnt<<endl;
+					cnt++;
+				}
+			}
+			else{
+					TPCEventTag = 0;
+					if(cnt>80){
+						continue;
+					}
+					cout<<cnt<<endl;
+					cnt++;
 			}
 			if(cnt%100==0&&cnt!=0){
 				cout<<i<<endl;
 				outfile->Write();
 			}
-			datatree->GetEntry(evt);
-			evnum=i;
 			for(int j=0;j<nhtpc;++j){
 				hist->Fill(z[j],x[j]);
 				hist2->Fill(z[j],y[j]);
@@ -535,19 +573,18 @@ void TagRealTPCByHand(int runnum , int mode,TString comment = "no comment"){
 			hist->Draw("colz");
 			c1->Modified();
 			c1->Update();
-			cout<<"Number of Hits: "<<nhtpc<<endl;
-			cout<<"htofnhits : "<<htofnhits<<endl;
+//			cout<<"Number of Hits: "<<nhtpc<<endl;
+//			cout<<"htofnhits : "<<htofnhits<<endl;
 			gSystem->ProcessEvents();
-			cout<<"What's the type of this event? : (0->BG, 1->Xi-like)"<<endl;
-			cin>>TPCEventTag;
-			cin.ignore();
+			//			cout<<"What's the type of this event? : (0->Else, 1->Xi-like, 2->Xi*-like)"<<endl;
+//			cin.ignore();
 			if(ntrk<0){
 				cout<<"quitting..."<<endl;
 				break;
 			}
 			if(ntrk<11){
 				outtree->Fill();
-				cnt++;
+//				cnt++;
 			}
 			else{
 				hist->Reset("ICES");
@@ -555,7 +592,7 @@ void TagRealTPCByHand(int runnum , int mode,TString comment = "no comment"){
 				hist3->Reset("ICES");
 				continue;
 			}
-			nhhist->Fill(ntrk);
+			nhhist->Fill(XiM2);
 			c1->cd(4);
 			nhhist->SetTitle(Form("Evt%d",i));
 			nhhist->Draw();
@@ -589,7 +626,7 @@ void TagRealTPCByHand(int runnum , int mode,TString comment = "no comment"){
 			cout<<"Number of Hits: "<<nhtpc<<endl;
 			cout<<"htofnhits : "<<htofnhits<<endl;
 			gSystem->ProcessEvents();
-			
+
 			TPCEventTag=0;
 			outtree->Fill();
 			cnt++;
@@ -605,5 +642,10 @@ void TagRealTPCByHand(int runnum , int mode,TString comment = "no comment"){
 			hist3->Reset("ICES");
 		}
 		outfile->Write();
+	}
+}
+void TagRealTPC(){
+	for(int i=5641;i<5667;++i){
+		TagRealTPCByHand(i,1);
 	}
 }
