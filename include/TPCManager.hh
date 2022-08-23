@@ -2,9 +2,8 @@
 #include "FileManager.hh"
 #include "TPCPadHelper.hh"
 #include "PhysicalConstants.hh"
-TF1* f_gaus = new TF1("f_gaus","gaus");
-TF1* f_landau = new TF1("f_landau","landau");
-TF1* slew_func= new TF1("slew_func",SlewFunc,0,5,3);
+#ifndef TPCManager_h
+#define TPCManager_h
 const int max_nh=2500;
 enum{
 	Else=0,
@@ -44,12 +43,12 @@ class TPCManager:public FileManager{
 		int idtpc[nhtpcmax];
 		int ititpc[nhtpcmax];
 		int ntrk[nhtpcmax];
-		vector<double>* dlTpc;
-		vector<double>* deTpc;
-		vector<double>* clxTpc;
-		vector<double>* clyTpc;
-		vector<double>* clzTpc;
-		vector<int>* clsize;
+		vector<double>* dlTpc = new vector<double>;
+		vector<double>* deTpc = new vector<double>;
+		vector<double>* clxTpc = new vector<double>;
+		vector<double>* clyTpc = new vector<double>;
+		vector<double>* clzTpc = new vector<double>;
+		vector<int>* clsize = new vector<int>;
 		int htofnhits;
 		int htofhitpat[34];
 		int nhittpc; double htofua[34];
@@ -65,6 +64,7 @@ class TPCManager:public FileManager{
 		virtual void LoadClusterFile(TString FileName){ DataFile = new TFile(FileName,"READ");
 			cout<<FileName<<" Opened"<<endl;
 			LoadClusterChain("tpc");
+			cout<<"Entries : "<<DataChain->GetEntries()<<endl;
 		}
 		virtual void LoadG4File(TString FileName){
 			DataFile = new TFile(FileName,"READ");
@@ -121,10 +121,14 @@ class TPCManager:public FileManager{
 			return dedxtpc[i];
 		}
 		TVector3 GetPosition(int itr){
-			TVector3 pos(clxTpc->at(itr),clyTpc->at(itr),clzTpc->at(itr)); 
+			TVector3 pos;
 			if(!cluster){ 
+//				cout<<itr<<endl;
 				pos =  tpc::getPosition(GetPadID(itr));
 				pos.SetY(GetDL(itr));
+			}
+			else{
+				pos=TVector3(clxTpc->at(itr),clyTpc->at(itr),clzTpc->at(itr)); 
 			}
 			return pos;
 		}
@@ -164,23 +168,27 @@ class TPCManager:public FileManager{
 		int WhichEvent();
 		void AssignG4Event(short * x,short* y,short* z,double* dedx);
 		void AssignG4EventD(int* trkid,int* pid, double * x,double* y,double* z,double* dedx);
-		void AssignRealEvent(double * x,double* y,double* z,double* dedx);
+		int AssignRealEvent(double * x,double* y,double* z,double* dedx);
 		void FillEvent();
 		int NumberOfTracks(int min_points=6);
 };
 void TPCManager::LoadChain(TString ChainName ){
 	cluster = false;
 	DataChain	= (TChain*) DataFile->Get(ChainName);
+
 	DataChain->SetBranchAddress("padTpc",&padTpc);
 	DataChain->SetBranchAddress("dlTpc",&dlTpc);
 	DataChain->SetBranchAddress("deTpc",&deTpc);
 	DataChain->SetBranchAddress("htofnhits",&htofnhits);
 	DataChain->SetBranchAddress("htofhitpat",htofhitpat);
+	
 	//	DataChain->SetBranchAddress("htofua",htofua);
 };
 void TPCManager::LoadClusterChain(TString ChainName ){
 	cluster = true;
 	DataChain	= (TChain*) DataFile->Get(ChainName);
+	
+	
 	DataChain->SetBranchAddress("cluster_hitpos_x",&clxTpc);
 	DataChain->SetBranchAddress("cluster_hitpos_y",&clyTpc);
 	DataChain->SetBranchAddress("cluster_hitpos_z",&clzTpc);
@@ -325,7 +333,7 @@ void TPCManager::AssignG4EventD(int* trkid,int* pid, double* x,double* y,double*
 		trkid[j]=trid;pid[j]=partid;x[j]=x_;y[j]=y_;z[j]=z_;dedx[j]=Getdedxtpc(j);
 	}
 }
-void TPCManager::AssignRealEvent( double* x,double* y,double* z,double* dedx){
+int TPCManager::AssignRealEvent( double* x,double* y,double* z,double* dedx){
 	int nitr = GetNhits();
 	for(int j=0;j<max_nh;++j){
 		x[j]=0;y[j]=0;z[j]=0;dedx[j]=0;
@@ -335,6 +343,7 @@ void TPCManager::AssignRealEvent( double* x,double* y,double* z,double* dedx){
 		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
 		x[j]=x_;y[j]=y_;z[j]=z_;dedx[j]=GetDE(j);
 	}
+	return nitr;
 }
 void TPCManager::FillEvent(){
 	int nitr = GetNhitsG4();
@@ -349,6 +358,4 @@ void TPCManager::FillEvent(){
 	}
 }
 
-
-
-
+#endif

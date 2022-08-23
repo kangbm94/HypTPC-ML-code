@@ -1,0 +1,25 @@
+#include "TPCTrajectory.hh"
+#ifndef TPCEvent_h
+#define TPCEvent_h
+class TPCEvent{
+	protected:
+		vector<TPCTrack> Tracks;
+	public:
+		void AssignTrack(TPCTrack a){
+			Tracks.push_back(a);
+		}
+		TPCTrack GetTrack(int i){
+			return Tracks.at(i);
+		}
+		int NumberOfTracks(){
+			return Tracks.size();
+		}
+};
+class PresortedEvent: public TPCEvent{
+	protected:
+		double cd_cut = 50;
+
+	public:
+		void Presort(TrackCandidate TC);
+};
+#endif

@@ -1,3 +1,7 @@
+import sys
+sys.path.append('./module')
+
+
 import ConcatNetwork as MODEL
 from ConcatNetwork import *
 import pandas as pd

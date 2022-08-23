@@ -4,6 +4,9 @@
 double square(double a){ 
 	return a*a;
 }
+double Norm(double x1,double x2=0,double x3=0,double x4=0){
+	return sqrt(square(x1)+square(x2)+square(x3)+square(x4));
+}
 int PM(int a){
 	if(a%2==0){
 		return 1;
@@ -87,17 +90,11 @@ double T1(double a,double b, double c, double d){
 }
 
 
-double Qr1(double a, double b, double c, double d, double e){
-	return 4;
-}
 
 //Randoms
-double GenUniformRandom(double range){
+double GenUniformRandom(double range = 1.){
 	double rnd=gRandom->Rndm();
 	return range*rnd;
-}
-double GenUniformRandom(){
-	return GenUniformRandom(1);
 }
 void GenSphericalRandom(double &theta, double &phi){
 	phi=GenUniformRandom(2*Pi());
