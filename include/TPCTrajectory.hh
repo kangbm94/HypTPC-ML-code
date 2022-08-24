@@ -5,12 +5,12 @@ static int nh=0;
 class TrackCandidate{
 	protected:
 		vector<TPCPoint> points;
-		TH2D* histZX;
-		TH2D* histZY;
-		TH2D* histXY;
-		TH1D* histX;
-		TH1D* histY;
-		TH1D* histZ;
+		TH2D* histZX=NULL;
+		TH2D* histZY=NULL;
+		TH2D* histXY=NULL;
+		TH1D* histX=NULL;
+		TH1D* histY=NULL;
+		TH1D* histZ=NULL;
 	public:
 		TrackCandidate(){
 			nh++;
@@ -21,6 +21,11 @@ class TrackCandidate{
 				points.push_back(a);
 			}
 			nh++;
+		}
+		~TrackCandidate(){
+			if(histZX!=NULL){
+				delete histZX;delete histZY;delete histXY;delete histX;delete histY;delete histZ;
+			}
 		}
 		void AssignPoint(TPCPoint a){
 			points.push_back(a);
@@ -51,9 +56,9 @@ class TPCTrack:public TrackCandidate{
 		double cx,cy,r,cz,dz;
 		//Line Parameters//
 		double x0,y0,z0,u,v;
-		TGraphErrors* gZX;
-		TGraphErrors* gZY;
-		TGraphErrors* gXY;
+		TGraphErrors* gZX=NULL;
+		TGraphErrors* gZY=NULL;
+		TGraphErrors* gXY=NULL;
 	public:
 		TPCTrack(){
 			nh++;
@@ -61,6 +66,11 @@ class TPCTrack:public TrackCandidate{
 		TPCTrack(int np,double* x,double* y,double* z,double* de)
 			:TrackCandidate(np,x,y,z,de){
 			}
+		~TPCTrack():~TrackCandidate(){
+			if(gZX!=NULL){
+				delete gZX;delete gZY;delete gXY;
+			}
+		}
 		double ClosestDistance(TPCPoint a);
 		bool FitBeamCircle(double mom, double* par);
 		function<double(double*)> CircleMetric=[this](double* par){
