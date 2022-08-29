@@ -1,4 +1,6 @@
 #include "Math.hh"
+#ifndef Utils_h
+#define Utils_h
 void Indicator(int i, int ent){
 	if(i>ent){
 		double tmp = ent;
@@ -87,3 +89,19 @@ void ReadTSV(fstream& file, double* data){//
 
 static int niter=0;
 static int canv=0;
+double GetPeakPosition(TH1* h){
+	double peak=0;
+	int nb = h->GetNbinsX();
+	double bw = h->GetBinWidth(0);
+	double x0 = h->GetBinCenter(0)-bw;
+	double x1 = h->GetBinCenter(nb)+bw;
+	if(h->GetEntries()>0){
+		int mb = h->GetMaximum();
+		peak = h->GetBinCenter(mb);
+	}
+	if(peak<x0||peak>x1){
+		peak=0;
+	}
+	return peak;
+}
+#endif

@@ -1,6 +1,9 @@
 #include "../include/TPCManager.hh"
+#ifndef TPCManager_C
+#define TPCManager_C
 const int max_ntrk = 16;
 TPCManager T;
+TPCManager gTPCManager;
 void ConvertRealTPC(int runnum){
 	TString dir = "../MayRun/rootfiles/CH2/TPC";
 	TString tpcdir = dir+"/";
@@ -638,3 +641,4 @@ void TagRealTPC(){
 		TagRealTPCByHand(i,1);
 	}
 }
+#endif

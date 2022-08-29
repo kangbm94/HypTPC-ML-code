@@ -1,3 +1,5 @@
+#ifndef FileManager_h
+#define FileManager_h
 double XiMinusMass = 1.32171, XiMinusWidth = 1,XiStarMass = 1.530,XiStarWidth = 0.0099;
 
 class FileManager{
@@ -47,7 +49,7 @@ TObject* FileManager::DrawHistogram(TString Argument, TCut Cut, TString Options 
 
 
 
-void FileManager::WriteParameter(vector<int> ID,vector<double> Param){
+void FileManager::WriteParameter(vector<int> ID={},vector<double> Param={}){
 	for(int i=0;i<ID.size();++i){
 		ParameterFile<<ID[i]<<"\t";
 	}
@@ -87,4 +89,4 @@ void FileManager::LoadParamMap(TString FileName){
 
 }
 */
-
+#endif

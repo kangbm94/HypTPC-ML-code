@@ -1,4 +1,5 @@
 #include "src/TPCManager.cc"
+#include "src/TPCCorrectionMapMaker.cc"
 
 void TPC(){
 	T.InitializeHistograms();

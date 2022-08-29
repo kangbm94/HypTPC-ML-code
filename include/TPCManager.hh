@@ -2,6 +2,7 @@
 #include "FileManager.hh"
 #include "TPCPadHelper.hh"
 #include "PhysicalConstants.hh"
+#include "TPCGlobalFunctions.hh"
 #ifndef TPCManager_h
 #define TPCManager_h
 const int max_nh=2500;
@@ -26,7 +27,7 @@ int ToShort(double y){
 
 static const int nhtpcmax = 300;
 class TPCManager:public FileManager{
-	private:
+	protected:
 		TFile* hist_file;
 		TH2Poly* PadHist;
 		TH2I* FlatHist;
@@ -64,7 +65,6 @@ class TPCManager:public FileManager{
 		virtual void LoadClusterFile(TString FileName){ DataFile = new TFile(FileName,"READ");
 			cout<<FileName<<" Opened"<<endl;
 			LoadClusterChain("tpc");
-			cout<<"Entries : "<<DataChain->GetEntries()<<endl;
 		}
 		virtual void LoadG4File(TString FileName){
 			DataFile = new TFile(FileName,"READ");
