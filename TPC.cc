@@ -9,5 +9,6 @@ void TPC(){
 	cout<<"TestML(TString Filename)"<<endl;
 	cout<<"ConvertRealTPC(int runnum)"<<endl;
 	cout<<"CheckRealTPCTraining(TString Filename)"<<endl;
+	TPCCorrectionMapMaker();
 	gStyle->SetPalette(22);
 }
