@@ -1,6 +1,98 @@
 #include "TPCManager.cc"
 #include "../include/TPCCorrectionMapMaker.hh"
 TPCCorrectionMapMaker Corrector;
+void TPCCorrectionMapMaker(){
+	cout<<"TPCCorrectionMapMaker(int dum)"<<endl;
+	cout<<"WriteCorrectionMap()"<<endl;
+	cout<<"MakeSnakeHistogram()"<<endl;
+	cout<<"WriteSnakeCorrectionMap()"<<endl;
+	ROOT::EnableThreadSafety();
+}
+void TPCCorrectionMapMaker(int a){
+	TFile* file = new TFile("CorHist.root","recreate");
+	TString dir = "../../MayRun/rootfiles/Defocus/";
+//	int runnum = 5755;
+	int runnum = 5000;
+	TString filename = Form("run0%d_DSTTPCBcOut.root",runnum);
+	Corrector.LoadTPCBcOut(dir+filename);
+	Corrector.Process();
+	file->cd();
+	Corrector.WriteHist();
+	file->Write();	
+	file->Close();	
+}
+void MakeSnakeHistogram(){
+	TString dir = "../../MayRun/rootfiles/Defocus/";
+	int runnum = 5000;
+	TString filename = Form("run0%d_DSTTPCBcOut.root",runnum);
+	Corrector.LoadTPCBcOut(dir+filename);
+	Corrector.MakeSnakeHist();
+	Corrector.MakeSnakeFile("SnakeHist_node2.root");
+	Corrector.WriteSnakeHist();
+}
+void WriteCorrectionMap(){
+	Corrector.MakeCorParameterFile("TPCCorrectionMap_KBM");
+	Corrector.LoadCorrectionHist("CorHist.root");
+	Corrector.WriteParam();
+}
+void WriteSnakeCorrectionMap(){
+	Corrector.LoadSnakeHist("SnakeHist_node2.root");
+	Corrector.MakeCorParameterFile("TPCCorrectionMap_Snake");
+	TCanvas* c1 = new TCanvas("c1","c1",1200,600);
+	TGraphErrors* gr= new TGraphErrors(nbin_z);
+	gr->SetMarkerStyle(5);
+	gr->SetLineColor(kRed);
+	gr->SetLineWidth(2);
+	for(int ix=0;ix<nbin_x;++ix){
+		for(int iy=0;iy<nbin_y;++iy){
+			vector<double>px,pxf,pxm1,pxm2,pxm3,py,pyxp,pyf;
+			vector<double>ex,ex1,ex2,ey,eyxp;
+			auto* hx = Corrector.ScanSnake(ix,iy,px,ex);
+			cout<<Form("Scanned(%d,%d)",ix,iy)<<endl;
+			cout<<"px: "<<px.size()<<endl;
+			cout<<"ex: "<<ex.size()<<endl;
+			delete gr;
+			int np = px.size();
+			int eval;
+			gr= new TGraphErrors(np);
+			for(int i=0;i<np;++i){
+				pxf.push_back(FillEmptyParam(px,i));
+			}
+			cout<<"pxm1"<<endl;
+			for(int i=0;i<np;++i){
+				pxm1.push_back(Wmean(pxf,ex,i,eval));
+			}
+			cout<<"pxm2"<<endl;
+			for(int i=0;i<np;++i){
+				pxm2.push_back(Wmean(pxm1,ex,i,eval));
+			}
+			cout<<"pxm3"<<endl;
+			for(int i=0;i<np;++i){
+				pxm3.push_back(Wmean(pxm2,ex,i,eval));
+				pyf.push_back(0);
+				gr->SetPoint(i,Corrector.BinPosZ(i),pxm3[i]);
+//				gr->SetPoint(i,Corrector.BinPosZ(i),pxf[i]);
+				gr->SetPointError(i,1,1/ex[i]);
+			}
+			c1->cd();
+			hx->Draw("colz");
+			gr->Draw("Same");
+			c1->Modified();
+			c1->Update();
+			gSystem->ProcessEvents();
+			cin.ignore();
+			cout<<"SettingParams"<<endl;
+//			RestoreEmpty(px);
+			Corrector.SetParameter(pxm3,pyf,ix,iy);
+		}
+	}
+//	Corrector.SmoothenParam();
+	Corrector.WriteParam();
+}
+
+
+
+
 void TPCCorrectionMapMaker::AssignHit(TVector3& Pos, TVector3& Cor,int nh){
 	double x=clxTpc->at(nh),y=clyTpc->at(nh),z=clzTpc->at(nh);	
 	double corx=xCorVec->at(nh),cory=yCorVec->at(nh),corz=zCorVec->at(nh);	
@@ -31,110 +123,76 @@ void TPCCorrectionMapMaker::Process(){
 		}
 	}
 }
-void TPCCorrectionMapMaker::ScanSnake(TH2D* hist,vector<double> &peaks,vector<double> &ents){
+TH2D* TPCCorrectionMapMaker::ScanSnake(int ix,int iy,vector<double> &peaks,vector<double> &ents){
+	auto* hist = GetSnakeHist(ix,iy,0);
+	cout<<"Hist: "<<hist->GetEntries()<<endl;
+	int cut=200;
 	TF1* f = new TF1("f","gaus",-5,5);
+	bool active = true;
 	for(int i=1;i<snake_nbin_z+1;i++){
+		double pos_z = BinPosZ(i);
+		double pos_x = BinPosX(ix);
+//		active = IsActiveArea(pos_z,pos_x);
 		TString Key = (TString)hist->GetTitle()+Form("_Proj%d",i);
 		TH1D* h = hist->ProjectionY(Key,i,i);
 		double peakcenter = GetPeakPosition(h);
 		cout<<Form("%d: peakcenter %f",i,peakcenter)<<endl;
 		f->SetParLimits(1,-5,5);
 		h->Fit("f","QR");
-		ents.push_back(h->GetEntries());
-		if(ents[i-1]>1000){
+		ents.push_back(h->GetEffectiveEntries());
+		if(!active){ //			peaks.push_back(-9999);
+			cout<<"DeadArea!"<<endl;
+			peaks.push_back(nand);
+			ents[i-1]=1;
+		}
+		else if(ents[i-1]>cut ){
 			peaks.push_back(f->GetParameter(1));
 		}
 		else{
-			ents[i-1]=0;
-			peaks.push_back(0);
+			ents[i-1]=1;
+			peaks.push_back(nand);
 		}
 	}
+	return hist;
 }
-void TPCCorrectionMapMaker(){
-	cout<<"TPCCorrectionMapMaker(int dum)"<<endl;
-	cout<<"WriteCorrectionMap()"<<endl;
-	cout<<"SnakeCorrector()"<<endl;
-	cout<<"WriteSnakeCorrectionMap()"<<endl;
+void TPCCorrectionMapMaker::MakeSnakeFile(TString FileName){
+	OutFile= new TFile(FileName,"recreate");
+	WriteTag("X_seg",Form("( nbin =%d, center =%f, width =%f)",nbin_x,center_x,width_x));
+	WriteTag("Y_seg",Form("( nbin =%d, center =%f, width =%f)",nbin_y,center_y,width_y));
 }
-void TPCCorrectionMapMaker(int a){
-	TFile* file = new TFile("CorHist.root","recreate");
-	TString dir = "../../MayRun/rootfiles/Defocus/old";
-	int runnum = 5755;
-	TString filename = Form("run0%d_DSTTPCBcOut.root",runnum);
-	Corrector.LoadTPCBcOut(dir+filename);
-	Corrector.Process();
-	file->cd();
-	Corrector.WriteHist();
-	file->Write();	
-	file->Close();	
-}
-void SnakeCorrector(){
-	TString dir = "../../MayRun/rootfiles/Defocus/old/";
-	int runnum = 5000;
-	TString filename = Form("run0%d_DSTTPCBcOut.root",runnum);
-	Corrector.LoadTPCBcOut(dir+filename);
-	Corrector.MakeSnakeHist();
-	Corrector.MakeOutFile("SnakeHist.root");
-	Corrector.WriteSnakeHist();
-}
-void WriteCorrectionMap(){
-	Corrector.MakeCorParameterFile("TPCCorrectionMap_KBM");
-	Corrector.LoadCorrectionHist("CorHist.root");
-	Corrector.WriteParam();
-}
-void WriteSnakeCorrectionMap(){
-	Corrector.LoadSnakeHist("SnakeHist.root");
-	Corrector.MakeCorParameterFile("TPCCorrectionMap_Snake");
-	TCanvas* c1 = new TCanvas("c1","c1",1200,600);
-//	TH2D* fitHist = new TH2D("FitHist","FitHist",nbin_z,0,nbin_z,100,-5,5);
-	TGraph* gr= new TGraph(nbin_z);
-	gr->SetMarkerStyle(3);
-	for(int ix=0;ix<nbin_x;++ix){
-		for(int iy=0;iy<nbin_y;++iy){
-			cout<<Form("(%d,%d)",ix,iy)<<endl;
-			vector<double>px,pxxp,pxf,py,pyxp,pyf;
-			vector<double>ex,exxp,ey,eyxp;
-			auto* hx = Corrector.GetSnakeHist(ix,iy,1);
-			Corrector.ScanSnake(hx,px,ex);
-			auto* hy = Corrector.GetSnakeHist(ix,iy,0);
-			Corrector.ScanSnake(hy,py,ey);
-			cout<<Form("Scanned(%d,%d)",ix,iy)<<endl;
-			cout<<"px: "<<px.size()<<endl;
-			ExtrapolateEmptyVector(px,pxxp);
-			cout<<"ex: "<<ex.size()<<endl;
-			ExtrapolateEmptyVector(ex,exxp);
-			cout<<"py: "<<py.size()<<endl;
-			ExtrapolateEmptyVector(py,pyxp);
-			cout<<"ey: "<<ey.size()<<endl;
-			ExtrapolateEmptyVector(ey,eyxp);
-			cout<<Form("Extrapolated(%d,%d)",ix,iy)<<endl;
-			cout<<pxxp.size()<<endl;
-			cout<<exxp.size()<<endl;
-			delete gr;
-			gr= new TGraph(snake_nbin_z-1);
-			for(int i=0;i<px.size();++i){
-//				pxf.push_back(Wmean(pxxp,exxp,i));
-//				pyf.push_back(Wmean(pyxp,eyxp,i));
-				pxf.push_back(Wmean(px,exxp,i));
-				pyf.push_back(Wmean(py,eyxp,i));
-				gr->SetPoint(i,Corrector.BinPosZ(i),pxf[i]);
-//				gr->SetPoint(i,Corrector.BinPosZ(i),px[i]);
+void TPCCorrectionMapMaker::RestoreEmptyParams(){
+	double peak_temp[nbin_x][nbin_y][nbin_z];
+	for(int ix=0;ix<nbin_x;++ix){			
+		for(int iy=0;iy<nbin_y;++iy){			
+			for(int iz=0;iz<nbin_z;++iz){
+				peak_temp[ix][iy][iz]=nand;
+				int bx = ix-1,by=iy-1,bz=iz-1;
+				int fx = ix+1,fy=iy+1,fz=iz+1;
+//				double bpx,bpy,bpz,fpx,fpy,fpz;
+				double bpx,fpx;
+				int bzd=0,fzd=0;
+				if(isnan(peakx[ix][iy][iz])){
+					while(bz>-1){
+						bzd++;
+						if(!isnan(peakx[ix][iy][bz])){
+							bpx+=peakx[ix][iy][bz];
+							break;
+						}
+						bz--;
+					}
+					if(bz==-1) bzd=0;
+					while(fz<nbin_z){
+						fzd++;
+						if(!isnan(peakx[ix][iy][fz])){
+							fpx+=peakx[ix][iy][fz];
+							break;
+						}
+						fz++;
+					}
+					if(fz==nbin_z) fzd=0;
+					peak_temp[ix][iy][iz]=(bpx*fzd+fpx*bzd)/(fzd+bzd);	
+				};
 			}
-			c1->cd();
-			hx->Draw("colz");
-			gr->Draw("Same");
-			c1->Modified();
-			c1->Update();
-			gSystem->ProcessEvents();
-			cin.ignore();
-			cout<<"SettingParams"<<endl;
-			RestoreEmpty(px);
-			RestoreEmpty(py);
-//			Corrector.SetParameter(px,py,ix,iy);
-//			Corrector.SetParameter(pxxp,pyxp,ix,iy);
-			Corrector.SetParameter(pxf,pyf,ix,iy);
 		}
 	}
-	Corrector.WriteParam();
-	//	Corrector.ScanSnake("SnakeHist.root");
 }

@@ -3,9 +3,12 @@
 #include "TPCPadHelper.hh"
 #include "PhysicalConstants.hh"
 #include "TPCGlobalFunctions.hh"
+#include "Track.hh"
 #ifndef TPCManager_h
 #define TPCManager_h
 const int max_nh=2500;
+double Target_pos=-143,Target_x=34,Target_z=24;
+double frame_width = 12.5;
 enum{
 	Else=0,
 	L2PPi=1,
@@ -24,17 +27,38 @@ int ToShort(double y){
 	y*=10;
 	return short(y);
 }
-
+bool IsInside(double z,double x){
+	if(sqrt(z*z+x*x)<250){
+		return true;
+	}
+	else{
+		return false;
+	}
+}
+bool IsTarget(double z, double x){
+	if(abs(z-Target_pos)<Target_z/2&&abs(x)<Target_x/2){
+		return true;
+	}
+	else{
+		return false;
+	}
+}
+bool IsActiveArea(double z, double x){
+	double zr = z-Target_pos;
+	if(abs(abs(z)-abs(x))<12.){
+		return false;
+	}
+	else{
+		return !IsTarget(z,x) and IsInside(z,x);
+	}
+}
 static const int nhtpcmax = 300;
 class TPCManager:public FileManager{
 	protected:
 		TFile* hist_file;
-		TH2Poly* PadHist;
-		TH2I* FlatHist;
-		TH2D* PosHist;
-		TH3D* SpaceHist;
-		TGraph2D* SpaceGraph;
-		TGraph2D* SpaceGraphBase;
+		TH2Poly* PadHist=nullptr;
+		TH2I* FlatHist=nullptr;
+		TH2D* PosHist=nullptr;
 		vector<int> *padTpc;
 		int iPadtpc[nhtpcmax];
 		double xtpc[nhtpcmax];
@@ -56,8 +80,15 @@ class TPCManager:public FileManager{
 		int gp = 0;
 		int gpb = 0;
 		bool cluster = false;
+		int ntBcOut=0;
+		vector<double>* x0BcOut = new vector<double>;
+		vector<double>* y0BcOut = new vector<double>;
+		vector<double>* u0BcOut = new vector<double>;
+		vector<double>* v0BcOut = new vector<double>;
 	public:
 		TPCManager(){};
+
+		//Data I/O
 		virtual void LoadFile(TString FileName){ DataFile = new TFile(FileName,"READ");
 			cout<<FileName<<" Opened"<<endl;
 			LoadChain("tpc");
@@ -74,20 +105,51 @@ class TPCManager:public FileManager{
 		void LoadChain(TString ChainName);
 		void LoadClusterChain(TString ChainName);
 		void LoadG4Chain(TString ChainName);
+		void LoadBcOut();
 		int GetNEvent(){
 			return DataChain->GetEntries();
 		};
 		void SetEvent(int evt){
 			DataChain->GetEntry(evt);
 		};
+
+
+		//Histogram Methods//
+		void InitializeHistograms();
+		void SetTitle(TString title){
+			PadHist->SetTitle(title);
+			FlatHist->SetTitle(title);
+		}
+		void FillHist(double x, double z){
+			PadHist->Fill(x,z);
+			PosHist->Fill(x,z);
+		};
+		void FillHist(int itr);
+		void FillFlatHist(int padID);
+		void SetPadContent(int padID,double cont);
+		void DrawHist(){
+			PadHist->Draw("colz");
+		}
+		void DrawFlatHist(){
+			FlatHist->Draw("colz");
+		}
+		void DrawPosHist(){
+			PosHist->Draw("colz");
+		}
 		void ClearHistogram(){
 			PadHist->Reset("ICE");
 			PosHist->Reset("ICE");
 			FlatHist->Reset("ICE");
 			gp=0;
 		}
-		int GetNhits(){
-			if(!cluster)	return Min(padTpc->size(),max_nh);
+		TH2Poly* GetPadHistogram(){
+			return PadHist;
+		}
+
+
+
+		int GetNhits(int conf){
+			if(!conf)	return Min(padTpc->size(),max_nh);
 			else 					return Min(clsize->size(),max_nh);
 		};
 		int GetPadID(int i){
@@ -98,6 +160,9 @@ class TPCManager:public FileManager{
 		}
 		int GetPadIDG4(int i){
 			return iPadtpc[i];
+		}
+		int GetClSize(int i){
+			return clsize->at(i);
 		}
 		int Getidtpc(int i){
 			return idtpc[i];
@@ -122,14 +187,13 @@ class TPCManager:public FileManager{
 		}
 		TVector3 GetPosition(int itr){
 			TVector3 pos;
-			if(!cluster){ 
-//				cout<<itr<<endl;
-				pos =  tpc::getPosition(GetPadID(itr));
-				pos.SetY(GetDL(itr));
-			}
-			else{
-				pos=TVector3(clxTpc->at(itr),clyTpc->at(itr),clzTpc->at(itr)); 
-			}
+			pos =  tpc::getPosition(GetPadID(itr));
+			pos.SetY(GetDL(itr));
+			return pos;
+		}
+		TVector3 GetClusterPosition(int itr){
+			TVector3 pos;
+			pos=TVector3(clxTpc->at(itr),clyTpc->at(itr),clzTpc->at(itr)); 
 			return pos;
 		}
 		TVector3 GetG4Position(int i){
@@ -143,28 +207,17 @@ class TPCManager:public FileManager{
 				hp[i]=htofhitpat[i];
 			}
 		}
-		void SetTitle(TString title){
-			PadHist->SetTitle(title);
-			FlatHist->SetTitle(title);
-		}
-		void InitializeHistograms();
-		void FillHist(double x, double z){
-			PadHist->Fill(x,z);
-			PosHist->Fill(x,z);
-		};
-		void FillHist(int padID);
-		void FillFlatHist(int padID);
-		void DrawHist(){
-			PadHist->Draw("colz");
-		}
-		void DrawFlatHist(){
-			FlatHist->Draw("colz");
-		}
-		void DrawPosHist(){
-			PosHist->Draw("colz");
-		}
 		TVector3 GetRTheta(int padID);
 		TVector2 GetLayerRow(int padID);
+		int GetBCnt(){
+			return ntBcOut;
+		}
+		Track GetTrack(int it=0){
+			return Track(x0BcOut->at(it),y0BcOut->at(it),u0BcOut->at(it),v0BcOut->at(it));
+		}
+		
+
+
 		int WhichEvent();
 		void AssignG4Event(short * x,short* y,short* z,double* dedx);
 		void AssignG4EventD(int* trkid,int* pid, double * x,double* y,double* z,double* dedx);
@@ -172,41 +225,11 @@ class TPCManager:public FileManager{
 		void FillEvent();
 		int NumberOfTracks(int min_points=6);
 };
-void TPCManager::LoadChain(TString ChainName ){
-	cluster = false;
-	DataChain	= (TChain*) DataFile->Get(ChainName);
 
-	DataChain->SetBranchAddress("padTpc",&padTpc);
-	DataChain->SetBranchAddress("dlTpc",&dlTpc);
-	DataChain->SetBranchAddress("deTpc",&deTpc);
-	DataChain->SetBranchAddress("htofnhits",&htofnhits);
-	DataChain->SetBranchAddress("htofhitpat",htofhitpat);
-	
-	//	DataChain->SetBranchAddress("htofua",htofua);
-};
-void TPCManager::LoadClusterChain(TString ChainName ){
-	cluster = true;
-	DataChain	= (TChain*) DataFile->Get(ChainName);
-	
-	
-	DataChain->SetBranchAddress("cluster_hitpos_x",&clxTpc);
-	DataChain->SetBranchAddress("cluster_hitpos_y",&clyTpc);
-	DataChain->SetBranchAddress("cluster_hitpos_z",&clzTpc);
-	DataChain->SetBranchAddress("cluster_de",&deTpc);
-	DataChain->SetBranchAddress("cluster_size",&clsize);
-}
-void TPCManager::LoadG4Chain(TString ChainName ){
-	DataChain	= (TChain*) DataFile->Get(ChainName);
-	DataChain->SetBranchAddress("nhittpc",&nhittpc);
-	DataChain->SetBranchAddress("iPadtpc",iPadtpc);
-	DataChain->SetBranchAddress("xtpc",xtpc);
-	DataChain->SetBranchAddress("ytpc",ytpc);
-	DataChain->SetBranchAddress("ztpc",ztpc);
-	DataChain->SetBranchAddress("idtpc",idtpc);
-	DataChain->SetBranchAddress("ititpc",ititpc);
-	DataChain->SetBranchAddress("ntrk",ntrk);
-	DataChain->SetBranchAddress("dedxtpc",dedxtpc);
-}
+
+
+
+
 void TPCManager::InitializeHistograms(){
 	PadHist = tpc::InitializeHistograms();
 	FlatHist = new TH2I("PadRTheta","PadRTheta",32,0,32,240,0,240);
@@ -228,134 +251,4 @@ void TPCManager::InitializeHistograms(){
 		 SpaceGraphBase->SetMarkerSize(3);
 		 */
 }
-TVector3 TPCManager::GetRTheta(int padID){
-	TVector3 pos = GetPosition(padID);
-	return pos;
-}
-TVector2 TPCManager::GetLayerRow(int padID){
-	int layer = tpc::getLayerID(padID);
-	int row = tpc::getRowID(padID);
-	TVector2 idvec(layer,row);
-	return idvec;
-}
-void TPCManager::FillFlatHist(int padID){
-	TVector2 lr = GetLayerRow(padID);
-	int l = lr.X();
-	int r = lr.Y();
-	FlatHist->Fill(l,r);
-}
-void TPCManager::FillHist(int padID){
-	TVector3 hitv = GetPosition(padID);
-	double x = hitv.X();
-	double z = hitv.Z();
-	PadHist->Fill(z,x);
-};
-int TPCManager::WhichEvent(){
-	const int max_ntrk=20;
-	int particle[max_ntrk]={0};
-	int ThisEvent=0,npi=0,nk=0,np=0;
-	int nh = GetNhitsG4();
-	for(int j=0;j<nh;++j){
-		particle[Getntrk(j)]=Getidtpc(j);
-	}
-	for(int j=0;j<max_ntrk;++j){
-//		cout<<((particle[j]))<<endl;
-		switch(abs(particle[j])){
-			case PionID:
-				npi++;
-				break;
-			case KaonID:
-				nk++;
-				break;
-			case ProtonID:
-				np++;
-				break;
-			case 3312:
-				//				cout<<"Xi detected"<<endl;
-				break;
-			case 0:
-				break;
-			default:
-				//				cout<<Form("Warning! pid: %d",particle[j])<<endl;
-				break;
-		}
-	}
-	if(npi==2&&nk==2&&np==1){
-		ThisEvent=L2PPi;
-	}
-	else if(npi==1&&nk==2&&np==0){
-		ThisEvent=L2NPi;
-	}
-	else if(npi==0&&nk==1&&np==0){
-		ThisEvent=KBeam;
-	}
-	else{
-		ThisEvent=Else;
-	}
-	//	cout<<ThisEvent<<endl;
-	return ThisEvent;
-}
-int TPCManager::NumberOfTracks(int min_points=6){
-	const int max_ntrk=20;
-	int counter[max_ntrk]={0};
-	int nh = GetNhitsG4();
-	int TrackCount=0;
-	for(int j=0;j<nh;++j){
-		counter[Getntrk(j)]+=1;
-	}
-	for(int j=0;j<max_ntrk;++j){
-		if(counter[j]>(min_points-1)) TrackCount++;
-	}
-	return TrackCount;
-}
-void TPCManager::AssignG4Event( short* x,short* y,short* z,double* dedx){
-	for(int j=0;j<max_nh;++j){
-		x[j]=0;y[j]=0;z[j]=0;
-	}
-//	cout<<"Initialized"<<endl;
-	for(int j=0;j<GetNhitsG4();++j){
-		TVector3 vec = GetG4Position(j);
-		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
-		short x_pix=ToPixel(x_);short y_short = ToShort(y_);short z_pix=ToPixel(z_);
-		x[j]=x_pix;y[j]=y_short;z[j]=z_pix;dedx[j]=Getdedxtpc(j);
-	}
-}
-void TPCManager::AssignG4EventD(int* trkid,int* pid, double* x,double* y,double* z,double* dedx){
-	for(int j=0;j<max_nh;++j){
-		trkid[j]=-999;x[j]=0;y[j]=0;z[j]=0;
-	}
-//	cout<<"Initialized"<<endl;
-	for(int j=0;j<GetNhitsG4();++j){
-		TVector3 vec = GetG4Position(j);
-		int trid = Getntrk(j);
-		int partid = Getidtpc(j);
-		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
-		trkid[j]=trid;pid[j]=partid;x[j]=x_;y[j]=y_;z[j]=z_;dedx[j]=Getdedxtpc(j);
-	}
-}
-int TPCManager::AssignRealEvent( double* x,double* y,double* z,double* dedx){
-	int nitr = GetNhits();
-	for(int j=0;j<max_nh;++j){
-		x[j]=0;y[j]=0;z[j]=0;dedx[j]=0;
-	}
-	for(int j=0;j<nitr;++j){
-		TVector3 vec = GetPosition(j);
-		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
-		x[j]=x_;y[j]=y_;z[j]=z_;dedx[j]=GetDE(j);
-	}
-	return nitr;
-}
-void TPCManager::FillEvent(){
-	int nitr = GetNhitsG4();
-	double x[max_nh],y[max_nh],z[max_nh],dedx[max_nh];
-	int trkid[max_nh],pid[max_nh];
-	for(int j=0;j<max_nh;++j){
-		x[j]=0;y[j]=0;z[j]=0;
-	}
-	AssignG4EventD(trkid,pid,x,y,z,dedx);
-	for(int j=0;j<nitr;++j){
-		FillHist(z[j],x[j]);
-	}
-}
-
 #endif

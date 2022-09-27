@@ -1,6 +1,7 @@
 #include "Math.hh"
 #ifndef Utils_h
 #define Utils_h
+const double K18HS = 1318.9;
 void Indicator(int i, int ent){
 	if(i>ent){
 		double tmp = ent;
@@ -115,7 +116,7 @@ double BinPos(int nbin, double r1,double r2, int bin){
 		return r1+bin*dr/(nbin-1);
 	}
 	else{
-		return 1;
+		return nand;
 	}
 }
 #endif

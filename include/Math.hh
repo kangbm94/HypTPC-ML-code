@@ -1,6 +1,7 @@
 #include "Constants.hh"
 #ifndef Math_h
 #define Math_h
+double nand = std::numeric_limits<double>::quiet_NaN();
 double square(double a){ 
 	return a*a;
 }
