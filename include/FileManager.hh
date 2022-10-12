@@ -19,6 +19,10 @@ class FileManager{
 		void WriteTag(TString title, TString comment);
 		void LoadFile(TString FileName){DataFile = new TFile(FileName,"READ");}
 		void LoadChain(TString ChainName){DataChain = (TChain*)DataFile->Get(ChainName);}
+		int GetEntries(){
+			return DataChain->GetEntries();
+		}
+
 		void LoadParameterFile(TString FileName){OldParameterFile.open(FileName,fstream::in);}
 		TObject* GetHistogram(int HistNumber);
 		TObject* DrawHistogram(TString Argument, TCut Cut, TString Options = "");

@@ -2,6 +2,7 @@
 #ifndef Utils_h
 #define Utils_h
 const double K18HS = 1318.9;
+TString base_dir = "~/Desktop/JPARC/E42/";
 void Indicator(int i, int ent){
 	if(i>ent){
 		double tmp = ent;
