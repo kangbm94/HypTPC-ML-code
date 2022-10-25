@@ -232,7 +232,7 @@ class TPCManager:public FileManager{
 
 
 void TPCManager::InitializeHistograms(){
-	PadHist = tpc::InitializeHistograms();
+	PadHist = tpc::InitializeHistogram();
 	FlatHist = new TH2I("PadRTheta","PadRTheta",32,0,32,240,0,240);
 	PosHist = new TH2D("PosHisto","PosHisto",128,-250,250,128,-250,250);
 	/*
