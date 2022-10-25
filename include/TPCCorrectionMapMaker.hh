@@ -1,5 +1,5 @@
 #include "TPCManager.hh"
-static const int nbin_x=13;
+static const int nbin_x=20;
 static const int nbin_y=5;
 static const int snake_nbin_x = 100;
 static const int snake_nbin_z = 40;
@@ -132,7 +132,7 @@ class TPCCorrectionMapMaker: public TPCManager{
 	protected:
 		static const int max_hit = 1000;
 		double center_x=0,center_y=5;
-		double width_x=10,width_y=15;
+		double width_x=5,width_y=10;
 		double x1=center_x-width_x*( nbin_x/2);
 		double x2=center_x+width_x*( nbin_x/2);
 		double y1=center_y-width_y*( nbin_y/2);

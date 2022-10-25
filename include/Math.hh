@@ -93,6 +93,15 @@ double T1(double a,double b, double c, double d){
 
 
 //Randoms
+double Rndm(double r1=0,double r2=1){
+	double tmp = r2;
+	if(r1>r2){
+		r2=r1;
+		r1=tmp;
+	}
+	double range = r2-r1;
+	return r1+range*gRandom->Rndm();
+}
 double GenUniformRandom(double range = 1.){
 	double rnd=gRandom->Rndm();
 	return range*rnd;
@@ -101,6 +110,12 @@ void GenSphericalRandom(double &theta, double &phi){
 	phi=GenUniformRandom(2*Pi());
 	double cth= GenUniformRandom(2)-1;
 	theta=acos(cth);
+}
+TVector2 GenCircleRandom(double r, double phi1,double phi2){
+	double pi = Pi();
+	double phi=pi*Rndm(phi1/pi, phi2/pi);
+	double x = r*cos(phi),y=r*sin(phi);
+	return TVector2(x,y);
 }
 
 double chebyshev(double x, int n){

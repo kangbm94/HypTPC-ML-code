@@ -127,6 +127,7 @@ class TPCManager:public FileManager{
 		void FillHist(int itr);
 		void FillFlatHist(int padID);
 		void SetPadContent(int padID,double cont);
+		void SetPadContent(int layer,int row,double cont);
 		void DrawHist(){
 			PadHist->Draw("colz");
 		}

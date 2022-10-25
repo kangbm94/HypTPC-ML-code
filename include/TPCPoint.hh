@@ -11,7 +11,14 @@ class TPCPoint:public TVector3{
 		TPCPoint(double x_,double y_,double z_,double edep_=0){
 			this->SetX(x_);this->SetY(y_);this->SetZ(z_);edep=edep_;
 		}
-		TPCPoint();
+		TPCPoint(){};
+		TPCPoint(TVector3 a,double edep_=0){
+			double x = a.X(),y=a.Y(),z=a.Z();
+			this->SetX(x);this->SetY(y);this->SetZ(z);edep=edep_;
+		};
+		void SetPosition(double x_,double y_,double z_,double edep_=0){
+			this->SetX(x_);this->SetY(y_);this->SetZ(z_);edep=edep_;
+		}
 		void SetDirection(double dx_,double dy_, double dz_){
 			double norm_=	Norm(dx_,dy_,dz_);
 			dx=dx_/norm_;dy=dy_/norm_;dz=dz_/norm_;
@@ -22,12 +29,13 @@ class TPCPoint:public TVector3{
 		double GetEdep(){
 			return edep;
 		}
-		double ClosestDistance(TPCPoint a);
+		double ClosestDistance(TPCPoint a);//of point a and the line(this+ t*this.direction)
 		void SetTrackingStatus(bool tf){
 			InTrack = tf;
 		}
 		void ListElements();
 };
+
 double TPCPoint::ClosestDistance(TPCPoint a){
 	auto SubVec = *this-a;
 	auto DirVec = this->GetDirection();
@@ -53,5 +61,9 @@ double CircleD2(TPCPoint a,double cx,double cz,double r){
 	return dist*dist;
 }
 
-
+void TPCPoint::ListElements(){
+	cout<<Form("Pos: (%f,%f,%f), Edep = %f",this->X(),this->Y(),this->Z(),edep)<<endl;
+//	cout<<Form("Dir: (%f,%f,%f)",dx,dy,dz)<<endl;
+//	cout<<Form("Sigma: (%f,%f,%f)",sx,sy,sz)<<endl;
+}
 #endif

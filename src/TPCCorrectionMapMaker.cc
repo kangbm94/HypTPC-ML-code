@@ -99,7 +99,7 @@ void TPCCorrectionMapMaker::AssignHit(TVector3& Pos, TVector3& Cor,int nh){
 	Pos=TVector3(x,y,z);Cor=TVector3(corx,cory,corz);
 }
 void TPCCorrectionMapMaker::AssignHits(TVector3* Pos, TVector3* Cor){
-	int nhits = GetNhits();
+	int nhits = GetNhits(1);
 	for(int i=0;i<max_hit;++i){
 		Pos[i]={0,0,0};Cor[i]={0,0,0};
 	}
@@ -116,7 +116,7 @@ void TPCCorrectionMapMaker::Process(){
 	for(int i=0;i<ent;++i){
 		SetEvent(i);
 		AssignHits(Pos,Cor);
-		int nh = GetNhits();
+		int nh = GetNhits(1);
 		Indicator(i,ent);
 		for(int j=0;j<nh;++j){
 			FillHists(Pos[j],Cor[j]);

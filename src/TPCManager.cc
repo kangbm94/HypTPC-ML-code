@@ -70,6 +70,10 @@ void TPCManager::FillHist(int itr){
 void TPCManager::SetPadContent(int padID,double cont){
 	PadHist->SetBinContent(padID,cont);
 }
+void TPCManager::SetPadContent(int layer,int row,double cont){
+	int padID=tpc::GetPadId(layer,row);
+	PadHist->SetBinContent(padID,cont);
+}
 
 
 

@@ -47,6 +47,7 @@ class TrackCandidate{
 		void MakeHistogram(int n);
 		bool CircleHough(double mom,double* pars);
 };
+
 class TPCTrack:public TrackCandidate{
 	private:
 		int TrackNo=0;
