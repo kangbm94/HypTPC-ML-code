@@ -49,8 +49,6 @@ void WriteSnakeCorrectionMap(){
 			vector<double>ex,ex1,ex2,ey,eyxp;
 			auto* hx = Corrector.ScanSnake(ix,iy,px,ex);
 			cout<<Form("Scanned(%d,%d)",ix,iy)<<endl;
-			cout<<"px: "<<px.size()<<endl;
-			cout<<"ex: "<<ex.size()<<endl;
 			delete gr;
 			int np = px.size();
 			int eval;
@@ -58,15 +56,12 @@ void WriteSnakeCorrectionMap(){
 			for(int i=0;i<np;++i){
 				pxf.push_back(FillEmptyParam(px,i));
 			}
-			cout<<"pxm1"<<endl;
 			for(int i=0;i<np;++i){
 				pxm1.push_back(Wmean(pxf,ex,i,eval));
 			}
-			cout<<"pxm2"<<endl;
 			for(int i=0;i<np;++i){
 				pxm2.push_back(Wmean(pxm1,ex,i,eval));
 			}
-			cout<<"pxm3"<<endl;
 			for(int i=0;i<np;++i){
 				pxm3.push_back(Wmean(pxm2,ex,i,eval));
 				pyf.push_back(0);
@@ -125,7 +120,7 @@ void TPCCorrectionMapMaker::Process(){
 }
 TH2D* TPCCorrectionMapMaker::ScanSnake(int ix,int iy,vector<double> &peaks,vector<double> &ents){
 	auto* hist = GetSnakeHist(ix,iy,0);
-	cout<<"Hist: "<<hist->GetEntries()<<endl;
+//	cout<<"Hist: "<<hist->GetEntries()<<endl;
 	int cut=200;
 	TF1* f = new TF1("f","gaus",-5,5);
 	bool active = true;
@@ -136,7 +131,6 @@ TH2D* TPCCorrectionMapMaker::ScanSnake(int ix,int iy,vector<double> &peaks,vecto
 		TString Key = (TString)hist->GetTitle()+Form("_Proj%d",i);
 		TH1D* h = hist->ProjectionY(Key,i,i);
 		double peakcenter = GetPeakPosition(h);
-		cout<<Form("%d: peakcenter %f",i,peakcenter)<<endl;
 		f->SetParLimits(1,-5,5);
 		h->Fit("f","QR");
 		ents.push_back(h->GetEffectiveEntries());

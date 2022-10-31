@@ -7,9 +7,10 @@ TPCManager gTPCManager;
 void TPCManager::LoadChain(TString ChainName ){
 	cluster = false;
 	DataChain	= (TChain*) DataFile->Get(ChainName);
-	DataChain->SetBranchAddress("raw_padid",&padTpc);
-	DataChain->SetBranchAddress("raw_hitpos_y",&dlTpc);
-	DataChain->SetBranchAddress("raw_de",&deTpc);
+//	DataChain->SetBranchAddress("nhTpc",&nhitTpc);
+	DataChain->SetBranchAddress("padTpc",&padTpc);
+	DataChain->SetBranchAddress("dlTpc",&dlTpc);
+	DataChain->SetBranchAddress("cdeTpc",&deTpc);
 };
 void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	cluster = true;

@@ -121,6 +121,7 @@ class FADCManager:public TPCManager{
 			DataFile = new TFile(FileName,"READ");
 			LoadFADCChain("tpc");
 		}
+		virtual void SetEvent(int i);
 		void LoadFADCChain(TString ChainName);
 		bool CheckLayerRowHit(int layer, int row);
 		void LoadWaveform();
@@ -139,7 +140,13 @@ class FADCManager:public TPCManager{
 		TH1D* GetRawBaseline();
 		bool Check();
 };
-
+void FADCManager::SetEvent(int i){
+	layerTpc->clear();
+	rowTpc->clear();
+	fadclayerTpc->clear();
+	fadcrowTpc->clear();
+	DataChain->GetEntry(i);
+}
 void FADCManager::LoadFADCChain(TString ChainName){
 	DataChain = (TChain*) DataFile->Get(ChainName);
 	cout<<"entries: "<<DataChain->GetEntries()<<endl;
@@ -173,21 +180,22 @@ void FADCManager::LoadWaveform(){
 	cout<<"Nwaves = "<<nw<<endl;
 	int cnt=0;
 	int bcnt=0;
-	for(int i=0;i<nw;++i){
-		int w_layer = fadclayerTpc->at(i);
-		int w_row = fadcrowTpc->at(i);
-		if(CheckLayerRowHit(w_layer,w_row)){
-			FADCs.push_back(FADC(tbTpc->at(i),fadcTpc->at(i),rawfadcTpc->at(i),w_layer,w_row));
+	for(int iw=0;iw<nw;++iw){
+		int w_layer = fadclayerTpc->at(iw);
+		int w_row = fadcrowTpc->at(iw);
+			FADCs.push_back(FADC(tbTpc->at(iw),fadcTpc->at(iw),rawfadcTpc->at(iw),w_layer,w_row));
 			int l = FADCs[cnt].GetLayer();
 			int r = FADCs[cnt].GetRow();
 			cnt++;
-			cout<<Form("LR=(%d,%d)",l,r)<<endl;
+		if(CheckLayerRowHit(w_layer,w_row) or 1){			cout<<Form("LR=(%d,%d)",l,r)<<endl;
 		}
+		/*
 		else{
 			Base.push_back(FADC(tbTpc->at(i),fadcTpc->at(i),rawfadcTpc->at(i),w_layer,w_row));
 			cout<<Form("Baseline=(%d,%d)",w_layer,w_row)<<endl;
 			bcnt++;
 		}
+		*/
 	}
 }
 
@@ -202,6 +210,9 @@ TH1D* FADCManager::GetWaveformHist(int layer=-1, int row=-1){
 		if(l_==layer and r_==row){
 			h=FADCs[i].GetHistogram();
 		}
+		else{
+			cout<<Form("Hist(%d,%d):Wave(%d,%d) Does not exist!",l_,r_,layer,row)<<endl;
+		}
 	}
 	return h;
 }
@@ -214,6 +225,9 @@ TH1D* FADCManager::GetRawWaveformHist(int layer=-1, int row=-1){
 		int r_=FADCs[i].GetRow();
 		if(l_==layer and r_==row){
 			h=FADCs[i].GetRawHistogram();
+		}
+		else{
+	//		cout<<Form("RawHist(%d,%d) Does not exist!",l_,r_)<<endl;
 		}
 	}
 	return h;

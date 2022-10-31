@@ -59,7 +59,7 @@ class TPCManager:public FileManager{
 		TH2Poly* PadHist=nullptr;
 		TH2I* FlatHist=nullptr;
 		TH2D* PosHist=nullptr;
-		vector<int> *padTpc;
+		vector<int> *padTpc = new vector<int>;
 		int iPadtpc[nhtpcmax];
 		double xtpc[nhtpcmax];
 		double ytpc[nhtpcmax];
@@ -109,7 +109,11 @@ class TPCManager:public FileManager{
 		int GetNEvent(){
 			return DataChain->GetEntries();
 		};
+		int GetEntries(){return GetNEvent();}
 		void SetEvent(int evt){
+			padTpc->clear();
+			dlTpc->clear();
+			deTpc->clear();
 			DataChain->GetEntry(evt);
 		};
 
@@ -139,9 +143,6 @@ class TPCManager:public FileManager{
 		}
 		void ClearHistogram(){
 			PadHist->Reset("ICE");
-			PosHist->Reset("ICE");
-			FlatHist->Reset("ICE");
-			gp=0;
 		}
 		TH2Poly* GetPadHistogram(){
 			return PadHist;
