@@ -4,61 +4,22 @@
 #include "PhysicalConstants.hh"
 #include "TPCGlobalFunctions.hh"
 #include "Track.hh"
+#include "TPCCluster.hh"
 #ifndef TPCManager_h
 #define TPCManager_h
-const int max_nh=2500;
-double Target_pos=-143,Target_x=34,Target_z=24;
-double frame_width = 12.5;
-enum{
-	Else=0,
-	L2PPi=1,
-	L2NPi=2,
-	KBeam=3
-};
-const int nbin=250;const int depth=1;
-const double tpc_size=250;
-short ToPixel(double x){
-	x+=250;
-	short x_pix = int(x* (double)nbin/tpc_size/2);
-	return x_pix;
-}
-int ToShort(double y){
-	y+=350;
-	y*=10;
-	return short(y);
-}
-bool IsInside(double z,double x){
-	if(sqrt(z*z+x*x)<250){
-		return true;
-	}
-	else{
-		return false;
-	}
-}
-bool IsTarget(double z, double x){
-	if(abs(z-Target_pos)<Target_z/2&&abs(x)<Target_x/2){
-		return true;
-	}
-	else{
-		return false;
-	}
-}
-bool IsActiveArea(double z, double x){
-	double zr = z-Target_pos;
-	if(abs(abs(z)-abs(x))<12.){
-		return false;
-	}
-	else{
-		return !IsTarget(z,x) and IsInside(z,x);
-	}
-}
-static const int nhtpcmax = 300;
+
 class TPCManager:public FileManager{
 	protected:
 		TFile* hist_file;
 		TH2Poly* PadHist=nullptr;
 		TH2I* FlatHist=nullptr;
 		TH2D* PosHist=nullptr;
+		TGeoVolume *TPC3D;
+		TPolyMarker3D *tpcHit3d;
+		TCanvas* TPCCanv;
+		vector<TPCHit> m_Hits;
+		vector<TPCCluster> m_Clusters;
+
 		vector<int> *padTpc = new vector<int>;
 		int iPadtpc[nhtpcmax];
 		double xtpc[nhtpcmax];
@@ -102,8 +63,10 @@ class TPCManager:public FileManager{
 			cout<<FileName<<" Opened"<<endl;
 			LoadG4Chain("TPC_g");
 		}
+		void LoadTPCBcOut(TString FileName);
 		void LoadChain(TString ChainName);
 		void LoadClusterChain(TString ChainName);
+		void LoadTPCBcOutChain(TString ChainName);
 		void LoadG4Chain(TString ChainName);
 		void LoadBcOut();
 		int GetNEvent(){
@@ -111,23 +74,28 @@ class TPCManager:public FileManager{
 		};
 		int GetEntries(){return GetNEvent();}
 		void SetEvent(int evt){
-			padTpc->clear();
-			dlTpc->clear();
-			deTpc->clear();
+				x0BcOut->clear();
+				y0BcOut->clear();
+				u0BcOut->clear();
+				v0BcOut->clear();
+				clxTpc->clear();
+				clyTpc->clear();
+				clzTpc->clear();
+//			padTpc->clear();
+//			dlTpc->clear();
+//			deTpc->clear();
 			DataChain->GetEntry(evt);
 		};
 
-
 		//Histogram Methods//
 		void InitializeHistograms();
+		void InitializeTPC();
 		void SetTitle(TString title){
 			PadHist->SetTitle(title);
 			FlatHist->SetTitle(title);
 		}
-		void FillHist(double x, double z){
-			PadHist->Fill(x,z);
-			PosHist->Fill(x,z);
-		};
+		void FillHist(double z, double x);
+		void LoadTPC3D();
 		void FillHist(int itr);
 		void FillFlatHist(int padID);
 		void SetPadContent(int padID,double cont);
@@ -142,16 +110,41 @@ class TPCManager:public FileManager{
 			PosHist->Draw("colz");
 		}
 		void ClearHistogram(){
-			PadHist->Reset("ICE");
+			PadHist->Reset("");
+		}
+		void ClearTPC(){
+//			TPC3D->Reset("");
 		}
 		TH2Poly* GetPadHistogram(){
 			return PadHist;
 		}
 
+		void AssignHits();
+		bool MakeUpClusters(double Vth);
+		int GetNumberOfMHits(){return m_Hits.size();}
+		int GetNumberOfMCls(){return m_Clusters.size();}
+		void ClearHits(){
+			m_Hits.clear();
+			m_Clusters.clear();
+		}
+		TPCHit GetMHit(int i){return m_Hits[i];}
+		TPCCluster GetMCl(int i){return m_Clusters[i];}
 
 
-		int GetNhits(int conf){
-			if(!conf)	return Min(padTpc->size(),max_nh);
+
+		virtual void Process(double* vals);
+
+
+		void DrawTPC(){
+	//		auto* dir = gDirectory()->cd();
+			TPCCanv = new TCanvas("c1","c1",1200,600);
+			TPCCanv->cd();
+			TView3D *view = (TView3D*) TView::CreateView(1);
+			TPC3D->Draw("");
+//			dir->cd();
+		}
+		int GetNhits(int clusters){
+			if(!clusters)	return Min(nhittpc,max_nh);
 			else 					return Min(clsize->size(),max_nh);
 		};
 		int GetPadID(int i){
@@ -217,7 +210,10 @@ class TPCManager:public FileManager{
 		Track GetTrack(int it=0){
 			return Track(x0BcOut->at(it),y0BcOut->at(it),u0BcOut->at(it),v0BcOut->at(it));
 		}
-		
+
+
+
+
 
 
 		int WhichEvent();
@@ -234,23 +230,10 @@ class TPCManager:public FileManager{
 
 void TPCManager::InitializeHistograms(){
 	PadHist = tpc::InitializeHistogram();
-	FlatHist = new TH2I("PadRTheta","PadRTheta",32,0,32,240,0,240);
-	PosHist = new TH2D("PosHisto","PosHisto",128,-250,250,128,-250,250);
-	/*
-		 SpaceHist = new TH3D("TPCTrack","TPCTrack",260,-260,260,260,-260,260,300,-300,300);
-		 SpaceGraph = new TGraph2D();
-		 SpaceGraph->GetXaxis()->SetRangeUser(-300,300);
-		 SpaceGraphBase->GetXaxis()->SetTitle("Z");
-		 SpaceGraphBase->GetYaxis()->SetRangeUser(-300,300);
-		 SpaceGraphBase->GetYaxis()->SetTitle("Y");
-		 SpaceGraphBase->GetZaxis()->SetRangeUser(-300,300);
-		 SpaceGraphBase->GetXaxis()->SetTitle("X");
-		 SpaceGraphBase->SetMarkerColor(kRed);
-		 SpaceGraphBase->SetMarkerSize(3);
-		 MakeTPCPad();
-		 SpaceGraphBase->SetMarkerStyle(kCircle);
-		 SpaceGraphBase->SetMarkerColor(kBlue);
-		 SpaceGraphBase->SetMarkerSize(3);
-		 */
+	//	FlatHist = new TH2I("PadRTheta","PadRTheta",32,0,32,240,0,240);
+	//	PosHist = new TH2D("PosHisto","PosHisto",128,-250,250,128,-250,250);
+}
+void TPCManager::InitializeTPC(){
+	TPC3D=TPCGeometry();
 }
 #endif

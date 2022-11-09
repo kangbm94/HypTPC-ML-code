@@ -7,28 +7,24 @@ TPCManager gTPCManager;
 void TPCManager::LoadChain(TString ChainName ){
 	cluster = false;
 	DataChain	= (TChain*) DataFile->Get(ChainName);
-//	DataChain->SetBranchAddress("nhTpc",&nhitTpc);
-	DataChain->SetBranchAddress("padTpc",&padTpc);
-	DataChain->SetBranchAddress("dlTpc",&dlTpc);
-	DataChain->SetBranchAddress("cdeTpc",&deTpc);
+	//	DataChain->SetBranchAddress("nhTpc",&nhitTpc);
+//	DataChain->SetBranchAddress("padTpc",&padTpc);
+//	DataChain->SetBranchAddress("dlTpc",&dlTpc);
+//	DataChain->SetBranchAddress("cdeTpc",&deTpc);
 };
 void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	cluster = true;
 	DataChain	= (TChain*) DataFile->Get(ChainName);
 
-
 	DataChain->SetBranchAddress("cluster_hitpos_x",&clxTpc);
 	DataChain->SetBranchAddress("cluster_hitpos_y",&clyTpc);
 	DataChain->SetBranchAddress("cluster_hitpos_z",&clzTpc);
-//	DataChain->SetBranchAddress("cluster_de",&deTpc);
+	//	DataChain->SetBranchAddress("cluster_de",&deTpc);
 	DataChain->SetBranchAddress("cluster_size",&clsize);
 }
-void TPCManager::LoadBcOut(){
-	DataChain->SetBranchAddress("ntBcOut",&ntBcOut);
-	DataChain->SetBranchAddress("x0BcOut",&x0BcOut);
-	DataChain->SetBranchAddress("y0BcOut",&y0BcOut);
-	DataChain->SetBranchAddress("u0BcOut",&u0BcOut);
-	DataChain->SetBranchAddress("v0BcOut",&v0BcOut);
+void TPCManager::LoadTPCBcOut(TString filename){
+	LoadFile(filename);	
+	LoadTPCBcOutChain("tpc");
 }
 void TPCManager::LoadG4Chain(TString ChainName ){
 	DataChain	= (TChain*) DataFile->Get(ChainName);
@@ -41,6 +37,29 @@ void TPCManager::LoadG4Chain(TString ChainName ){
 	DataChain->SetBranchAddress("ititpc",ititpc);
 	DataChain->SetBranchAddress("ntrk",ntrk);
 	DataChain->SetBranchAddress("dedxtpc",dedxtpc);
+}
+void TPCManager::LoadBcOut(){
+	DataChain->SetBranchAddress("ntBcOut",&ntBcOut);
+	DataChain->SetBranchAddress("x0BcOut",&x0BcOut);
+	DataChain->SetBranchAddress("y0BcOut",&y0BcOut);
+	DataChain->SetBranchAddress("u0BcOut",&u0BcOut);
+	DataChain->SetBranchAddress("v0BcOut",&v0BcOut);
+}
+void TPCManager::LoadTPCBcOutChain(TString ChainName ="tpc"){
+	cluster = true;
+	DataChain	= (TChain*) DataFile->Get(ChainName);
+	cout<<"Chain Loaded: "<<DataChain->GetEntries()<<endl;
+	DataChain->SetBranchAddress("ntBcOut",&ntBcOut);
+	DataChain->SetBranchAddress("x0BcOut",&x0BcOut);
+	DataChain->SetBranchAddress("y0BcOut",&y0BcOut);
+	DataChain->SetBranchAddress("u0BcOut",&u0BcOut);
+	DataChain->SetBranchAddress("v0BcOut",&v0BcOut);
+	DataChain->SetBranchAddress("nhTpc",&nhittpc);
+	DataChain->SetBranchAddress("cluster_x",&clxTpc);
+	DataChain->SetBranchAddress("cluster_y",&clyTpc);
+	DataChain->SetBranchAddress("cluster_z",&clzTpc);
+	DataChain->SetBranchAddress("cluster_de",&deTpc);
+	DataChain->SetBranchAddress("cluster_size",&clsize);
 }
 TVector3 TPCManager::GetRTheta(int padID){
 	TVector3 pos = GetPosition(padID);
@@ -62,6 +81,10 @@ void TPCManager::FillFlatHist(int padID){
 	int r = lr.Y();
 	FlatHist->Fill(l,r);
 }
+void TPCManager::FillHist(double z, double x){
+	int padId = tpc::findPadID(z,x);
+	if(!tpc::Dead(padId)) PadHist->Fill(z,x);
+}
 void TPCManager::FillHist(int itr){
 	TVector3 hitv = GetPosition(itr);
 	double x = hitv.X();
@@ -75,7 +98,27 @@ void TPCManager::SetPadContent(int layer,int row,double cont){
 	int padID=tpc::GetPadId(layer,row);
 	PadHist->SetBinContent(padID,cont);
 }
-
+void TPCManager::LoadTPC3D(){
+	TPCCanv->cd();
+	if(tpcHit3d) delete tpcHit3d;
+	int nh;
+	if(!cluster){
+		nh= GetNhits(0);
+	}
+	else{
+		nh=GetNhits(1);
+	}
+	tpcHit3d= new TPolyMarker3D(nh,8);    
+	for(int i=0;i<nh;++i){
+		TVector3 pos = GetPosition(i);
+		double x=pos.x(),y=pos.y(),z=pos.z();
+		tpcHit3d->SetPoint(i,z,x,y);
+	}
+//  TView3D *view = (TView3D*) TView::CreateView(1);
+	tpcHit3d->Draw("SAME");
+	TPCCanv->Modified();
+	TPCCanv->Update();
+}
 
 
 
@@ -185,6 +228,56 @@ void TPCManager::FillEvent(){
 	for(int j=0;j<nitr;++j){
 		FillHist(z[j],x[j]);
 	}
+}
+void TPCManager::AssignHits(){
+	for(int ipad = 0;ipad<max_pad;++ipad){
+		int de = PadHist->GetBinContent(ipad+1);
+		if(de)m_Hits.push_back(TPCHit(ipad+1,de));
+	}
+#if 0
+	for(auto hit : m_Hits)hit.Show();
+#endif
+}
+
+bool TPCManager::MakeUpClusters(double Vth=3){
+	
+	int nh = m_Hits.size();
+  if(nh==0) return false;
+	vector<int> joined(nh,0);
+	int clnum = 0;
+	for(int i=0;i<nh;++i){
+		if(joined[i])continue;
+		vector<TPCHit> Cand;
+		auto hit = m_Hits[i];
+		if(hit.GetDe()<=Vth)continue;
+		int layer = hit.GetLayer();
+		hit.SetCluster(clnum);
+		Cand.push_back(hit);
+		joined[i]++;
+		for(int j=0;j<nh;++j){
+			auto thit = m_Hits[j];
+			if(i==j or joined[j] or layer != thit.GetLayer()) continue;
+      int rowID = (int)thit.GetRow();
+      for( auto c_hit: Cand){
+        int c_rowID = (int)c_hit.GetRow();
+        if(tpc::IsClusterable(layer, rowID, c_rowID,2)){
+          thit.SetCluster(clnum);
+					Cand.push_back(thit);
+          joined[j]++;
+          break;
+        }
+      }
+		}
+//		for(auto cls : Cand) cls.Show();
+		TPCCluster cl(Cand);
+		m_Clusters.push_back(cl);
+		clnum++;
+	}
+//	cout<<m_Clusters.size()<<endl;
+#if 0
+	for(auto cl : m_Clusters)	cl.Show();
+#endif
+	return true;
 }
 
 #endif

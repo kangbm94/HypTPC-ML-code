@@ -30,7 +30,7 @@ namespace tpc
 		kLength,
 		NPadParameter
 	};
-
+int max_pad = 5768;
 	//_____________________________________________________________________________
 	//#OfPad #division #radius padLength
 	static const Double_t padParameter[NumOfLayersTPC][NPadParameter] =
@@ -1216,10 +1216,11 @@ namespace tpc
 	inline Bool_t
 		IsClusterable(Int_t layer, Int_t row_a, Int_t row_b, Int_t maxdif=1)
 		{
+//			cout<<Form("L=%d,R=%d,cR=%d",layer,row_a,row_b)<<endl;
 			if(layer < 10){
 				const Int_t npad = padParameter[layer][kNumOfPad];
 				return (TMath::Abs(row_a - row_b) <= maxdif
-						|| TMath::Abs(row_a - row_b) >= npad - maxdif);
+						or TMath::Abs(row_a - row_b) >= npad - maxdif);
 			}else{
 				return (TMath::Abs(row_a - row_b) <= maxdif);
 			}

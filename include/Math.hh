@@ -117,6 +117,13 @@ TVector2 GenCircleRandom(double r, double phi1,double phi2){
 	double x = r*cos(phi),y=r*sin(phi);
 	return TVector2(x,y);
 }
+TVector2 Generate2DGaus(double z0,double x0,double sig){
+	double r = abs(gRandom->Gaus(0,sig));
+	TVector2 V(z0,x0);
+	return V+GenCircleRandom(r,0,2*acos(-1));
+}
+
+
 
 double chebyshev(double x, int n){
 	double val;

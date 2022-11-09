@@ -13,7 +13,11 @@ class FileManager{
 		typedef map<TString,ParamArray> ParamMap;
 		typedef ParamMap::const_iterator PIterator;	
 		ParamMap Map;
-
+		TFile* OutFile;	
+		TTree* OutChain;
+		double OutBufD[100];
+		int OutBufI[100];
+		vector<double>* OutBufV[20];
 	public:
 		FileManager(){}
 		void WriteTag(TString title, TString comment);
@@ -34,6 +38,28 @@ class FileManager{
 		TChain* GetPublicChain(){return DataChain;}
 		void LoadParamMap(TString FileName);
 		double GetParameter(TString key, int i=0);
+	
+		void CreateFile(TString filename){
+			OutFile = new TFile(filename,"recreate");
+			OutChain = new TTree("tree","tree");
+		}
+		void WriteFile(){
+			OutFile ->Write();
+		}
+		void ClearBuffer(){
+			for(int i=0;i<20;++i) if(OutBufV[i]) OutBufV[i]->clear();
+		}
+		void OutBranch(TString Title, int i, int conf ){
+			if(conf==1)OutChain->Branch(Title,&OutBufD[i]);	
+			else if(conf ==0) OutChain->Branch(Title,&OutBufI[i]);	
+			else if(conf ==2) {
+				OutBufV[i] = new vector<double>;
+				OutChain->Branch(Title,&OutBufV[i]);	
+			}
+		}
+		
+		TTree* GetOutChain(){return OutChain;}
+
 };
 
 TObject* FileManager::GetHistogram(int HistNumber){

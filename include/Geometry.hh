@@ -6,13 +6,15 @@
 class Surface{
 	protected:
 		vector<TPCPoint> Points;
+		TGeoVolume* Volume;
 	public:
 		Surface(){};
 		TPCPoint GetPoint(int i);
 		void AddPoint(TPCPoint pt){Points.push_back(pt);}
 		double Position(int inp,int xyz){
 //			cout<<"Pos "<<inp<<endl;
-			return Points.at(inp)[xyz];};
+			return Points.at(inp)[xyz];}
+//		virtual void InitializeVolume();
 };
 TPCPoint Surface::GetPoint(int i){
 	int np = Points.size();
@@ -88,6 +90,7 @@ class RiemanSphere:public Surface{
 			NorthPole.SetPosition(x,y,z+r);
 			hist = new TH3D("RiemanSphereH","RiemanSphereH",22,x-1.1*r,x+1.1*r,22,y-1.1*r,y+1.1*r,22,z-1.1*r,z+1.1*r);
 			//			hist = new TH2D("RiemanSphere","RiemanSphere",22,x-1.1*r,x+1.1*r,22,y-1.1*r,y+1.1*r);
+			InitializeVolume(x,y,z,r);
 		}
 		RiemanSphere(){radius=1;}
 		void ProjectPoint(TPCPoint point);
@@ -98,8 +101,11 @@ class RiemanSphere:public Surface{
 			hist->Draw();
 		}
 		Plane LeastSquarePlane();
+		void InitializeVolume(double x,double y,double z,double r);
 };
-void RiemanSphere::ProjectPoint(TPCPoint point){
+void RiemanSphere::ProjectPoint(TPCPoint point_){
+	TPCPoint point = point_;
+	point.SetZ(0);
 	double dist = Euclidean(NorthPole,point);
 	double de = point.GetEdep();
 	auto direction = point-NorthPole;
@@ -138,4 +144,17 @@ Plane RiemanSphere::LeastSquarePlane(){
 		Pl.AddPoint(Points.at(i));
 	}
 	return Pl;
+}
+void RiemanSphere::InitializeVolume(double x,double y,double z,double r){
+	double width = 3*r; 
+  TGeoManager *geom = new TGeoManager("RiemanSpace","RiemanSpace");
+  TGeoMaterial *mat_world = new TGeoMaterial("Vacuum",0,0,0);
+  TGeoMedium *med_world = new TGeoMedium("med_world",1,mat_world);
+  TGeoVolume *world = geom->MakeBox("world",med_world,width,width,width);
+  world->SetVisibility(kFALSE);
+	TGeoVolume* RSphere  = geom->MakeSphere("RSphere",med_world,0,r);
+
+	geom->SetTopVolume(world);
+
+	return world;
 }

@@ -1,9 +1,9 @@
 #include "Geometry.hh"
 void test(){
-	RiemanSphere RS(2,0,0,3);
+	RiemanSphere RS(-3,5,0,3);
 	Plane Pl;
-	for(int i=0;i<30;++i){
-		Pl.GeneratePlanarCircle(4,3,2,0.0,0.5*Pi());
+	for(int i=0;i<60;++i){
+		Pl.GeneratePlanarCircle(14,3,2,0.0,1.5*Pi());
 //		Pl.GeneratePlanarCircle(3000,0,0,0,2*Pi());
 	}
 	cout<<"AddingRandomPoints"<<endl;
@@ -16,7 +16,8 @@ void test(){
 	int np = Pl.GetNPoints();
 	cout<<"ProjectingPoints"<<endl;
 	for(int i=0;i<np;++i){
-		RS.ProjectPoint(Pl.GetPoint(i));
+		TVector3 vp = Pl.GetPoint(i);
+		RS.ProjectPoint(vp);
 		
 //		Pl.GetPoint(i).ListElements();
 //		RS.GetPoint(i).ListElements();
