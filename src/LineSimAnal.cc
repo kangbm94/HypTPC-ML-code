@@ -39,6 +39,7 @@ void LineSimAnal(){
 	double A;
 	int ent = tree->GetEntries();
 	for(int i=0;i<ent;++i){
+		if(!(i%1000)) cout<<i<< " / "<<ent<<endl;
 		tree->GetEntry(i);
 		int ncl = clde->size();
 		int nh = de->size();
@@ -53,11 +54,10 @@ void LineSimAnal(){
 				}	
 			}
 			for(int k = 0; k<nh;++k){
-				cout<<j<<" -> Cluster : "<<cluster->at(k)<<endl;
-				if(ecl!=cl_de) cout<<"Warning! wrong cluster, clde vs desum = "<<cl_de<<" , "<<ecl<<endl;
 				if(j==cluster->at(k)){
+					if(ecl!=cl_de) cout<<"Warning! wrong cluster, clde vs desum = "<<cl_de<<" , "<<ecl<<endl;
 					A = de->at(k)/ecl;	
-					int lay = (int)layer->at(k);
+					int lay = (int)layer->at(j);
 					double h_x = x->at(k);
 					double h_z = z->at(k);
 					double dist = TransverseDistance(cl_x,cl_z,h_x,h_z);
@@ -69,6 +69,8 @@ void LineSimAnal(){
 	gStyle->SetOptFit(1100);
 	for(int i=0;i<32;++i){
 		c1->cd(i+1);
+		gPad->SetLogz();
+		cout<<"Layer "<<i<<endl;
 		hist[i]->Draw("colz");
 		hist[i]->Fit("gaus");
 	}
