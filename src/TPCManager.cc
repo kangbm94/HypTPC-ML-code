@@ -2,7 +2,6 @@
 #ifndef TPCManager_C
 #define TPCManager_C
 const int max_ntrk = 16;
-TPCManager T;
 TPCManager gTPCManager;
 void TPCManager::LoadChain(TString ChainName ){
 	cluster = false;

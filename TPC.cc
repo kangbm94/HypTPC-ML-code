@@ -2,7 +2,7 @@
 #include "src/TPCCorrectionMapMaker.cc"
 
 void TPC(){
-	T.InitializeHistograms();
+	gTPCManager.InitializeHistograms();
 	cout<<"ViewTPC(TString Filename)"<<endl;
 	cout<<"TagTPCEvents(TString Filename, TString OutFileName)"<<endl;
 	cout<<"TagTPCTracks(TString Filename)"<<endl;

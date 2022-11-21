@@ -132,7 +132,7 @@ class TPCManager:public FileManager{
 
 
 
-		virtual void Process(double* vals);
+		virtual void Process(double* vals){};
 
 
 		void DrawTPC(){
