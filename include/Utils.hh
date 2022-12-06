@@ -109,15 +109,15 @@ double GetPeakPosition(TH1* h){
 int Bin(int nbin,double r1,double r2,double r){
 	double dr = (r2-r1)/(nbin-1);
 	r-=(r1-dr/2);
-	return r/dr;
+	int val =  (r+dr*1e6)/dr;
+	return val-1e6;
 }
 double BinPos(int nbin, double r1,double r2, int bin){
+	if(nbin==1){
+		return (r1+r2)/2;
+	}
 	double dr = r2-r1;
-	if(nbin!=1){
-		return r1+bin*dr/(nbin-1);
-	}
-	else{
-		return nand;
-	}
+	double bw = dr/(nbin-1);
+	return r1+bin*bw;
 }
 #endif

@@ -6,20 +6,33 @@ TPCManager gTPCManager;
 void TPCManager::LoadChain(TString ChainName ){
 	cluster = false;
 	DataChain	= (TChain*) DataFile->Get(ChainName);
-	//	DataChain->SetBranchAddress("nhTpc",&nhitTpc);
-//	DataChain->SetBranchAddress("padTpc",&padTpc);
-//	DataChain->SetBranchAddress("dlTpc",&dlTpc);
+	DataChain->SetBranchAddress("evnum",&evnum);
+	DataChain->SetBranchAddress("nhTpc",&nhittpc);
+	DataChain->SetBranchAddress("padTpc",&padTpc);
+	DataChain->SetBranchAddress("dlTpc",&dlTpc);
 //	DataChain->SetBranchAddress("cdeTpc",&deTpc);
 };
 void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	cluster = true;
 	DataChain	= (TChain*) DataFile->Get(ChainName);
+	DataChain->SetBranchAddress("runnum",&runnum);
+	DataChain->SetBranchAddress("evnum",&evnum);
 
-	DataChain->SetBranchAddress("cluster_hitpos_x",&clxTpc);
-	DataChain->SetBranchAddress("cluster_hitpos_y",&clyTpc);
-	DataChain->SetBranchAddress("cluster_hitpos_z",&clzTpc);
+	DataChain->SetBranchAddress("cluster_x",&clxTpc);
+	DataChain->SetBranchAddress("cluster_y",&clyTpc);
+	DataChain->SetBranchAddress("cluster_z",&clzTpc);
 	//	DataChain->SetBranchAddress("cluster_de",&deTpc);
 	DataChain->SetBranchAddress("cluster_size",&clsize);
+	DataChain->SetBranchAddress("padTpc",&padTpc);
+	DataChain->SetBranchAddress("ntTpc",&ntTpc);
+	DataChain->SetBranchAddress("helix_cx",&helcxTpc);	
+	DataChain->SetBranchAddress("helix_cy",&helcyTpc);	
+	DataChain->SetBranchAddress("helix_z0",&helz0Tpc);	
+	DataChain->SetBranchAddress("helix_r",&helrTpc);	
+	DataChain->SetBranchAddress("helix_dz",&heldzTpc);	
+	DataChain->SetBranchAddress("vtx",&vtx);
+	DataChain->SetBranchAddress("vty",&vty);
+	DataChain->SetBranchAddress("vtz",&vtz);
 }
 void TPCManager::LoadTPCBcOut(TString filename){
 	LoadFile(filename);	
@@ -59,6 +72,8 @@ void TPCManager::LoadTPCBcOutChain(TString ChainName ="tpc"){
 	DataChain->SetBranchAddress("cluster_z",&clzTpc);
 	DataChain->SetBranchAddress("cluster_de",&deTpc);
 	DataChain->SetBranchAddress("cluster_size",&clsize);
+
+
 }
 TVector3 TPCManager::GetRTheta(int padID){
 	TVector3 pos = GetPosition(padID);
@@ -87,8 +102,10 @@ void TPCManager::FillHist(double z, double x){
 void TPCManager::FillHist(int itr){
 	TVector3 hitv = GetPosition(itr);
 	double x = hitv.X();
+	double y = hitv.Y();
 	double z = hitv.Z();
 	PadHist->Fill(z,x);
+	ZYHist->Fill(z,y);
 };
 void TPCManager::SetPadContent(int padID,double cont){
 	PadHist->SetBinContent(padID,cont);

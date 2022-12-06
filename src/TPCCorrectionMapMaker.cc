@@ -24,10 +24,11 @@ void TPCCorrectionMapMaker(int a){
 void MakeSnakeHistogram(){
 	TString dir = "../../MayRun/rootfiles/Defocus/";
 	int runnum = 5000;
+//	runnum = 5754;
 	TString filename = Form("run0%d_DSTTPCBcOut.root",runnum);
 	Corrector.LoadTPCBcOut(dir+filename);
 	Corrector.MakeSnakeHist();
-	Corrector.MakeSnakeFile("SnakeHist_node2.root");
+	Corrector.MakeSnakeFile("SnakeHist.root");
 	Corrector.WriteSnakeHist();
 }
 void WriteCorrectionMap(){
@@ -36,10 +37,10 @@ void WriteCorrectionMap(){
 	Corrector.WriteParam();
 }
 void WriteSnakeCorrectionMap(){
-	Corrector.LoadSnakeHist("SnakeHist_node2.root");
+	Corrector.LoadSnakeHist("SnakeHist.root");
 	Corrector.MakeCorParameterFile("TPCCorrectionMap_Snake");
 	TCanvas* c1 = new TCanvas("c1","c1",1200,600);
-	TGraphErrors* gr= new TGraphErrors(nbin_z);
+	TGraphErrors* gr= new TGraphErrors(snake_nbin_z);
 	gr->SetMarkerStyle(5);
 	gr->SetLineColor(kRed);
 	gr->SetLineWidth(2);
@@ -55,6 +56,7 @@ void WriteSnakeCorrectionMap(){
 			gr= new TGraphErrors(np);
 			for(int i=0;i<np;++i){
 				pxf.push_back(FillEmptyParam(px,i));
+				pyf.push_back(0);
 			}
 			for(int i=0;i<np;++i){
 				pxm1.push_back(Wmean(pxf,ex,i,eval));
@@ -65,9 +67,9 @@ void WriteSnakeCorrectionMap(){
 			for(int i=0;i<np;++i){
 				pxm3.push_back(Wmean(pxm2,ex,i,eval));
 				pyf.push_back(0);
-				gr->SetPoint(i,Corrector.BinPosZ(i),pxm3[i]);
-//				gr->SetPoint(i,Corrector.BinPosZ(i),pxf[i]);
-				gr->SetPointError(i,1,1/ex[i]);
+//				gr->SetPoint(i,Corrector.BinPosZ(i),pxm3[i]);
+				gr->SetPoint(i,Corrector.BinPosZ(i),pxf[i]);
+				gr->SetPointError(i,1,1/sqrt(ex[i]));
 			}
 			c1->cd();
 			hx->Draw("colz");
@@ -78,7 +80,7 @@ void WriteSnakeCorrectionMap(){
 			cin.ignore();
 			cout<<"SettingParams"<<endl;
 //			RestoreEmpty(px);
-			Corrector.SetParameter(pxm3,pyf,ix,iy);
+			Corrector.SetParameter(pxf,pyf,ix,iy);
 		}
 	}
 //	Corrector.SmoothenParam();
@@ -118,32 +120,38 @@ void TPCCorrectionMapMaker::Process(){
 		}
 	}
 }
+TF1* f = new TF1("f","gaus",-5,5);
 TH2D* TPCCorrectionMapMaker::ScanSnake(int ix,int iy,vector<double> &peaks,vector<double> &ents){
 	auto* hist = GetSnakeHist(ix,iy,0);
 //	cout<<"Hist: "<<hist->GetEntries()<<endl;
-	int cut=200;
-	TF1* f = new TF1("f","gaus",-5,5);
+	int cut=300;
 	bool active = true;
-	for(int i=1;i<snake_nbin_z+1;i++){
+	for(int i=0;i<nbin_z;i++){
 		double pos_z = BinPosZ(i);
 		double pos_x = BinPosX(ix);
 //		active = IsActiveArea(pos_z,pos_x);
 		TString Key = (TString)hist->GetTitle()+Form("_Proj%d",i);
-		TH1D* h = hist->ProjectionY(Key,i,i);
-		double peakcenter = GetPeakPosition(h);
-		f->SetParLimits(1,-5,5);
-		h->Fit("f","QR");
+		TH1D* h = hist->ProjectionY(Key,i+1,i+1);
+//		double peakcenter = GetPeakPosition(h);
 		ents.push_back(h->GetEffectiveEntries());
+		double peakcenter = h->GetBinCenter(h->GetMaximumBin());
+		if(abs(peakcenter)>7.1&&abs(pos_x)>150)peakcenter=0;
+		//	f->SetParLimits(1,peakcenter-1,peakcenter+1);
+		f->SetParameter(1,peakcenter);
+		f->SetParLimits(1,peakcenter-2,peakcenter+2);
+		f->SetRange(peakcenter-5,peakcenter+5);
+		h->Fit("f","QR0");
+		cout<<i<<"-> ent : "<<ents[i]<<", peak : "<<peakcenter<<endl; 	
 		if(!active){ //			peaks.push_back(-9999);
 			cout<<"DeadArea!"<<endl;
 			peaks.push_back(nand);
-			ents[i-1]=1;
+			ents[i]=1;
 		}
-		else if(ents[i-1]>cut ){
+		else if(ents[i]>cut ){
 			peaks.push_back(f->GetParameter(1));
 		}
 		else{
-			ents[i-1]=1;
+			ents[i]=1;
 			peaks.push_back(nand);
 		}
 	}

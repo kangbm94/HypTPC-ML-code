@@ -1,9 +1,10 @@
 #include "TPCManager.hh"
 static int nhist=0;;
 class FADC{
-	private:
+	protected:
 		int layer=-1,row=-1;
 		double ped=0,mean=0,sig=0;
+		double rawped=0,rawmean=0,rawsig=0;
 		TH1D* hist=nullptr;
 		TH1D* rawhist=nullptr;
 		TF1* func=nullptr;
@@ -26,6 +27,11 @@ class FADC{
 			return rawhist;
 		}
 		int DoFit(double* par);
+		double GetRMS(){return sig;}
+};
+class Baseline: public FADC{
+	public:
+		Baseline(vector<double>tb,vector<double>fadc);
 };
 
 FADC::FADC(vector<double>tb,vector<double>fadc,vector<double>rawfadc,int l,int r){
@@ -33,11 +39,16 @@ FADC::FADC(vector<double>tb,vector<double>fadc,vector<double>rawfadc,int l,int r
 	int nb = tb.size();
 	for(int i=0;i<nb;++i){
 		if(i<20) ped+=fadc[i]/20;
+		if(i<20) rawped+=rawfadc[i]/20;
 		mean+=fadc[i]/nb;
+		rawmean+=rawfadc[i]/nb;
 		sig+=fadc[i]*fadc[i]/nb;
+		rawsig+=rawfadc[i]*rawfadc[i]/nb;
 	}
 	sig=sqrt(sig-mean*mean);
+	rawsig=sqrt(rawsig-rawmean*rawmean);
 	mean-=ped;
+	rawmean-=rawped;
 	layer = l;row=r;
 	hist=nullptr;
 	hist = new TH1D(Form("hist%d",nhist),Form("Waveform(%d,%d)_%d",layer,row,nhist),nb,t1,t2);
@@ -45,10 +56,38 @@ FADC::FADC(vector<double>tb,vector<double>fadc,vector<double>rawfadc,int l,int r
 	rawhist = new TH1D(Form("rawhist%d",nhist),Form("RawWaveform(%d,%d)_%d",layer,row,nhist),nb,t1,t2);
 	for(int i=0;i<nb;++i){
 		hist->SetBinContent(tb[i],fadc[i]-ped);
-		rawhist->SetBinContent(tb[i],rawfadc[i]-350);
+		rawhist->SetBinContent(tb[i],rawfadc[i]-rawped);
 	}
 	hist->GetYaxis()->SetRangeUser(-200,700);
 	rawhist->GetYaxis()->SetRangeUser(-200,700);
+	TSpectrum spec(20);
+	double sigma=3,threshold=0.4;
+	npeaks = spec.Search(hist,sigma,"goff",threshold); 
+	//npeaks = spec.Search(hist,sigma,"",threshold); 
+	double* x_peaks = spec.GetPositionX();
+	for(int i=0;i<npeaks;++i){
+		peaks.push_back(x_peaks[i]);
+	}
+	stable_sort(peaks.begin(),peaks.end());
+};
+Baseline::Baseline(vector<double>tb,vector<double>fadc){
+	
+	int nb = tb.size();
+	for(int i=0;i<20;++i){
+		if(i<20) ped+=fadc[i]/20;
+	}
+	for(int i=0;i<nb;++i){
+		mean+=fadc[i]/nb;
+		sig+=fadc[i]*fadc[i]/nb;
+	}
+	sig=sqrt(sig-mean*mean);
+	mean-=ped;
+	hist=nullptr;
+	hist = new TH1D(Form("hist%d",nhist),Form("Baseline_%d",nhist),nb,t1,t2);
+	for(int i=0;i<nb;++i){
+		hist->SetBinContent(tb[i],fadc[i]-ped);
+	}
+	hist->GetYaxis()->SetRangeUser(-200,700);
 	TSpectrum spec(20);
 	double sigma=3,threshold=0.4;
 	npeaks = spec.Search(hist,sigma,"goff",threshold); 
@@ -90,8 +129,8 @@ int FADC::DoFit(double* par){
 	func->SetParameter(npeaks*3,0);
 	func->SetParLimits(npeaks*3,-0.5*sig,0.5*sig);
 	func->SetRange(25,155);
-	cout<<Form("Fitting (%d,%d), npeaks = %d",layer,row,npeaks)<<endl;
-	hist->Fit("func","R");
+//	cout<<Form("Fitting (%d,%d), npeaks = %d",layer,row,npeaks)<<endl;
+	hist->Fit("func","QR");
 	for(int i=0;i<10;++i){
 		par[i]=0;
 	}
@@ -112,8 +151,10 @@ class FADCManager:public TPCManager{
 		vector<vector<double>>*tbTpc = new vector<vector<double>>;
 		vector<vector<double>>*fadcTpc = new vector<vector<double>>;
 		vector<vector<double>>*rawfadcTpc = new vector<vector<double>>;
+		vector<vector<double>>*baselinetbTpc = new vector<vector<double>>;
+		vector<vector<double>>*baselineTpc = new vector<vector<double>>;
 		vector<FADC> FADCs;
-		vector<FADC> Base;
+		vector<Baseline> Base;
 	public:
 		FADCManager(){
 		}
@@ -131,6 +172,7 @@ class FADCManager:public TPCManager{
 //			return FADCs.size();
 		}
 		int GetBaseNum(){
+			cout<<"NBase = "<<Base.size()<<endl;
 			return Base.size();
 		}
 		TH1D* GetWaveformHist(int layer=-1, int row=-1);
@@ -145,6 +187,8 @@ void FADCManager::SetEvent(int i){
 	rowTpc->clear();
 	fadclayerTpc->clear();
 	fadcrowTpc->clear();
+	baselineTpc->clear();
+	baselinetbTpc->clear();
 	DataChain->GetEntry(i);
 }
 void FADCManager::LoadFADCChain(TString ChainName){
@@ -158,6 +202,8 @@ void FADCManager::LoadFADCChain(TString ChainName){
 	DataChain->SetBranchAddress("tbTpc",&tbTpc);
 	DataChain->SetBranchAddress("fadcTpc",&fadcTpc);
 	DataChain->SetBranchAddress("rawfadcTpc",&rawfadcTpc);
+	DataChain->SetBranchAddress("baselinetbTpc",&baselinetbTpc);
+	DataChain->SetBranchAddress("baselineTpc",&baselineTpc);
 }
 bool FADCManager::CheckLayerRowHit(int layer, int row){
 	int nh = layerTpc->size();
@@ -197,6 +243,7 @@ void FADCManager::LoadWaveform(){
 		}
 		*/
 	}
+	Base.push_back(Baseline(baselinetbTpc->at(0),baselineTpc->at(0)));
 }
 
 

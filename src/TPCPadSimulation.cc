@@ -1,5 +1,9 @@
 #include "TPCManager.cc"
 static int nev = 0;
+void TPCPadSimulation(){
+	cout<<"TPCLineSimulation()"<<endl;
+	cout<<"TPCRKSimulation()"<<endl;
+}
 void TPCLineSimulation(){
 	gTPCManager.InitializeHistograms();
 	auto h = gTPCManager.GetPadHistogram();
@@ -84,7 +88,74 @@ void TPCLineSimulation(){
 	c1->cd(2);
 	chain->Draw("clde");
 }
+void TPCRKSimulation(){
+	gTPCManager.InitializeHistograms();
+	auto h = gTPCManager.GetPadHistogram();
+	int nt = 100;
+	double sig0 = 0.204;
+	double sigd = 0.18*sqrt(2);
+	//*sqrt(30);
+	int nevt = 500;//Number of Electrons
+	TString dir = "../../MayRun/rootfiles/Defocus/";
+	int runnum = 5754;
+	TString filename = Form("run0%d_DSTTPCBcOut.root",runnum);
+	gTPCManager.LoadTPCBcOut(dir+filename);
+	int ent = gTPCManager.GetEntries();
+	gTPCManager.CreateFile(Form("RKSimul%d_5.root",runnum));
+	gTPCManager.OutBranch("x0",0,1);
+	gTPCManager.OutBranch("u0",1,1);
+	gTPCManager.OutBranch("nev",0,0);
+	gTPCManager.OutBranch("nhits",1,0);
+	gTPCManager.OutBranch("ncls",2,0);
 
+	gTPCManager.OutBranch("z",0,2);
+	gTPCManager.OutBranch("x",1,2);
+	gTPCManager.OutBranch("de",2,2);
+
+	gTPCManager.OutBranch("PadID",3,2);
+	gTPCManager.OutBranch("Bcx",4,2);
+	gTPCManager.OutBranch("cluster",5,2);
+
+	gTPCManager.OutBranch("clsize",6,2);
+	gTPCManager.OutBranch("clz",7,2);
+	gTPCManager.OutBranch("clx",8,2);
+	gTPCManager.OutBranch("clde",9,2);
+	gTPCManager.OutBranch("clBcx",10,2);
+	gTPCManager.OutBranch("layer",11,2);
+	int cnt = 0;
+	ent/=5;
+	TCanvas*c1 = new TCanvas("c1","c1",1200,800);
+	c1->Divide(2,1);
+	for(int evt = 4*ent ; evt< 5*ent; evt ++){
+		gTPCManager.SetEvent(evt);
+		int bcnt = gTPCManager.GetBCnt();
+		int nhtpc = gTPCManager.GetNhits(0);
+		if((evt+1)%(ent/100)==0) {cnt++;cout<<cnt<<"\% Processing"<<endl;}
+		if(bcnt!=1) continue;
+		if(nhtpc<9) continue;
+		Track Trk = gTPCManager.GetTrack(0);
+		double x0 = Trk.GetPosition(-K18HS).X();
+		double u0 = (Trk.GetPosition(0).X()-x0)/K18HS;
+		for(int i=0;i<nevt;++i){
+		
+			double z = -250+ (double)(500)/nevt *(i+1);
+			double y = Trk.GetPosition(z).Y()/10 + 30;//mm -> cm, drift length 30cm +- y
+			double sig = sigd*sqrt(y);
+			double x = Trk.GetPosition(z).X(); 
+			auto pos = Generate2DGaus(z,x,sig);
+			//			cout<<"Position: "<<pos.X()<<" , "<<pos.Y()<<endl;
+			gTPCManager.FillHist(pos.X(),pos.Y());
+		
+		}
+		double val[10];val[0]=x0;val[1]=u0;
+		gTPCManager.Process(val);
+		gTPCManager.ClearHits();
+		gTPCManager.ClearHistogram();
+	}
+
+
+
+}
 
 
 void TPCManager::Process(double* vals){

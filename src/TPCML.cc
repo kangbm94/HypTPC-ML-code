@@ -1,6 +1,7 @@
 #include "TPCManager.cc"
 #ifndef TPCML_C
 #define TPCML_C
+TPCManager T;
 void ConvertRealTPC(int runnum){
 	TString dir = "../MayRun/rootfiles/CH2/TPC";
 	TString tpcdir = dir+"/";

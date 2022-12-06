@@ -1,9 +1,15 @@
 #include "TPCManager.hh"
-static const int nbin_x=21;
-static const int nbin_y=5;
 static const int snake_nbin_x = 100;
 static const int snake_nbin_z = 40;
-static const int nbin_z=snake_nbin_z;
+static const int nbin_z=snake_nbin_z+1;
+double gx1 = -200,gx2 = 200;
+double gy1 = 5,gy2 = 5;
+double width_x = 5,width_y = 30;//Histo Range: (gx1-width_x ,gx2+width_x);
+
+//const int nbin_x=(gx2-gx1)/width_x+1;
+//const int nbin_y=(gy2-gy1)/width_y+1;
+const int nbin_x = 81;
+const int nbin_y = 1;
 double FillEmptyParam(vector<double>x,int i){
 	const int size = x.size();
 	double val=0;
@@ -15,12 +21,10 @@ double FillEmptyParam(vector<double>x,int i){
 		cout<<"ExeedingVectorSize!"<<endl;
 		return val;
 	}
-	int bi = i-1,fi=i+1;
-	int bd=0,fd=0;
-	double bp=0,fp=0;
+	int bi = i-1,fi=i; int bd=0,fd=0; double bp=0,fp=0;
 	if(isnan(x[i])){
 		while(bi>-1){
-			bd++;
+			bd++;//BeforeDistance
 			if(!isnan(x[bi])){
 				bp=x[bi];
 				break;
@@ -32,12 +36,15 @@ double FillEmptyParam(vector<double>x,int i){
 			fd++;
 			if(!isnan(x[fi])){
 				fp=x[fi];
+				cout<<Form("x[%d]=%f ->(%2f*%d+%2f*%d)/(%d+%d)=%3f",i,x[i],bp,fd,fp,bd,fd,bd, double(bp*fd+fp*bd)/(fd+bd)	)<<endl;
 				break;
 			}
 			fi++;
 		}
 		if(fi==size) fd=0;
-		val=double(bp*fd+fp*bd)/(fd+bd);	
+		if(fd!=0 and bd!=0)val=double(bp*fd+fp*bd)/(fd+bd);	
+		if(fd==0 ) return bp;
+		if(bd==0 ) return fp;
 	}
 	else{
 		val=x[i];
@@ -131,24 +138,20 @@ void ExtrapolateEmptyVector(vector<double>bf,vector<double>&af){
 class TPCCorrectionMapMaker: public TPCManager{
 	protected:
 		static const int max_hit = 1000;
-		double center_x=0,center_y=5;
-		double width_x=5,width_y=10;
-		double x1=center_x-width_x*( nbin_x/2);
-		double x2=center_x+width_x*( nbin_x/2);
-		double y1=center_y-width_y*( nbin_y/2);
-		double y2=center_y+width_y*( nbin_y/2);
+		double center_x=(gx1+gx2)/2,center_y=(gy1+gy2)/2;
+		double z1=-250,z2=250;
+		double width_z = (z2-z1)/nbin_z ;
 		TH2D* SnakeHistX[nbin_x][nbin_y];
 		TH2D* SnakeHistY[nbin_x][nbin_y];
 		TFile* OutFile=NULL;
 
 
-		double z1=-250,z2=250;
 
 
 		int hbin_x=20,hbin_y=20,hbin_z=20;
-		double cx=(x2-x1)/(nbin_x-1);
+		double cx=(gx2-gx1)/(nbin_x-1);
 		double hcx=7;
-		double cy=(y2-y1)/(nbin_y-1);
+		double cy=(gy2-gy1)/(nbin_y-1);
 		double cz=(z2-z1)/(nbin_z-1);
 		TH1D* hist_x[nbin_x][nbin_y][nbin_z];
 		TH1D* hist_y[nbin_x][nbin_y][nbin_z];
@@ -161,19 +164,19 @@ class TPCCorrectionMapMaker: public TPCManager{
 		vector<double>* zCorVec = new vector<double>;
 		int ntBcOut=0;
 		int BinX(double x){
-			return Bin(nbin_x,x1,x2,x);
+			return Bin(nbin_x,gx1,gx2,x);
 		}
 		int BinY(double y){
-			return Bin(nbin_y,y1,y2,y);
+			return Bin(nbin_y,gy1,gy2,y);
 		}
 		int BinZ(double z){
-			return Bin(nbin_z,z1,z2,z);
+			return Bin(snake_nbin_z,z1+width_z/2,z2-width_z/2,z);
 		}
-		double BinPosX(double xbin){
-			return BinPos(nbin_x,x1,x2,xbin);
+		double BinPosX(int xbin){
+			return BinPos(nbin_x,gx1,gx2,xbin);
 		}
-		double BinPosY(double ybin){
-			return BinPos(nbin_y,y1,y2,ybin);
+		double BinPosY(int ybin){
+			return BinPos(nbin_y,gy1,gy2,ybin);
 		}
 
 
@@ -192,7 +195,7 @@ class TPCCorrectionMapMaker: public TPCManager{
 			cout<<"Hist initialized"<<endl;
 		}
 		double BinPosZ(double zbin){
-			return BinPos(nbin_z,z1+(z2-z1)/(nbin_z)/2,z2-(z2-z1)/(nbin_z)/2,zbin);
+			return BinPos(snake_nbin_z,z1+(z2-z1)/(nbin_z)/2,z2-(z2-z1)/(nbin_z)/2,zbin);
 		}
 		void MakeSnakeFile(TString FileName);
 		void WriteHist();
@@ -208,8 +211,8 @@ class TPCCorrectionMapMaker: public TPCManager{
 		}
 		void MakeCorParameterFile(TString FileName){
 			MakeParameterFile(FileName);
-			vector<int> nb = {nbin_x,nbin_y,nbin_z};
-			vector<double> par = {x1,y1,z1,cx,cy,cz};
+			vector<int> nb = {nbin_x,nbin_y+1,nbin_z};
+			vector<double> par = {gx1,-50,z1,cx,100,cz};
 			WriteParameter(nb,par);
 		}
 		void LoadTPCBcOutChain(TString ChainName);
@@ -270,19 +273,19 @@ void TPCCorrectionMapMaker::MakeSnakeHist(){
 		for(int iy=0;iy<nbin_y;++iy){
 			cout<<Form("Drawing Hist(%d,%d)... please wait",ix,iy)<<endl;
 			TString Key = Form("Snake%d_%d_",ix,iy);
-			TString DrawCommandX = "xCorVec:cluster_hitpos_z>>"+Key+"x";
+			TString DrawCommandX = "xCorVec:cluster_z>>"+Key+"x";
 
 			TString Title = Form("X(%f,%f)Y(%f,%f)",BinPosX(ix)-width_x/2,BinPosX(ix)+width_x/2,BinPosY(iy)-width_y/2,BinPosY(iy)+width_y/2);
 
-			TCut Cut = Form("ntBcOut==1&&nhTpc>15&&abs(cluster_hitpos_x-%f)<%f&&abs(cluster_hitpos_y-%f)<%f",BinPosX(ix)+0*width_x/2,width_x/2,BinPosY(iy),width_y/2);
+			TCut Cut = Form("ntBcOut==1&&nhTpc>15&&abs(cluster_x-%f)<%f&&abs(cluster_y-%f)<%f&&nclTpc<45&&cluster_size>1",BinPosX(ix),width_x/2,BinPosY(iy),width_y/2);
 
-			TCut Inside = Form("sqrt(cluster_hitpos_x*cluster_hitpos_x+cluster_hitpos_z*cluster_hitpos_z)<250");
-			TCut In_frame = Form("abs(abs(cluster_hitpos_x)-abs(cluster_hitpos_z))<%f",frame_width);
-			TCut In_Target = Form("abs(cluster_hitpos_z-%f)<%f&&abs(cluster_hitpos_x)<%f",Target_pos,Target_z,Target_x);
+		//	TCut Inside = Form("sqrt(cluster_hitpos_x*cluster_hitpos_x+cluster_hitpos_z*cluster_hitpos_z)<250");
+	//		TCut In_frame = Form("abs(abs(cluster_hitpos_x)-abs(cluster_hitpos_z))<%f",frame_width);
+//			TCut In_Target = Form("abs(cluster_hitpos_z-%f)<%f&&abs(cluster_hitpos_x)<%f",Target_pos,Target_z,Target_x);
 			//			TCut Cut = Form("ntBcOut==1&&nhTpc>15&&abs(cluster_x-%f)<%f&&abs(cluster_y-%f)<%f",BinPosX(ix)+0*width_x/2,width_x/2,BinPosY(iy)+0*width_x/2,width_y/2);
 			SnakeHistX[ix][iy] = new TH2D(Key+"x",Title+"x",snake_nbin_z,-250,250,snake_nbin_x,-7.5,7.5);
-			SnakeHistY[ix][iy] = new TH2D(Key+"y",Title+"y",snake_nbin_z,-250,250,snake_nbin_x,-7.5,7.5);
-			DataChain->Draw(DrawCommandX,Cut and not (In_frame or In_Target) and Inside,"col0");
+//			DataChain->Draw(DrawCommandX,Cut and not (In_frame or In_Target) and Inside,"col0");
+			DataChain->Draw(DrawCommandX,Cut ,"col0");
 			//			DataChain->Draw(DrawCommandY,Cut,"col0");
 			cout<<SnakeHistX[ix][iy]->GetEntries()<<endl;
 		}
@@ -319,7 +322,7 @@ void TPCCorrectionMapMaker::WriteSnakeHist(){
 			cout<<Title+"x"<<endl;
 			SnakeHistX[ix][iy]->Write();
 			cout<<Title+"y"<<endl;
-			SnakeHistY[ix][iy]->Write();
+//			SnakeHistY[ix][iy]->Write();
 			cout<<Title+"Done"<<endl;
 		}
 	}
@@ -351,28 +354,44 @@ TH2D* TPCCorrectionMapMaker::GetSnakeHist(int ix, int iy,bool isX){
 }
 
 void TPCCorrectionMapMaker::WriteParam(){
+	OutFile = new TFile("CorrectionMap.root","recreate");
+	TTree* tree = new TTree("tree","tree");
+	double x_,y_,z_,px_;
+	int nx_,ny_,nz_;
+	tree->Branch("nx",&nx_);
+	tree->Branch("ny",&ny_);
+	tree->Branch("nz",&nz_);
+	tree->Branch("x",&x_);
+	tree->Branch("y",&y_);
+	tree->Branch("z",&z_);
+	tree->Branch("px",&px_);
 	for(int ix=0;ix<nbin_x;++ix){
-		for(int iy=0;iy<nbin_y;++iy){
-			for(int iz=0;iz<nbin_z;++iz){
+		for(int iy=0;iy<nbin_y+1;++iy){
+			for(int iz=0;iz<snake_nbin_z;++iz){
 				//vector<double>par= {BinPosX(ix),BinPosY(iy),BinPosZ(iz),peakx[ix][iy][iz],peaky[ix][iy][iz],peakz[ix][iy][iz]};
-				double x_ = BinPosX(ix);	
-				double y_ = BinPosY(iy);	
-				double z_ = BinPosZ(iz);	
+				x_ = BinPosX(ix);	
+//				y_ = BinPosY(iy);	
+				y_ = -50 + 100*iy; 
+				z_ = BinPosZ(iz);	
 				bool correct = CorrectionRegion(x_,y_,z_);
+				correct = true;
 				vector<int>dum={};
 				if(correct){
 					cout<<Form("Position(%f,%f,%f) Correction:",x_,y_,z_)<<endl;
-					vector<double>par= {x_,y_,z_,peakx[ix][iy][iz],peaky[ix][iy][iz],peakz[ix][iy][iz]};
+					vector<double>par= {x_,y_,z_,peakx[ix][0][iz],peaky[ix][0][iz],peakz[ix][0][iz]};
 					WriteParameter(dum,par);
 				}
 				else {
 					cout<<Form("Position(%f,%f,%f) ZeroCorrection:",x_,y_,z_)<<endl;
-					vector<double>par= {x_,y_,z_,0,peaky[ix][iy][iz],peakz[ix][iy][iz]};
+					vector<double>par= {x_,y_,z_,0,peaky[ix][0][iz],peakz[ix][0][iz]};
 					WriteParameter(dum,par);
 				}//						cout<<peakz[ix][iy][iz]<<endl;
+				px_ = peakx[ix][0][iz];
+				tree->Fill();
 			}
 		}
 	}
+	OutFile->Write();
 }
 void TPCCorrectionMapMaker::ParamFilter(vector<double>&pars,vector<int>ent){
 
