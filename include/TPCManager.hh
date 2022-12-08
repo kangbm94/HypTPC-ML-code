@@ -3,69 +3,11 @@
 #include "TPCPadHelper.hh"
 #include "PhysicalConstants.hh"
 #include "TPCGlobalFunctions.hh"
-#include "Track.hh"
+//#include "Track.hh"
 #include "TPCCluster.hh"
+#include "ReconTools.hh"
 #ifndef TPCManager_h
 #define TPCManager_h
-TVector3 VertexPointHelix(const Double_t par1[5], const Double_t par2[5],
-                 Double_t& dist, Double_t& t1, Double_t& t2)
-{
-  //helix function 1
-  //x = [0] + [3]*cos(t);
-  //y = [1] + [3]*sin(t);
-  //z = [2] + [3]*[4]*t;
-
-  //helix function 2
-  //x = [5] + [8]*cos(t);
-  //y = [6] + [8]*sin(t);
-  //z = [7] + [8]*[9]*t;
-
-  TF2 fvert_helix("fvert_helix",
-                         "pow(([0]+[3]*cos(x))-([5]+[8]*cos(y)),2)+pow(([1]+[3]*sin(x))-([6]+[8]*sin(y)),2)+pow(([2]+[3]*[4]*x)-([7]+[8]*[9]*y),2)",
-                         -5.,5.,-5.,5.);
-
-  fvert_helix.SetParameter(0, par1[0]);
-  fvert_helix.SetParameter(1, par1[1]);
-  fvert_helix.SetParameter(2, par1[2]);
-  fvert_helix.SetParameter(3, par1[3]);
-  fvert_helix.SetParameter(4, par1[4]);
-  fvert_helix.SetParameter(5, par2[0]);
-  fvert_helix.SetParameter(6, par2[1]);
-  fvert_helix.SetParameter(7, par2[2]);
-  fvert_helix.SetParameter(8, par2[3]);
-  fvert_helix.SetParameter(9, par2[4]);
-
-  Double_t close_zin, close_zout;
-  fvert_helix.GetMinimumXY(close_zin, close_zout);
-  t1 = close_zin;
-  t2 = close_zout;
-  dist = TMath::Sqrt(fvert_helix.GetMinimum());
-
-  Double_t xin = par1[0]+par1[3]*cos(close_zin);
-  Double_t xout = par2[0]+par2[3]*cos(close_zout);
-  Double_t yin =  par1[1]+par1[3]*sin(close_zin);
-  Double_t yout = par2[1]+par2[3]*sin(close_zout);
-  Double_t zin = par1[2]+par1[3]*par1[4]*close_zin;
-  Double_t zout =  par2[2]+par2[3]*par2[4]*close_zout;
-
-  // Double_t vx = (par1[0]+par1[3]*cos(close_zin) + par2[0]+par2[3]*cos(close_zout))/2.;
-  // Double_t vy = (par1[1]+par1[3]*sin(close_zin) + par2[1]+par2[3]*sin(close_zout))/2.;
-  // Double_t vz = (par1[2]+par1[3]*par1[4]*close_zin + par2[2]+par2[3]*par2[4]*close_zout)/2.;
-  Double_t vx = (xin+xout)/2.;
-  Double_t vy = (yin+yout)/2.;
-  Double_t vz = (zin+zout)/2.;
-
-  Double_t dist2 = sqrt(pow(xin-xout,2)
-			+pow(yin-yout,2)
-			+pow(zin-zout,2));
-  // std::cout<<"dist ="<<dist<<", dist2="<<dist2<<std::endl;
-  // std::cout<<"close_zin="<<close_zin<<", close_zout="<<close_zout<<std::endl;
-  dist = dist2;
-  Double_t vertx = -1.*vx;
-  Double_t verty = vz;
-  Double_t vertz = vy + ZTarget;
-  return TVector3(vertx, verty, vertz);
-}
 class TPCManager:public FileManager{
 	protected:
 		TFile* hist_file;
@@ -95,15 +37,19 @@ class TPCManager:public FileManager{
 		vector<double>* clxTpc = new vector<double>;
 		vector<double>* clyTpc = new vector<double>;
 		vector<double>* clzTpc = new vector<double>;
-		vector<double>* helcxTpc = new vector<double>;
-		vector<double>* helcyTpc = new vector<double>;
-		vector<double>* helz0Tpc = new vector<double>;
-		vector<double>* helrTpc = new vector<double>;
-		vector<double>* heldzTpc = new vector<double>;
+vector<double>* chisqr = new vector<double>;
+vector<double>* helix_cx = new vector<double>;
+vector<double>* helix_cy = new vector<double>;
+vector<double>* helix_z0 = new vector<double>;
+vector<double>* helix_r = new vector<double>;
+vector<double>* helix_dz = new vector<double>;
 vector<double>* vtx = new vector<double>;
 vector<double>* vty = new vector<double>;
 vector<double>* vtz = new vector<double>;
-		vector<int>* clsize = new vector<int>;
+ vector<int>* isBeam = new vector<int>;
+vector<int>* clsize = new vector<int>;
+vector<int>* pid = new vector<int>;
+vector<int>* charge = new vector<int>;
 		int evnum,runnum;
 		int htofnhits;
 		int htofhitpat[34];
@@ -116,6 +62,8 @@ vector<double>* vtz = new vector<double>;
 		vector<double>* y0BcOut = new vector<double>;
 		vector<double>* u0BcOut = new vector<double>;
 		vector<double>* v0BcOut = new vector<double>;
+		bool ldflg,xiflg;
+		Recon Ld,Xi;
 	public:
 		TPCManager(){};
 
@@ -154,11 +102,11 @@ vector<double>* vtz = new vector<double>;
 				clyTpc->clear();
 				clzTpc->clear();
 				padTpc->clear();
-				helcxTpc->clear();
-				helcyTpc->clear();
-				helz0Tpc->clear();
-				helrTpc->clear();
-				heldzTpc->clear();
+				helix_cx->clear();
+				helix_cy->clear();
+				helix_z0->clear();
+				helix_r->clear();
+				helix_dz->clear();
 				evnum=-1;
 //			dlTpc->clear();
 //			deTpc->clear();
@@ -177,16 +125,16 @@ vector<double>* vtz = new vector<double>;
 			for(auto h : HelixTrack){
 	//			if(h) delete h;
 			}
-
+		
 			HelixTrackZY.clear();		
 			HelixTrackZY.resize(ntTpc);		
 			for(int ih = 0; ih< ntTpc;++ih){
 				
-				double cx = helcxTpc->at(ih);
-				double cy = helcyTpc->at(ih);
-				double z0 = helz0Tpc->at(ih);
-				double r = helrTpc->at(ih);
-				double dz = heldzTpc->at(ih);
+				double cx = helix_cx->at(ih);
+				double cy = helix_cy->at(ih);
+				double z0 = helix_z0->at(ih);
+				double r = helix_r->at(ih);
+				double dz = helix_dz->at(ih);
 				cout<<Form("Params = (%f,%f,%f,%f,%f)",cx,cy,r,z0,dz)<<endl;
 //				TString title = Form("Helix%d",ih);
 				HelixTrack[ih] = new TEllipse(cy+tpc::ZTarget,-cx,r,r);
@@ -212,10 +160,57 @@ vector<double>* vtz = new vector<double>;
 				}
 			}
 		}
+		void ReconEvent();
 		void DrawHelix(){
 			for(int ih = 0; ih< ntTpc;++ih){
 				HelixTrack[ih]->Draw("psame");
 			}
+		}
+		void DrawVertex(){
+			TVector3 LV,XV;
+			bool ldflg = Ld.Exist(),xiflg = Xi.Exist();
+			double z1=0,z2=0,x1=0,x2=0;
+			if(ldflg) {
+				LV = Ld.Vertex();
+				z1 = LV.Z();
+				x1 = LV.X();
+				auto Dir = Ld.Momentum();
+				Dir = Dir* (1./Dir.Mag());
+				z2 = LV.Z()-Dir.Z()*100;
+				x2 = LV.X()-Dir.X()*100;
+				cout<<Form("Lambda Vertex (%f,%f,%f) Mass: %f",LV.X(),LV.Y(),LV.Z(),Ld.Mass())<<endl;
+			}
+			if(xiflg){
+				XV = Xi.Vertex();
+				z2 = XV.Z();
+				x2 = XV.X();
+				cout<<Form("Xi Vertex (%f,%f,%f) Mass: %f",XV.X(),XV.Y(),XV.Z(),Xi.Mass())<<endl;
+			}
+			auto ld = new TLine(z1,x1,z2,x2);	
+			ld->SetLineWidth(3);ld->SetLineColor(kMagenta);
+			ld->Draw("psame");
+		}
+		void DrawVertexZY(){
+			TVector3 LV,XV;
+			bool ldflg = Ld.Exist(),xiflg = Xi.Exist();
+			double z1=0,z2=0,y1=0,y2=0;
+			if(ldflg) {
+				LV = Ld.Vertex();
+				z1 = LV.Z();
+				y1 = LV.Y();
+				auto Dir = Ld.Momentum();
+				Dir = Dir* (1./Dir.Mag());
+				z2 = LV.Z()-Dir.Z()*100;
+				y2 = LV.Y()-Dir.Y()*100;
+			}
+			if(xiflg){
+				XV = Xi.Vertex();
+				z2 = XV.Z();
+				y2 = XV.Y();
+			}
+			auto ld = new TLine(z1,y1,z2,y2);	
+			ld->SetLineWidth(3);ld->SetLineColor(kMagenta);
+			ld->Draw("psame");
 		}
 		void DrawHelixZY(){
 			for(int ih = 0; ih< ntTpc;++ih){
@@ -359,10 +354,11 @@ vector<double>* vtz = new vector<double>;
 		int GetBCnt(){
 			return ntBcOut;
 		}
+#if 0
 		Track GetTrack(int it=0){
 			return Track(x0BcOut->at(it),y0BcOut->at(it),u0BcOut->at(it),v0BcOut->at(it));
 		}
-
+#endif
 
 
 
@@ -373,7 +369,7 @@ vector<double>* vtz = new vector<double>;
 		void AssignG4EventD(int* trkid,int* pid, double * x,double* y,double* z,double* dedx);
 		int AssignRealEvent(double * x,double* y,double* z,double* dedx);
 		void FillEvent();
-		int NumberOfTracks(int min_points=6);
+//		int NumberOfTracks(int min_points=6);
 };
 
 
@@ -391,20 +387,20 @@ void TPCManager::InitializeTPC(){
 }
 void TPCManager::SearchVertex(){
 		for(int nt1 = 0; nt1<ntTpc;++nt1){
-			double hcx = helcxTpc->at(nt1);
-			double hcy = helcyTpc->at(nt1);
-			double hz0 = helz0Tpc->at(nt1);
-			double hr = helrTpc->at(nt1);
-			double hdz = heldzTpc->at(nt1);
+			double hcx = helix_cx->at(nt1);
+			double hcy = helix_cy->at(nt1);
+			double hz0 = helix_z0->at(nt1);
+			double hr = helix_r->at(nt1);
+			double hdz = helix_dz->at(nt1);
 			double par1[5] = {hcx,hcy,hz0,hr,hdz};
 			TVector3 vert(vtx->at(nt1),vty->at(nt1),vtz->at(nt1));
 			for(int nt2 = 0; nt2<ntTpc;++nt2){
 				if(nt2 <= nt1) continue;
-				double hcx2 = helcxTpc->at(nt2);
-				double hcy2 = helcyTpc->at(nt2);
-				double hz02 = helz0Tpc->at(nt2);
-				double hr2 = helrTpc->at(nt2);
-				double hdz2 = heldzTpc->at(nt2);
+				double hcx2 = helix_cx->at(nt2);
+				double hcy2 = helix_cy->at(nt2);
+				double hz02 = helix_z0->at(nt2);
+				double hr2 = helix_r->at(nt2);
+				double hdz2 = helix_dz->at(nt2);
 				double par2[5] = {hcx2,hcy2,hz02,hr2,hdz2};
 				double cd,t1,t2;
 				auto vert = VertexPointHelix(par1,par2,cd,t1,t2);

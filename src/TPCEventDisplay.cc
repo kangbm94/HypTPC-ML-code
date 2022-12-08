@@ -61,7 +61,7 @@ void TPCEventDisplayHelix(){
 	tree->SetBranchAddress("XiM2",&xim2);
 	int xient = tree->GetEntries();
 	for(int i=0;i<ent;++i){
-		if(i%10000==0) cout<<"Event "<<i<<endl;
+		if(i%1000==0) cout<<"Event "<<i<<endl;
 		gTPCManager.SetEvent(i);
 		int evnum = gTPCManager.GetEvnum();
 		int runnum = gTPCManager.GetRunnum();
@@ -81,6 +81,7 @@ void TPCEventDisplayHelix(){
 			gTPCManager.FillHist(itr);
 		}
 		gTPCManager.InitializeHelix();
+		gTPCManager.ReconEvent();
 		if(Single){
 			cout<<Form("Drawing Event (%d,%d)",runnum,evnum)<<endl;
 			c1->cd(1);
@@ -89,9 +90,11 @@ void TPCEventDisplayHelix(){
 		//	h->SetTitle(Form("MissMass = %f",xim2));
 		//	h->SetTitle(Form("MissMass = %f",xim2));
 			gTPCManager.DrawHelix();
+			gTPCManager.DrawVertex();
 			c1->cd(2);
 			h2->Draw("col");
 			gTPCManager.DrawHelixZY();
+			gTPCManager.DrawVertexZY();
 			c1->Modified();
 			c1->Update();
 			gSystem->ProcessEvents();

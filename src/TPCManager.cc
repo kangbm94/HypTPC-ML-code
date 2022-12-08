@@ -1,4 +1,5 @@
 #include "../include/TPCManager.hh"
+#include "ReconTools.cc"
 #ifndef TPCManager_C
 #define TPCManager_C
 const int max_ntrk = 16;
@@ -9,8 +10,7 @@ void TPCManager::LoadChain(TString ChainName ){
 	DataChain->SetBranchAddress("evnum",&evnum);
 	DataChain->SetBranchAddress("nhTpc",&nhittpc);
 	DataChain->SetBranchAddress("padTpc",&padTpc);
-	DataChain->SetBranchAddress("dlTpc",&dlTpc);
-//	DataChain->SetBranchAddress("cdeTpc",&deTpc);
+	DataChain->SetBranchAddress("dlTpc",&dlTpc); //	DataChain->SetBranchAddress("cdeTpc",&deTpc);
 };
 void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	cluster = true;
@@ -25,11 +25,15 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("cluster_size",&clsize);
 	DataChain->SetBranchAddress("padTpc",&padTpc);
 	DataChain->SetBranchAddress("ntTpc",&ntTpc);
-	DataChain->SetBranchAddress("helix_cx",&helcxTpc);	
-	DataChain->SetBranchAddress("helix_cy",&helcyTpc);	
-	DataChain->SetBranchAddress("helix_z0",&helz0Tpc);	
-	DataChain->SetBranchAddress("helix_r",&helrTpc);	
-	DataChain->SetBranchAddress("helix_dz",&heldzTpc);	
+	DataChain->SetBranchAddress("helix_cx",&helix_cx);	
+	DataChain->SetBranchAddress("helix_cy",&helix_cy);	
+	DataChain->SetBranchAddress("helix_z0",&helix_z0);	
+	DataChain->SetBranchAddress("helix_r",&helix_r);	
+	DataChain->SetBranchAddress("helix_dz",&helix_dz);	
+	DataChain->SetBranchAddress("chisqr",&chisqr);	
+	DataChain->SetBranchAddress("isBeam",&isBeam);
+	DataChain->SetBranchAddress("pid",&pid);
+	DataChain->SetBranchAddress("charge",&charge);
 	DataChain->SetBranchAddress("vtx",&vtx);
 	DataChain->SetBranchAddress("vty",&vty);
 	DataChain->SetBranchAddress("vtz",&vtz);
@@ -130,7 +134,7 @@ void TPCManager::LoadTPC3D(){
 		double x=pos.x(),y=pos.y(),z=pos.z();
 		tpcHit3d->SetPoint(i,z,x,y);
 	}
-//  TView3D *view = (TView3D*) TView::CreateView(1);
+	//  TView3D *view = (TView3D*) TView::CreateView(1);
 	tpcHit3d->Draw("SAME");
 	TPCCanv->Modified();
 	TPCCanv->Update();
@@ -183,6 +187,7 @@ int TPCManager::WhichEvent(){
 	//	cout<<ThisEvent<<endl;
 	return ThisEvent;
 }
+#if 0 
 int TPCManager::NumberOfTracks(int min_points=6){
 	const int max_ntrk=20;
 	int counter[max_ntrk]={0};
@@ -196,6 +201,7 @@ int TPCManager::NumberOfTracks(int min_points=6){
 	}
 	return TrackCount;
 }
+#endif
 void TPCManager::AssignG4Event( short* x,short* y,short* z,double* dedx){
 	for(int j=0;j<max_nh;++j){
 		x[j]=0;y[j]=0;z[j]=0;
@@ -256,9 +262,9 @@ void TPCManager::AssignHits(){
 }
 
 bool TPCManager::MakeUpClusters(double Vth=3){
-	
+
 	int nh = m_Hits.size();
-  if(nh==0) return false;
+	if(nh==0) return false;
 	vector<int> joined(nh,0);
 	int clnum = 0;
 	for(int i=0;i<nh;++i){
@@ -273,27 +279,84 @@ bool TPCManager::MakeUpClusters(double Vth=3){
 		for(int j=0;j<nh;++j){
 			auto thit = m_Hits[j];
 			if(i==j or joined[j] or layer != thit.GetLayer()) continue;
-      int rowID = (int)thit.GetRow();
-      for( auto c_hit: Cand){
-        int c_rowID = (int)c_hit.GetRow();
-        if(tpc::IsClusterable(layer, rowID, c_rowID,2)){
-          thit.SetCluster(clnum);
+			int rowID = (int)thit.GetRow();
+			for( auto c_hit: Cand){
+				int c_rowID = (int)c_hit.GetRow();
+				if(tpc::IsClusterable(layer, rowID, c_rowID,2)){
+					thit.SetCluster(clnum);
 					Cand.push_back(thit);
-          joined[j]++;
-          break;
-        }
-      }
+					joined[j]++;
+					break;
+				}
+			}
 		}
-//		for(auto cls : Cand) cls.Show();
+		//		for(auto cls : Cand) cls.Show();
 		TPCCluster cl(Cand);
 		m_Clusters.push_back(cl);
 		clnum++;
 	}
-//	cout<<m_Clusters.size()<<endl;
+	//	cout<<m_Clusters.size()<<endl;
 #if 0
 	for(auto cl : m_Clusters)	cl.Show();
 #endif
 	return true;
 }
+void
+TPCManager::ReconEvent(){
+	vector<Vertex> verts;
+	vector<Track> parts;
+	bool ldflg = false,xiflg=false;
+	Ld.Clear();Xi.Clear();
+	double chi_cut = 50;
+	for(int nt1 = 0; nt1<ntTpc;++nt1){
+		if(chisqr->at(nt1)>chi_cut) continue; 
+		if(isBeam->at(nt1)) continue; 
+		int nh = helix_cx->size();
+		double hcx = helix_cx->at(nt1);
+		double hcy = helix_cy->at(nt1);
+		double hz0 = helix_z0->at(nt1);
+		double hr = helix_r->at(nt1);
+		double hdz = helix_dz->at(nt1);
+		double par1[5] = {hcx,hcy,hz0,hr,hdz};
+		int id1 = pid->at(nt1);
+		double q1 = charge->at(nt1);
+		parts.push_back(Track(id1,q1,par1,nt1));
+	}
+	int np = parts.size();
+	if(np<1) return;
+	for(int nt1=0;nt1<np;++nt1){
+		Vertex f(parts[nt1]);
+		for(int nt2=nt1+1;nt2<np;++nt2){
+			f.AddTrack(parts[nt2]);	
+		}
+		//if(f.NTrack()>1) verts.push_back(f);
+		verts.push_back(f);
+	}
+	vector<Recon>LdCand;
+	int nvt = verts.size();
+	for(auto vt: verts){
+		vt.SearchLdCombination();
+		auto Ldc = vt.GetLd();
+		LdCand.push_back(Ldc);
+	}
+	int nld= LdCand.size();
+	double comp = 9999;
+
+	for(auto m:LdCand){
+		if( abs(mL-m.Mass())<comp) {comp=abs(mL-m.Mass());Ld=m;}
+	}
+	comp = 9999;
+	VertexLH V(Ld);
+
+	for(auto p : parts){
+		V.AddTrack(p);
+	}
+	ldflg=Ld.Exist();
+	if(ldflg)V.SearchXiCombination();	
+	auto Xi = V.GetXi();
+	xiflg=Xi.Exist();
+}
+
+
 
 #endif
