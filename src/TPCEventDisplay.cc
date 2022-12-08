@@ -77,12 +77,13 @@ void TPCEventDisplayHelix(){
 		int nh=0;
 		nh=gTPCManager.GetNhits(1);
 		if(!nh) continue;
-		for(int itr=0;itr<nh;++itr){
-			gTPCManager.FillHist(itr);
-		}
 		gTPCManager.InitializeHelix();
 		gTPCManager.ReconEvent();
+		if(!gTPCManager.XiEvent()) continue;
 		if(Single){
+			for(int itr=0;itr<nh;++itr){
+				gTPCManager.FillHist(itr);
+			}
 			cout<<Form("Drawing Event (%d,%d)",runnum,evnum)<<endl;
 			c1->cd(1);
 			h->Draw();
@@ -99,6 +100,7 @@ void TPCEventDisplayHelix(){
 			c1->Update();
 			gSystem->ProcessEvents();
 			cin.ignore();
+			cout<<"Searching..."<<endl;
 			gTPCManager.ClearHistogram();
 		}
 	}

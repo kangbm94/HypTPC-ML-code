@@ -105,7 +105,7 @@ TVector3 VertexPointHelix(const Double_t par1[5], const Double_t par2[5],
 	return   TargetToGlobal(TVector3(vx,vy,vz));
 
 }
-TVector3 VertexPointHelixLinear(const Double_t par1[5], const Double_t par2[5],
+TVector3 VertexPointHelixLinear(const Double_t par1[5], const Double_t par2[4],
 		Double_t& dist, Double_t& t1, Double_t& t2)
 {
 	//helix function 1
@@ -115,11 +115,11 @@ TVector3 VertexPointHelixLinear(const Double_t par1[5], const Double_t par2[5],
 
 	//helix function 2
 	//x = [5] + [7]*t;
-	//y = [6] + [8]*t;
-	//z =  t;
+	//y = t;
+	//z = [6]+[8]*t;
 
 	TF2 fvert_helix_lin("fvert_helix_lin",
-			"pow(([0]+[3]*cos(x))-([5]+[7]*y),2)+pow(([1]+[3]*sin(x))-([6]+[8]*y),2)+pow(([2]+[3]*[4]*x)-y,2)",
+			"pow(([0]+[3]*cos(x))-([5]+[7]*y),2)+pow(([1]+[3]*sin(x))-y,2)+pow(([2]+[3]*[4]*x)-([6]+[8]*y),2)",
 			-5.,5.,-250.,250.);
 	fvert_helix_lin.SetParameter(0, par1[0]);
 	fvert_helix_lin.SetParameter(1, par1[1]);
@@ -140,24 +140,27 @@ TVector3 VertexPointHelixLinear(const Double_t par1[5], const Double_t par2[5],
 	Double_t xin = par1[0]+par1[3]*cos(close_zin);
 	Double_t xout = par2[0]+par2[2]*close_zout;
 	Double_t yin =  par1[1]+par1[3]*sin(close_zin);
-	Double_t yout = par2[1]+par2[3]*close_zout;
+	Double_t yout = close_zout;
 	Double_t zin = par1[2]+par1[3]*par1[4]*close_zin;
-	Double_t zout = close_zout;
+	Double_t zout = par2[1]+par2[3]*close_zout;
 
 	// Double_t vx = (par1[0]+par1[3]*cos(close_zin) + par2[0]+par2[3]*cos(close_zout))/2.;
 	// Double_t vy = (par1[1]+par1[3]*sin(close_zin) + par2[1]+par2[3]*sin(close_zout))/2.;
 	// Double_t vz = (par1[2]+par1[3]*par1[4]*close_zin + par2[2]+par2[3]*par2[4]*close_zout)/2.;
+
 	Double_t vx = (xin+xout)/2.;
 	Double_t vy = (yin+yout)/2.;
 	Double_t vz = (zin+zout)/2.;
 
+/*
+	double vx = xin;
+	double vy = yin;
+	double vz = zin;
+	*/
 	Double_t dist2 = sqrt(pow(xin-xout,2)
 			+pow(yin-yout,2)
 			+pow(zin-zout,2));
 	dist = dist2;
-	Double_t vertx = -1.*vx;
-	Double_t verty = vz;
-	Double_t vertz = vy + ZTarget;
 	return TargetToGlobal(TVector3(vx,vy,vz));
 //	return TVector3(vertx, verty, vertz);
 }
@@ -283,10 +286,10 @@ class Recon{
 			auto V_t = GlobalToTarget(Vert);
 			auto mom = LV.Vect();
 			auto dir_t = GlobalToTargetMom(mom);
-			dir_t = dir_t* (1/dir_t.Z());
+			dir_t = dir_t* (1/dir_t.Y());
 			auto u = dir_t.X();
-			auto v = dir_t.Y();
-			par[0]=V_t.X()-V_t.Z()*u,par[1]=V_t.Y()-V_t.Z()*v,par[2]= u,par[3]=v;
+			auto v = dir_t.Z();
+			par[0]=V_t.X()-V_t.Z()*u,par[1]=V_t.Z()-V_t.Y()*v,par[2]= u,par[3]=v;
 		}
 		Recon(){}
 		void Clear(){

@@ -58,6 +58,7 @@ vector<int>* charge = new vector<int>;
 		int gpb = 0;
 		bool cluster = false;
 		int ntBcOut=0;
+		int ntk=0;
 		vector<double>* x0BcOut = new vector<double>;
 		vector<double>* y0BcOut = new vector<double>;
 		vector<double>* u0BcOut = new vector<double>;
@@ -135,8 +136,9 @@ vector<int>* charge = new vector<int>;
 				double z0 = helix_z0->at(ih);
 				double r = helix_r->at(ih);
 				double dz = helix_dz->at(ih);
-				cout<<Form("Params = (%f,%f,%f,%f,%f)",cx,cy,r,z0,dz)<<endl;
+	//			cout<<Form("Params = (%f,%f,%f,%f,%f)",cx,cy,r,z0,dz)<<endl;
 //				TString title = Form("Helix%d",ih);
+//				if(r>4000) continue;
 				HelixTrack[ih] = new TEllipse(cy+tpc::ZTarget,-cx,r,r);
 				HelixTrack[ih]-> SetLineColor(kRed);
 				HelixTrack[ih]-> SetFillStyle(0);
@@ -169,7 +171,8 @@ vector<int>* charge = new vector<int>;
 		void DrawVertex(){
 			TVector3 LV,XV;
 			bool ldflg = Ld.Exist(),xiflg = Xi.Exist();
-			double z1=0,z2=0,x1=0,x2=0;
+			double z1=0,z2=0,x1=0,x2=0,z3=0,x3=0;
+			TEllipse* ldvert;TEllipse* xivert;
 			if(ldflg) {
 				LV = Ld.Vertex();
 				z1 = LV.Z();
@@ -182,18 +185,31 @@ vector<int>* charge = new vector<int>;
 			}
 			if(xiflg){
 				XV = Xi.Vertex();
-				z2 = XV.Z();
-				x2 = XV.X();
+				z3 = XV.Z();
+				x3 = XV.X();
 				cout<<Form("Xi Vertex (%f,%f,%f) Mass: %f",XV.X(),XV.Y(),XV.Z(),Xi.Mass())<<endl;
+			cout<<"PropDist : "<<(LV-XV).Mag()<<endl;
 			}
 			auto ld = new TLine(z1,x1,z2,x2);	
 			ld->SetLineWidth(3);ld->SetLineColor(kMagenta);
 			ld->Draw("psame");
+			ldvert = new TEllipse(z1,x1,3,0);
+			ldvert->SetLineColor(kMagenta);
+			ldvert->Draw("psame");
+			if(xiflg){
+				auto ld2 = new TLine(z1,x1,z3,x3);	
+			ld2->SetLineWidth(3);ld2->SetLineColor(kCyan);
+				ld2->Draw("psame");
+				xivert = new TEllipse(z3,x3,3,0);
+				xivert->SetLineColor(kCyan);
+				xivert->Draw("psame");
+			}
 		}
 		void DrawVertexZY(){
 			TVector3 LV,XV;
+			TEllipse* ldvert;TEllipse* xivert;
 			bool ldflg = Ld.Exist(),xiflg = Xi.Exist();
-			double z1=0,z2=0,y1=0,y2=0;
+			double z1=0,z2=0,y1=0,y2=0,z3=0,y3=0;
 			if(ldflg) {
 				LV = Ld.Vertex();
 				z1 = LV.Z();
@@ -205,12 +221,23 @@ vector<int>* charge = new vector<int>;
 			}
 			if(xiflg){
 				XV = Xi.Vertex();
-				z2 = XV.Z();
-				y2 = XV.Y();
+				z3 = XV.Z();
+				y3 = XV.Y();
 			}
 			auto ld = new TLine(z1,y1,z2,y2);	
 			ld->SetLineWidth(3);ld->SetLineColor(kMagenta);
 			ld->Draw("psame");
+			ldvert = new TEllipse(z1,y1,3,0);
+			ldvert->SetLineColor(kMagenta);
+			ldvert->Draw("psame");
+			if(xiflg){
+			auto ld2 = new TLine(z1,y1,z3,y3);	
+			ld2->SetLineWidth(3);ld2->SetLineColor(kCyan);
+			ld2->Draw("psame");
+			xivert = new TEllipse(z3,y3,3,0);
+			xivert->SetLineColor(kCyan);
+			xivert->Draw("psame");
+			}
 		}
 		void DrawHelixZY(){
 			for(int ih = 0; ih< ntTpc;++ih){
@@ -219,6 +246,8 @@ vector<int>* charge = new vector<int>;
 				}
 			}
 		}
+		bool LambdaEvent(){return Ld.Exist();}
+		bool XiEvent(){return Xi.Exist();}
 		void SearchVertex();
 		//Histogram Methods//
 		void InitializeHistograms();

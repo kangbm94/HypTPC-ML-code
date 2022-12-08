@@ -353,7 +353,7 @@ TPCManager::ReconEvent(){
 	}
 	ldflg=Ld.Exist();
 	if(ldflg)V.SearchXiCombination();	
-	auto Xi = V.GetXi();
+	Xi = V.GetXi();
 	xiflg=Xi.Exist();
 }
 
