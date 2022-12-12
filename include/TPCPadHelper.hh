@@ -16,9 +16,9 @@
 
 #include "DetectorID.hh"
 
+	const Double_t ZTarget = -143.; // Target from center
 namespace tpc
 {
-	const Double_t ZTarget = -143.; // Target from center
 
 	enum EPadParameter
 	{

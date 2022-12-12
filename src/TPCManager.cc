@@ -110,6 +110,7 @@ void TPCManager::FillHist(int itr){
 	double z = hitv.Z();
 	PadHist->Fill(z,x);
 	ZYHist->Fill(z,y);
+	YHist->Fill(y);
 };
 void TPCManager::SetPadContent(int padID,double cont){
 	PadHist->SetBinContent(padID,cont);

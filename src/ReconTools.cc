@@ -43,7 +43,8 @@ void Vertex::SearchLdCombination(){
 		if(p.IsP())PCand.push_back(p);
 		if(p.IsPi())PiCand.push_back(p);
 	}
-	double mom_cut = 1;
+	double mom_cut = 1.3;//1.2 for XiStar, 0.9 for Xi
+	double mom_cutMin = 0.2;//0.3 for XiStar, 0.2 for Xi
 	for(auto p:PCand){
 		for(auto pi:PiCand){
 			double cd_,t1_,t2_;
@@ -55,11 +56,11 @@ void Vertex::SearchLdCombination(){
 			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv1 = {pLV,piLV};
 			auto ldlv1 = pLV+piLV;
-			if(ldlv1.Vect().Mag()<mom_cut)LdCand.push_back(Recon(lv1,ppivert,p.GetID(),pi.GetID()));
+			if(ldlv1.Vect().Mag()<mom_cut and ldlv1.Vect().Mag()>mom_cutMin)LdCand.push_back(Recon(lv1,ppivert,p.GetID(),pi.GetID()));
 			auto piLVInv = TLorentzVector(-p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv2 = {pLV,piLVInv};
 			auto ldlv2 = pLV+piLVInv;
-			if(ldlv2.Vect().Mag()<mom_cut)LdCand.push_back(Recon(lv2,ppivert,p.GetID(),pi.GetID()));
+			if(ldlv2.Vect().Mag()<mom_cut and ldlv2.Vect().Mag()>mom_cutMin)LdCand.push_back(Recon(lv2,ppivert,p.GetID(),pi.GetID()));
 		}
 	}
 }
@@ -112,7 +113,8 @@ void VertexLH::SearchXiCombination(){
 	for(auto p:Tracks){
 		if(p.IsPi())PiCand.push_back(p);
 	}
-	double mom_cut = 0.9;
+	double mom_cut = 0.9;//Xi->0.9 XiStar->1.2
+	double mom_cutMin = 0.4;//Xi-> 0.4 XiStar->0.8
 	for(auto ld:Recons) LdCand.push_back(ld);
 	for(auto ld:LdCand){
 		for(auto pi:PiCand){
@@ -121,16 +123,28 @@ void VertexLH::SearchXiCombination(){
 			auto ldpivert = VertexPointHelixLinear(pi.GetPar(),ld.GetPar(),cd_,t1_,t2_); 
 			auto p2 = CalcHelixMom(pi.GetPar(),ldpivert.y());
 			std::bitset<8>ldb(ld.GetID());
-			cout<<"cd = "<<cd_<<" PiID,LdId = ("<<pi.GetID()<<" , "<<ldb<<" )"<<endl;
+//			cout<<"cd = "<<cd_<<" PiID,LdId = ("<<pi.GetID()<<" , "<<ldb<<" )"<<endl;
 			auto ldLV = ld.GetLV();
 			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv1 = {ldLV,piLV};
 			auto xilv1 = ldLV+piLV;
-			if(xilv1.Vect().Mag()<mom_cut)XiCand.push_back(Recon(lv1,ldpivert,ld.GetID(),pi.GetID()));
+			if(xilv1.Vect().Mag()<mom_cut and xilv1.Vect().Mag()>mom_cutMin)XiCand.push_back(Recon(lv1,ldpivert,ld.GetID(),pi.GetID()));
 			auto piLVInv = TLorentzVector(-p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv2 = {ldLV,piLVInv};
 			auto xilv2 = ldLV+piLVInv;
-			if(xilv2.Vect().Mag()<mom_cut)XiCand.push_back(Recon(lv2,ldpivert,ld.GetID(),pi.GetID()));
+			if(xilv2.Vect().Mag()<mom_cut and xilv2.Vect().Mag()>mom_cutMin)XiCand.push_back(Recon(lv2,ldpivert,ld.GetID(),pi.GetID()));
+			double ldpx = ldLV.Vect().X();
+			double ldpy = ldLV.Vect().Y();
+			double ldpz = ldLV.Vect().Z();
+			auto ldLVCor = TLorentzVector();
+			ldLVCor.SetXYZM(ldpx,ldpy,ldpz,mL);
+			auto xiCorlv1 = ldLVCor+piLV;
+//			std::cout<<"Ld: "<<ldLVCor.Mag()<<endl;
+			vector<TLorentzVector> lv1Cor = {ldLVCor,piLV};
+			if(xiCorlv1.Vect().Mag()<mom_cut and xiCorlv1.Vect().Mag()>mom_cutMin)XiCorCand.push_back(Recon(lv1Cor,ldpivert,ld.GetID(),pi.GetID()));
+			auto xiCorlv2 = ldLVCor+piLVInv;
+			vector<TLorentzVector> lv2Cor = {ldLVCor,piLVInv};
+			if(xiCorlv2.Vect().Mag()<mom_cut and xiCorlv2.Vect().Mag()>mom_cutMin)XiCorCand.push_back(Recon(lv2Cor,ldpivert,ld.GetID(),pi.GetID()));
 		}
 	}
 }

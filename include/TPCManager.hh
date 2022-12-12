@@ -15,6 +15,7 @@ class TPCManager:public FileManager{
 		TH2D* ZYHist=nullptr;
 		TH2I* FlatHist=nullptr;
 		TH2D* PosHist=nullptr;
+		TH1D* YHist=nullptr;
 		TGeoVolume *TPC3D;
 		TPolyMarker3D *tpcHit3d;
 		TCanvas* TPCCanv;
@@ -37,19 +38,19 @@ class TPCManager:public FileManager{
 		vector<double>* clxTpc = new vector<double>;
 		vector<double>* clyTpc = new vector<double>;
 		vector<double>* clzTpc = new vector<double>;
-vector<double>* chisqr = new vector<double>;
-vector<double>* helix_cx = new vector<double>;
-vector<double>* helix_cy = new vector<double>;
-vector<double>* helix_z0 = new vector<double>;
-vector<double>* helix_r = new vector<double>;
-vector<double>* helix_dz = new vector<double>;
-vector<double>* vtx = new vector<double>;
-vector<double>* vty = new vector<double>;
-vector<double>* vtz = new vector<double>;
- vector<int>* isBeam = new vector<int>;
-vector<int>* clsize = new vector<int>;
-vector<int>* pid = new vector<int>;
-vector<int>* charge = new vector<int>;
+		vector<double>* chisqr = new vector<double>;
+		vector<double>* helix_cx = new vector<double>;
+		vector<double>* helix_cy = new vector<double>;
+		vector<double>* helix_z0 = new vector<double>;
+		vector<double>* helix_r = new vector<double>;
+		vector<double>* helix_dz = new vector<double>;
+		vector<double>* vtx = new vector<double>;
+		vector<double>* vty = new vector<double>;
+		vector<double>* vtz = new vector<double>;
+		vector<int>* isBeam = new vector<int>;
+		vector<int>* clsize = new vector<int>;
+		vector<int>* pid = new vector<int>;
+		vector<int>* charge = new vector<int>;
 		int evnum,runnum;
 		int htofnhits;
 		int htofhitpat[34];
@@ -65,6 +66,7 @@ vector<int>* charge = new vector<int>;
 		vector<double>* v0BcOut = new vector<double>;
 		bool ldflg,xiflg;
 		Recon Ld,Xi;
+//		vector<>;
 	public:
 		TPCManager(){};
 
@@ -73,9 +75,9 @@ vector<int>* charge = new vector<int>;
 			cout<<FileName<<" Opened"<<endl;
 			LoadChain("tpc");
 		}
-		virtual void LoadClusterFile(TString FileName){ DataFile = new TFile(FileName,"READ");
+		virtual void LoadClusterFile(TString FileName,TString chainname = "tpc"){ DataFile = new TFile(FileName,"READ");
 			cout<<FileName<<" Opened"<<endl;
-			LoadClusterChain("tpc");
+			LoadClusterChain(chainname);
 		}
 		virtual void LoadG4File(TString FileName){
 			DataFile = new TFile(FileName,"READ");
@@ -95,51 +97,51 @@ vector<int>* charge = new vector<int>;
 		int GetEvnum(){return evnum;}
 		int GetRunnum(){return runnum;}
 		void SetEvent(int evt){
-				x0BcOut->clear();
-				y0BcOut->clear();
-				u0BcOut->clear();
-				v0BcOut->clear();
-				clxTpc->clear();
-				clyTpc->clear();
-				clzTpc->clear();
-				padTpc->clear();
-				helix_cx->clear();
-				helix_cy->clear();
-				helix_z0->clear();
-				helix_r->clear();
-				helix_dz->clear();
-				evnum=-1;
-//			dlTpc->clear();
-//			deTpc->clear();
+			x0BcOut->clear();
+			y0BcOut->clear();
+			u0BcOut->clear();
+			v0BcOut->clear();
+			clxTpc->clear();
+			clyTpc->clear();
+			clzTpc->clear();
+			padTpc->clear();
+			helix_cx->clear();
+			helix_cy->clear();
+			helix_z0->clear();
+			helix_r->clear();
+			helix_dz->clear();
+			evnum=-1;
+			//			dlTpc->clear();
+			//			deTpc->clear();
 			DataChain->GetEntry(evt);
 			for(int i=0;i<20;++i){
-//				if(HelixTrack[i]) delete HelixTrack[i];
+				//				if(HelixTrack[i]) delete HelixTrack[i];
 			}
 		};
 		void InitializeHelix(){
 			cout<<"InitializeHelix: "<<endl;
 			for(auto h : HelixTrackZY){
 				for(auto ht:h){
-//					if(ht) delete ht;
+					//					if(ht) delete ht;
 				}
 			}
 			for(auto h : HelixTrack){
-	//			if(h) delete h;
+				//			if(h) delete h;
 			}
-		
+
 			HelixTrackZY.clear();		
 			HelixTrackZY.resize(ntTpc);		
 			for(int ih = 0; ih< ntTpc;++ih){
-				
+
 				double cx = helix_cx->at(ih);
 				double cy = helix_cy->at(ih);
 				double z0 = helix_z0->at(ih);
 				double r = helix_r->at(ih);
 				double dz = helix_dz->at(ih);
-	//			cout<<Form("Params = (%f,%f,%f,%f,%f)",cx,cy,r,z0,dz)<<endl;
-//				TString title = Form("Helix%d",ih);
-//				if(r>4000) continue;
-				HelixTrack[ih] = new TEllipse(cy+tpc::ZTarget,-cx,r,r);
+				//			cout<<Form("Params = (%f,%f,%f,%f,%f)",cx,cy,r,z0,dz)<<endl;
+				//				TString title = Form("Helix%d",ih);
+				//				if(r>4000) continue;
+				HelixTrack[ih] = new TEllipse(cy+ZTarget,-cx,r,r);
 				HelixTrack[ih]-> SetLineColor(kRed);
 				HelixTrack[ih]-> SetFillStyle(0);
 				HelixTrack[ih]-> SetLineColor(ih+1);
@@ -147,15 +149,15 @@ vector<int>* charge = new vector<int>;
 				for(int ip=0;ip<300;ip++){
 					double t1 = 2*3.14*(ip/150.-0.5),t2=2*3.14*((ip+1)/150.-0.5);
 					double y1 = r*dz*t1+z0,y2 = r*dz*t2+z0;
-					double z1 = r*sin(t1)+cy+tpc::ZTarget,z2 = r*sin(t2)+cy+tpc::ZTarget;
+					double z1 = r*sin(t1)+cy+ZTarget,z2 = r*sin(t2)+cy+ZTarget;
 					/*
-					double y1 = -300+ip*600./100;
-					double y2 = -300+(ip+1)*600./1000;
-					double t1 = (y1-z0)/r*dz;
-					double t2 = (y2-z0)/r*dz;
-					double z1 = r*cos(t1)+cy+tpc::ZTarget;
-					double z2 = r*cos(t2)+cy+tpc::ZTarget;
-					*/
+						 double y1 = -300+ip*600./100;
+						 double y2 = -300+(ip+1)*600./1000;
+						 double t1 = (y1-z0)/r*dz;
+						 double t2 = (y2-z0)/r*dz;
+						 double z1 = r*cos(t1)+cy+tpc::ZTarget;
+						 double z2 = r*cos(t2)+cy+tpc::ZTarget;
+						 */
 					HelixTrackZY[ih].push_back(new TLine(z1,y1,z2,y2));
 					HelixTrackZY[ih].at(ip)->SetLineColor(ih+1);
 					HelixTrackZY[ih].at(ip)->SetLineWidth(2);
@@ -188,7 +190,7 @@ vector<int>* charge = new vector<int>;
 				z3 = XV.Z();
 				x3 = XV.X();
 				cout<<Form("Xi Vertex (%f,%f,%f) Mass: %f",XV.X(),XV.Y(),XV.Z(),Xi.Mass())<<endl;
-			cout<<"PropDist : "<<(LV-XV).Mag()<<endl;
+				cout<<"PropDist : "<<(LV-XV).Mag()<<endl;
 			}
 			auto ld = new TLine(z1,x1,z2,x2);	
 			ld->SetLineWidth(3);ld->SetLineColor(kMagenta);
@@ -198,7 +200,7 @@ vector<int>* charge = new vector<int>;
 			ldvert->Draw("psame");
 			if(xiflg){
 				auto ld2 = new TLine(z1,x1,z3,x3);	
-			ld2->SetLineWidth(3);ld2->SetLineColor(kCyan);
+				ld2->SetLineWidth(3);ld2->SetLineColor(kCyan);
 				ld2->Draw("psame");
 				xivert = new TEllipse(z3,x3,3,0);
 				xivert->SetLineColor(kCyan);
@@ -231,12 +233,12 @@ vector<int>* charge = new vector<int>;
 			ldvert->SetLineColor(kMagenta);
 			ldvert->Draw("psame");
 			if(xiflg){
-			auto ld2 = new TLine(z1,y1,z3,y3);	
-			ld2->SetLineWidth(3);ld2->SetLineColor(kCyan);
-			ld2->Draw("psame");
-			xivert = new TEllipse(z3,y3,3,0);
-			xivert->SetLineColor(kCyan);
-			xivert->Draw("psame");
+				auto ld2 = new TLine(z1,y1,z3,y3);	
+				ld2->SetLineWidth(3);ld2->SetLineColor(kCyan);
+				ld2->Draw("psame");
+				xivert = new TEllipse(z3,y3,3,0);
+				xivert->SetLineColor(kCyan);
+				xivert->Draw("psame");
 			}
 		}
 		void DrawHelixZY(){
@@ -275,15 +277,19 @@ vector<int>* charge = new vector<int>;
 		void ClearHistogram(){
 			PadHist->Reset("");
 			ZYHist->Reset("");
+			YHist->Reset("");
 		}
 		void ClearTPC(){
-//			TPC3D->Reset("");
+			//			TPC3D->Reset("");
 		}
 		TH2Poly* GetPadHistogram(){
 			return PadHist;
 		}
 		TH2D* GetZYHistogram(){
 			return ZYHist;
+		}
+		TH1D* GetYHistogram(){
+			return YHist;
 		}
 
 		void AssignHits();
@@ -303,12 +309,12 @@ vector<int>* charge = new vector<int>;
 
 
 		void DrawTPC(){
-	//		auto* dir = gDirectory()->cd();
+			//		auto* dir = gDirectory()->cd();
 			TPCCanv = new TCanvas("c1","c1",1200,600);
 			TPCCanv->cd();
 			TView3D *view = (TView3D*) TView::CreateView(1);
 			TPC3D->Draw("");
-//			dir->cd();
+			//			dir->cd();
 		}
 		int GetNhits(int clusters){
 			if(!clusters)	return Min(padTpc->size(),max_nh);//Min(nhittpc,max_nh);
@@ -378,6 +384,17 @@ vector<int>* charge = new vector<int>;
 				hp[i]=htofhitpat[i];
 			}
 		}
+		void FillgHitPos(double peak, double width){
+			int nh = GetNhits(1);
+			for(int i=0;i<nh;++i){
+				TVector3 hitv = GetPosition(i);
+				double x = hitv.X();
+				double y = hitv.Y();
+				double z = hitv.Z();
+				TVector3 res(1,1,1);
+				if(abs(y-peak)<width) {gHitPos.push_back(hitv);gRes.push_back(res);}
+			}
+		}
 		TVector3 GetRTheta(int padID);
 		TVector2 GetLayerRow(int padID);
 		int GetBCnt(){
@@ -398,7 +415,7 @@ vector<int>* charge = new vector<int>;
 		void AssignG4EventD(int* trkid,int* pid, double * x,double* y,double* z,double* dedx);
 		int AssignRealEvent(double * x,double* y,double* z,double* dedx);
 		void FillEvent();
-//		int NumberOfTracks(int min_points=6);
+		//		int NumberOfTracks(int min_points=6);
 };
 
 
@@ -410,32 +427,33 @@ void TPCManager::InitializeHistograms(){
 	//	FlatHist = new TH2I("PadRTheta","PadRTheta",32,0,32,240,0,240);
 	//	PosHist = new TH2D("PosHisto","PosHisto",128,-250,250,128,-250,250);
 	ZYHist = new TH2D("ZYHist","ZYHist",40,-250,250,50,-300,300);
+	YHist = new TH1D("YHist","YHist",140,-350,350);
 }
 void TPCManager::InitializeTPC(){
 	TPC3D=TPCGeometry();
 }
 void TPCManager::SearchVertex(){
-		for(int nt1 = 0; nt1<ntTpc;++nt1){
-			double hcx = helix_cx->at(nt1);
-			double hcy = helix_cy->at(nt1);
-			double hz0 = helix_z0->at(nt1);
-			double hr = helix_r->at(nt1);
-			double hdz = helix_dz->at(nt1);
-			double par1[5] = {hcx,hcy,hz0,hr,hdz};
-			TVector3 vert(vtx->at(nt1),vty->at(nt1),vtz->at(nt1));
-			for(int nt2 = 0; nt2<ntTpc;++nt2){
-				if(nt2 <= nt1) continue;
-				double hcx2 = helix_cx->at(nt2);
-				double hcy2 = helix_cy->at(nt2);
-				double hz02 = helix_z0->at(nt2);
-				double hr2 = helix_r->at(nt2);
-				double hdz2 = helix_dz->at(nt2);
-				double par2[5] = {hcx2,hcy2,hz02,hr2,hdz2};
-				double cd,t1,t2;
-				auto vert = VertexPointHelix(par1,par2,cd,t1,t2);
-//				hist->Fill(cd);
-				//			TVector3 mom_vtx = tp->CalcHelixMom(par1, vert.y());
-			}
+	for(int nt1 = 0; nt1<ntTpc;++nt1){
+		double hcx = helix_cx->at(nt1);
+		double hcy = helix_cy->at(nt1);
+		double hz0 = helix_z0->at(nt1);
+		double hr = helix_r->at(nt1);
+		double hdz = helix_dz->at(nt1);
+		double par1[5] = {hcx,hcy,hz0,hr,hdz};
+		TVector3 vert(vtx->at(nt1),vty->at(nt1),vtz->at(nt1));
+		for(int nt2 = 0; nt2<ntTpc;++nt2){
+			if(nt2 <= nt1) continue;
+			double hcx2 = helix_cx->at(nt2);
+			double hcy2 = helix_cy->at(nt2);
+			double hz02 = helix_z0->at(nt2);
+			double hr2 = helix_r->at(nt2);
+			double hdz2 = helix_dz->at(nt2);
+			double par2[5] = {hcx2,hcy2,hz02,hr2,hdz2};
+			double cd,t1,t2;
+			auto vert = VertexPointHelix(par1,par2,cd,t1,t2);
+			//				hist->Fill(cd);
+			//			TVector3 mom_vtx = tp->CalcHelixMom(par1, vert.y());
 		}
+	}
 }
 #endif

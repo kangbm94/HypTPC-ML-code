@@ -2,7 +2,8 @@
 int runnum = 5000;
 TString dir = base_dir+"MayRun/rootfiles/CH2/TPC/";
 //TString tpcfile = dir + Form("run0%d_TPC_RMSCut.root",runnum);
-TString tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
+//TString tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
+TString tpcfile = dir + Form("SelectedHelix.root");
 //TString tpcfile = dir + Form("run0%d_DstSelectedTPCHelixTracking.root ",runnum);
 void TPCEventDisplay(){
 }
@@ -44,7 +45,7 @@ void TPCEventDisplayRaw(){
 void TPCEventDisplayHelix(){
 	gStyle->SetOptStat(0);
 	gTPCManager.InitializeHistograms();
-	gTPCManager.LoadClusterFile(tpcfile);
+	gTPCManager.LoadClusterFile(tpcfile,"tree");
 	auto h = gTPCManager.GetPadHistogram();
 	auto h2 = gTPCManager.GetZYHistogram();
 	int ent = gTPCManager.GetEntries();	
@@ -106,4 +107,13 @@ void TPCEventDisplayHelix(){
 	}
 	h->Draw("colz");
 	h->SetTitle(Form("Run%d",runnum));
+}
+void DisplayY(){
+	gTPCManager.LoadClusterFile(tpcfile);
+	auto h2 = gTPCManager.GetZYHistogram();
+	TCanvas* c1 = new TCanvas("c1","c1",1600,1200);
+	c1->Divide(2,1);
+
+
+
 }
