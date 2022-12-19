@@ -18,9 +18,18 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("runnum",&runnum);
 	DataChain->SetBranchAddress("evnum",&evnum);
 
+	DataChain->SetBranchAddress("nclTpc",&nclTpc);
 	DataChain->SetBranchAddress("cluster_x",&clxTpc);
 	DataChain->SetBranchAddress("cluster_y",&clyTpc);
 	DataChain->SetBranchAddress("cluster_z",&clzTpc);
+	DataChain->SetBranchAddress("nclTpcf",&nclfTpc);
+	DataChain->SetBranchAddress("cluster_xf",&clxfTpc);
+	DataChain->SetBranchAddress("cluster_yf",&clyfTpc);
+	DataChain->SetBranchAddress("cluster_zf",&clzfTpc);
+	DataChain->SetBranchAddress("nclTpcb",&nclbTpc);
+	DataChain->SetBranchAddress("cluster_xb",&clxbTpc);
+	DataChain->SetBranchAddress("cluster_yb",&clybTpc);
+	DataChain->SetBranchAddress("cluster_zb",&clzbTpc);
 	//	DataChain->SetBranchAddress("cluster_de",&deTpc);
 	DataChain->SetBranchAddress("cluster_size",&clsize);
 	DataChain->SetBranchAddress("padTpc",&padTpc);
@@ -37,6 +46,10 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("vtx",&vtx);
 	DataChain->SetBranchAddress("vty",&vty);
 	DataChain->SetBranchAddress("vtz",&vtz);
+	DataChain->SetBranchAddress("beam_y",&beam_y);
+	DataChain->SetBranchAddress("beam_p0",&beam_p0);
+	DataChain->SetBranchAddress("beam_p1",&beam_p1);
+	DataChain->SetBranchAddress("beam_p2",&beam_p2);
 }
 void TPCManager::LoadTPCBcOut(TString filename){
 	LoadFile(filename);	
@@ -103,6 +116,14 @@ void TPCManager::FillHist(double z, double x){
 	int padId = tpc::findPadID(z,x);
 	if(!tpc::Dead(padId)) PadHist->Fill(z,x);
 }
+void TPCManager::FillHistf(double z, double x){
+	int padId = tpc::findPadID(z,x);
+	if(!tpc::Dead(padId)) PadHistf->Fill(z,x);
+}
+void TPCManager::FillHistb(double z, double x){
+	int padId = tpc::findPadID(z,x);
+	if(!tpc::Dead(padId)) PadHistb->Fill(z,x);
+}
 void TPCManager::FillHist(int itr){
 	TVector3 hitv = GetPosition(itr);
 	double x = hitv.X();
@@ -111,6 +132,22 @@ void TPCManager::FillHist(int itr){
 	PadHist->Fill(z,x);
 	ZYHist->Fill(z,y);
 	YHist->Fill(y);
+};
+void TPCManager::FillHistf(int itr){
+	TVector3 hitv = GetPositionf(itr);
+	double x = hitv.X();
+	double y = hitv.Y();
+	double z = hitv.Z();
+	PadHistf->Fill(z,x);
+	ZYHistf->Fill(z,y);
+};
+void TPCManager::FillHistb(int itr){
+	TVector3 hitv = GetPositionb(itr);
+	double x = hitv.X();
+	double y = hitv.Y();
+	double z = hitv.Z();
+	PadHistb->Fill(z,x);
+	ZYHistb->Fill(z,y);
 };
 void TPCManager::SetPadContent(int padID,double cont){
 	PadHist->SetBinContent(padID,cont);

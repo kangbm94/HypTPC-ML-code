@@ -12,7 +12,11 @@ class TPCManager:public FileManager{
 	protected:
 		TFile* hist_file;
 		TH2Poly* PadHist=nullptr;
+		TH2Poly* PadHistf=nullptr;
+		TH2Poly* PadHistb=nullptr;
 		TH2D* ZYHist=nullptr;
+		TH2D* ZYHistf=nullptr;
+		TH2D* ZYHistb=nullptr;
 		TH2I* FlatHist=nullptr;
 		TH2D* PosHist=nullptr;
 		TH1D* YHist=nullptr;
@@ -33,11 +37,20 @@ class TPCManager:public FileManager{
 		int ititpc[nhtpcmax];
 		int ntrk[nhtpcmax];
 		int ntTpc;
+		int nclTpc;
+		int nclfTpc;
+		int nclbTpc;
 		vector<double>* dlTpc = new vector<double>;
 		vector<double>* deTpc = new vector<double>;
 		vector<double>* clxTpc = new vector<double>;
 		vector<double>* clyTpc = new vector<double>;
 		vector<double>* clzTpc = new vector<double>;
+		vector<double>* clxfTpc = new vector<double>;
+		vector<double>* clyfTpc = new vector<double>;
+		vector<double>* clzfTpc = new vector<double>;
+		vector<double>* clxbTpc = new vector<double>;
+		vector<double>* clybTpc = new vector<double>;
+		vector<double>* clzbTpc = new vector<double>;
 		vector<double>* chisqr = new vector<double>;
 		vector<double>* helix_cx = new vector<double>;
 		vector<double>* helix_cy = new vector<double>;
@@ -51,6 +64,10 @@ class TPCManager:public FileManager{
 		vector<int>* clsize = new vector<int>;
 		vector<int>* pid = new vector<int>;
 		vector<int>* charge = new vector<int>;
+		vector<double>* beam_y = new vector<double>;
+		vector<double>* beam_p0 = new vector<double>;
+		vector<double>* beam_p1 = new vector<double>;
+		vector<double>* beam_p2 = new vector<double>;
 		int evnum,runnum;
 		int htofnhits;
 		int htofhitpat[34];
@@ -104,6 +121,16 @@ class TPCManager:public FileManager{
 			clxTpc->clear();
 			clyTpc->clear();
 			clzTpc->clear();
+			clxfTpc->clear();
+			clyfTpc->clear();
+			clzfTpc->clear();
+			clxbTpc->clear();
+			clybTpc->clear();
+			clzbTpc->clear();
+			beam_y->clear();
+			beam_p0->clear();
+			beam_p1->clear();
+			beam_p2->clear();
 			padTpc->clear();
 			helix_cx->clear();
 			helix_cy->clear();
@@ -150,14 +177,6 @@ class TPCManager:public FileManager{
 					double t1 = 2*3.14*(ip/150.-0.5),t2=2*3.14*((ip+1)/150.-0.5);
 					double y1 = r*dz*t1+z0,y2 = r*dz*t2+z0;
 					double z1 = r*sin(t1)+cy+ZTarget,z2 = r*sin(t2)+cy+ZTarget;
-					/*
-						 double y1 = -300+ip*600./100;
-						 double y2 = -300+(ip+1)*600./1000;
-						 double t1 = (y1-z0)/r*dz;
-						 double t2 = (y2-z0)/r*dz;
-						 double z1 = r*cos(t1)+cy+tpc::ZTarget;
-						 double z2 = r*cos(t2)+cy+tpc::ZTarget;
-						 */
 					HelixTrackZY[ih].push_back(new TLine(z1,y1,z2,y2));
 					HelixTrackZY[ih].at(ip)->SetLineColor(ih+1);
 					HelixTrackZY[ih].at(ip)->SetLineWidth(2);
@@ -237,17 +256,7 @@ class TPCManager:public FileManager{
 				ld2->SetLineWidth(3);ld2->SetLineColor(kCyan);
 				ld2->Draw("psame");
 				xivert = new TEllipse(z3,y3,3,0);
-				xivert->SetLineColor(kCyan);
-				xivert->Draw("psame");
-			}
-		}
-		void DrawHelixZY(){
-			for(int ih = 0; ih< ntTpc;++ih){
-				for(int ip=0;ip<300;ip++){
-					HelixTrackZY[ih].at(ip)->Draw("same");
-				}
-			}
-		}
+				xivert->SetLineColor(kCyan); xivert->Draw("psame"); } } void DrawHelixZY(){ for(int ih = 0; ih< ntTpc;++ih){ for(int ip=0;ip<300;ip++){ HelixTrackZY[ih].at(ip)->Draw("same"); } } }
 		bool LambdaEvent(){return Ld.Exist();}
 		bool XiEvent(){return Xi.Exist();}
 		void SearchVertex();
@@ -256,12 +265,20 @@ class TPCManager:public FileManager{
 		void InitializeTPC();
 		void SetTitle(TString title){
 			PadHist->SetTitle(title);
+			PadHistf->SetTitle(title+"f");
+			PadHistb->SetTitle(title+"b");
 			ZYHist->SetTitle(title+"ZY");
+			ZYHistf->SetTitle(title+"ZYf");
+			ZYHistb->SetTitle(title+"ZYb");
 			FlatHist->SetTitle(title);
 		}
 		void FillHist(double z, double x);
+		void FillHistf(double z, double x);
+		void FillHistb(double z, double x);
 		void LoadTPC3D();
 		void FillHist(int itr);
+		void FillHistf(int itr);
+		void FillHistb(int itr);
 		void FillFlatHist(int padID);
 		void SetPadContent(int padID,double cont);
 		void SetPadContent(int layer,int row,double cont);
@@ -276,7 +293,11 @@ class TPCManager:public FileManager{
 		}
 		void ClearHistogram(){
 			PadHist->Reset("");
+			PadHistf->Reset("");
+			PadHistb->Reset("");
 			ZYHist->Reset("");
+			ZYHistf->Reset("");
+			ZYHistb->Reset("");
 			YHist->Reset("");
 		}
 		void ClearTPC(){
@@ -285,8 +306,20 @@ class TPCManager:public FileManager{
 		TH2Poly* GetPadHistogram(){
 			return PadHist;
 		}
+		TH2Poly* GetPadHistogramf(){
+			return PadHistf;
+		}
+		TH2Poly* GetPadHistogramb(){
+			return PadHistb;
+		}
 		TH2D* GetZYHistogram(){
 			return ZYHist;
+		}
+		TH2D* GetZYHistogramf(){
+			return ZYHistf;
+		}
+		TH2D* GetZYHistogramb(){
+			return ZYHistb;
 		}
 		TH1D* GetYHistogram(){
 			return YHist;
@@ -318,8 +351,17 @@ class TPCManager:public FileManager{
 		}
 		int GetNhits(int clusters){
 			if(!clusters)	return Min(padTpc->size(),max_nh);//Min(nhittpc,max_nh);
-			else 					return Min(clsize->size(),max_nh);
+			else 					return Min(nclTpc,max_nh);
 		};
+		int GetNhits(){
+			return nclTpc;
+		}
+		int GetNhitsf(){
+			return nclfTpc;
+		}
+		int GetNhitsb(){
+			return nclbTpc;
+		}
 		int GetPadID(int i){
 			cout<<i<<" : GetPadID"<<endl;
 			if(i<padTpc->size()){
@@ -368,6 +410,28 @@ class TPCManager:public FileManager{
 			}
 			return pos;
 		}
+		TVector3 GetPositionf(int itr){
+			TVector3 pos;
+			if(!cluster){
+				pos =  tpc::getPosition(GetPadID(itr));
+				pos.SetY(GetDL(itr));
+			}
+			else{
+				pos = TVector3(clxfTpc->at(itr),clyfTpc->at(itr),clzfTpc->at(itr)); 
+			}
+			return pos;
+		}
+		TVector3 GetPositionb(int itr){
+			TVector3 pos;
+			if(!cluster){
+				pos =  tpc::getPosition(GetPadID(itr));
+				pos.SetY(GetDL(itr));
+			}
+			else{
+				pos = TVector3(clxbTpc->at(itr),clybTpc->at(itr),clzbTpc->at(itr)); 
+			}
+			return pos;
+		}
 		TVector3 GetClusterPosition(int itr){
 			TVector3 pos;
 			pos=TVector3(clxTpc->at(itr),clyTpc->at(itr),clzTpc->at(itr)); 
@@ -405,7 +469,18 @@ class TPCManager:public FileManager{
 			return Track(x0BcOut->at(it),y0BcOut->at(it),u0BcOut->at(it),v0BcOut->at(it));
 		}
 #endif
-
+	vector<double>GetBeamY(){
+		return *beam_y;
+	}
+	vector<double>GetBeamP0(){
+		return *beam_p0;
+	}
+	vector<double>GetBeamP1(){
+		return *beam_p1;
+	}
+	vector<double>GetBeamP2(){
+		return *beam_p2;
+	}
 
 
 
@@ -424,9 +499,13 @@ class TPCManager:public FileManager{
 
 void TPCManager::InitializeHistograms(){
 	PadHist = tpc::InitializeHistogram();
+	PadHistf = tpc::InitializeHistogram();
+	PadHistb = tpc::InitializeHistogram();
 	//	FlatHist = new TH2I("PadRTheta","PadRTheta",32,0,32,240,0,240);
 	//	PosHist = new TH2D("PosHisto","PosHisto",128,-250,250,128,-250,250);
 	ZYHist = new TH2D("ZYHist","ZYHist",40,-250,250,50,-300,300);
+	ZYHistf = new TH2D("ZYHistf","ZYHistf",40,-250,250,50,-300,300);
+	ZYHistb = new TH2D("ZYHistb","ZYHistb",40,-250,250,50,-300,300);
 	YHist = new TH1D("YHist","YHist",140,-350,350);
 }
 void TPCManager::InitializeTPC(){
