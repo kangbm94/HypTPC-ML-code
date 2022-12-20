@@ -50,6 +50,7 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("beam_p0",&beam_p0);
 	DataChain->SetBranchAddress("beam_p1",&beam_p1);
 	DataChain->SetBranchAddress("beam_p2",&beam_p2);
+	DataChain->SetBranchAddress("beam_v",&beam_v);
 }
 void TPCManager::LoadTPCBcOut(TString filename){
 	LoadFile(filename);	

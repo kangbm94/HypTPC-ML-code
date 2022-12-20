@@ -137,6 +137,7 @@ void DisplayBeamRemver(){
 		int nhf=gTPCManager.GetNhitsf();
 		int nhb=gTPCManager.GetNhitsb();
 		if(!nhf or !nhb) continue;
+		if(nhb<80) continue;
 //		if(nhf+ nhb ==nh) continue;
 		for(int itr=0;itr<nh;++itr){
 			gTPCManager.FillHist(itr);
@@ -153,6 +154,7 @@ void DisplayBeamRemver(){
 			auto p0 = gTPCManager.GetBeamP0();
 			auto p1 = gTPCManager.GetBeamP1();
 			auto p2 = gTPCManager.GetBeamP2();
+			auto bv = gTPCManager.GetBeamV();
 			c1->cd(1);
 			hf->Draw("colz");
 			hf->SetTitle(Form("Event%d",evnum));
@@ -170,7 +172,7 @@ void DisplayBeamRemver(){
 			for(int i=0;i<by.size();++i){
 				TF1* f2 = new TF1(Form("f2%d",i),"pol1",-250,250);
 				f2->SetParameter(0,by[i]);
-				f2->SetParameter(1,0);
+				f2->SetParameter(1,bv[i]);
 				f2->SetLineColor(i+2);
 				f2->SetLineWidth(3);
 				f2->Draw("same");
@@ -199,7 +201,7 @@ void DisplayBeamRemver(){
 			for(int i=0;i<by.size();++i){
 				TF1* f2 = new TF1(Form("f2%d",i),"pol1",-250,250);
 				f2->SetParameter(0,by[i]);
-				f2->SetParameter(1,0);
+				f2->SetParameter(1,bv[i]);
 				f2->SetLineColor(i+2);
 				f2->SetLineWidth(3);
 				f2->Draw("same");
