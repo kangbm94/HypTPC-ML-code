@@ -72,9 +72,10 @@ class Recon{
 		bool proper = false;
 		int CombID=-1;
 		double par[4];
+		double close_dist=-1;
 	public:
-		Recon(vector<TLorentzVector> D,TVector3 vertex,int id1,int id2){
-			LV.SetXYZM(0,0,0,0);Daughters = D;Vert=vertex;
+		Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2){
+			LV.SetXYZM(0,0,0,0);Daughters = D;Vert=vertex;close_dist=clos_dist;
 			for(auto lv:D) LV+=lv;
 			CombID = pow(2,id1)+pow(2,id2);
 			exist = true;
@@ -104,6 +105,9 @@ class Recon{
 		}
 		double Mass(){
 			return LV.Mag();
+		}
+		double GetCD(){
+			return close_dist;
 		}
 		TVector3 Momentum(){
 			return LV.Vect();

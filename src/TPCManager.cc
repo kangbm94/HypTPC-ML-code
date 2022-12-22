@@ -131,6 +131,9 @@ void TPCManager::FillHist(int itr){
 	double y = hitv.Y();
 	double z = hitv.Z();
 	PadHist->Fill(z,x);
+	int bx,by;
+	int bin = ZYHist->FindBin(z,y);
+//	ZYHist->SetBinContent(bin,x);
 	ZYHist->Fill(z,y);
 	YHist->Fill(y);
 };
@@ -139,8 +142,8 @@ void TPCManager::FillHistf(int itr){
 	double x = hitv.X();
 	double y = hitv.Y();
 	double z = hitv.Z();
-	PadHistf->Fill(z,x);
-	ZYHistf->Fill(z,y);
+	if(abs(y)>50)PadHistf->Fill(z,x);
+	if(abs(y)>50)ZYHistf->Fill(z,y);
 };
 void TPCManager::FillHistb(int itr){
 	TVector3 hitv = GetPositionb(itr);

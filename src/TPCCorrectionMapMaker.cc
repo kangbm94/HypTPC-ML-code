@@ -135,11 +135,11 @@ TH2D* TPCCorrectionMapMaker::ScanSnake(int ix,int iy,vector<double> &peaks,vecto
 //		double peakcenter = GetPeakPosition(h);
 		ents.push_back(h->GetEffectiveEntries());
 		double peakcenter = h->GetBinCenter(h->GetMaximumBin());
-		if(abs(peakcenter)>7.1&&abs(pos_x)>150)peakcenter=0;
+		if(abs(peakcenter)>8.1&&abs(pos_x)>150)peakcenter=0;
 		//	f->SetParLimits(1,peakcenter-1,peakcenter+1);
 		f->SetParameter(1,peakcenter);
-		f->SetParLimits(1,peakcenter-2,peakcenter+2);
-		f->SetRange(peakcenter-5,peakcenter+5);
+		f->SetParLimits(1,peakcenter-3,peakcenter+3);
+		f->SetRange(peakcenter-6,peakcenter+6);
 		h->Fit("f","QR0");
 		cout<<i<<"-> ent : "<<ents[i]<<", peak : "<<peakcenter<<endl; 	
 		if(!active){ //			peaks.push_back(-9999);

@@ -1,4 +1,5 @@
 #include "TPCManager.hh"
+#define done 0
 static const int snake_nbin_x = 100;
 static const int snake_nbin_z = 40;
 static const int nbin_z=snake_nbin_z+1;
@@ -211,7 +212,7 @@ class TPCCorrectionMapMaker: public TPCManager{
 		}
 		void MakeCorParameterFile(TString FileName){
 			MakeParameterFile(FileName);
-			vector<int> nb = {nbin_x,nbin_y+1,nbin_z};
+			vector<int> nb = {nbin_x,nbin_y+1,nbin_z-1};
 			vector<double> par = {gx1,-50,z1,cx,100,cz};
 			WriteParameter(nb,par);
 		}
@@ -283,7 +284,7 @@ void TPCCorrectionMapMaker::MakeSnakeHist(){
 	//		TCut In_frame = Form("abs(abs(cluster_hitpos_x)-abs(cluster_hitpos_z))<%f",frame_width);
 //			TCut In_Target = Form("abs(cluster_hitpos_z-%f)<%f&&abs(cluster_hitpos_x)<%f",Target_pos,Target_z,Target_x);
 			//			TCut Cut = Form("ntBcOut==1&&nhTpc>15&&abs(cluster_x-%f)<%f&&abs(cluster_y-%f)<%f",BinPosX(ix)+0*width_x/2,width_x/2,BinPosY(iy)+0*width_x/2,width_y/2);
-			SnakeHistX[ix][iy] = new TH2D(Key+"x",Title+"x",snake_nbin_z,-250,250,snake_nbin_x,-7.5,7.5);
+			SnakeHistX[ix][iy] = new TH2D(Key+"x",Title+"x",snake_nbin_z,-250,250,snake_nbin_x,-9,9);
 //			DataChain->Draw(DrawCommandX,Cut and not (In_frame or In_Target) and Inside,"col0");
 			DataChain->Draw(DrawCommandX,Cut ,"col0");
 			//			DataChain->Draw(DrawCommandY,Cut,"col0");
@@ -405,3 +406,19 @@ bool TPCCorrectionMapMaker::CorrectionRegion(double x,double y,double z){
 	}
 	return val;
 }
+
+#if done
+	double BcXPos(double z){
+		return  x0+u0*(z+K18HS);
+	}
+	TVector3 GetBcPosition(int padId){
+		double z = GetPosition(padId).Z();
+		double bcx = BcXPos(z);
+		return TVector3(bcx,0,z);
+	}
+
+
+#endif
+
+
+

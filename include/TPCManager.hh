@@ -8,6 +8,13 @@
 #include "ReconTools.hh"
 #ifndef TPCManager_h
 #define TPCManager_h
+double ExplicitHelix(double x,double y,double cx,double cy,double z0,double dz){
+	double x0 = x-cx;
+	double y0 = y-cy;
+	double r = sqrt(x0*x0+y0*y0);
+	return 0;
+}
+
 class TPCManager:public FileManager{
 	protected:
 		TFile* hist_file;
@@ -68,6 +75,7 @@ class TPCManager:public FileManager{
 		vector<double>* beam_p0 = new vector<double>;
 		vector<double>* beam_p1 = new vector<double>;
 		vector<double>* beam_p2 = new vector<double>;
+		vector<double>* beam_v = new vector<double>;
 		int evnum,runnum;
 		int htofnhits;
 		int htofhitpat[34];
@@ -481,6 +489,9 @@ class TPCManager:public FileManager{
 	vector<double>GetBeamP2(){
 		return *beam_p2;
 	}
+	vector<double>GetBeamV(){
+		return *beam_v;
+	}
 
 
 
@@ -503,7 +514,7 @@ void TPCManager::InitializeHistograms(){
 	PadHistb = tpc::InitializeHistogram();
 	//	FlatHist = new TH2I("PadRTheta","PadRTheta",32,0,32,240,0,240);
 	//	PosHist = new TH2D("PosHisto","PosHisto",128,-250,250,128,-250,250);
-	ZYHist = new TH2D("ZYHist","ZYHist",40,-250,250,50,-300,300);
+	ZYHist = new TH2D("ZYHist","ZYHist",40,-250,250,140,-350,350);
 	ZYHistf = new TH2D("ZYHistf","ZYHistf",40,-250,250,50,-300,300);
 	ZYHistb = new TH2D("ZYHistb","ZYHistb",40,-250,250,50,-300,300);
 	YHist = new TH1D("YHist","YHist",140,-350,350);
