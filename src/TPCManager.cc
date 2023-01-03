@@ -19,6 +19,7 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("evnum",&evnum);
 
 	DataChain->SetBranchAddress("nclTpc",&nclTpc);
+	DataChain->SetBranchAddress("cluster_de",&cldeTpc);
 	DataChain->SetBranchAddress("cluster_x",&clxTpc);
 	DataChain->SetBranchAddress("cluster_y",&clyTpc);
 	DataChain->SetBranchAddress("cluster_z",&clzTpc);
@@ -32,6 +33,7 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("cluster_zb",&clzbTpc);
 	//	DataChain->SetBranchAddress("cluster_de",&deTpc);
 	DataChain->SetBranchAddress("cluster_size",&clsize);
+	DataChain->SetBranchAddress("hough_flag",&hough_flag);
 	DataChain->SetBranchAddress("padTpc",&padTpc);
 	DataChain->SetBranchAddress("ntTpc",&ntTpc);
 	DataChain->SetBranchAddress("helix_cx",&helix_cx);	
@@ -43,6 +45,8 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("isBeam",&isBeam);
 	DataChain->SetBranchAddress("pid",&pid);
 	DataChain->SetBranchAddress("charge",&charge);
+	DataChain->SetBranchAddress("mom0",&mom0);
+	DataChain->SetBranchAddress("dEdx",&dEdx);
 	DataChain->SetBranchAddress("vtx",&vtx);
 	DataChain->SetBranchAddress("vty",&vty);
 	DataChain->SetBranchAddress("vtz",&vtz);
@@ -51,6 +55,12 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("beam_p1",&beam_p1);
 	DataChain->SetBranchAddress("beam_p2",&beam_p2);
 	DataChain->SetBranchAddress("beam_v",&beam_v);
+	DataChain->SetBranchAddress("helix_t",&helix_t);
+//	DataChain->SetBranchAddress("track_cluster_layer",&track_cluster_layer);
+	DataChain->SetBranchAddress("hitlayer",&track_cluster_layer);
+	DataChain->SetBranchAddress("track_cluster_x_center",&track_cluster_x_center);
+	DataChain->SetBranchAddress("track_cluster_y_center",&track_cluster_y_center);
+	DataChain->SetBranchAddress("track_cluster_z_center",&track_cluster_z_center);
 }
 void TPCManager::LoadTPCBcOut(TString filename){
 	LoadFile(filename);	
@@ -130,13 +140,56 @@ void TPCManager::FillHist(int itr){
 	double x = hitv.X();
 	double y = hitv.Y();
 	double z = hitv.Z();
-	PadHist->Fill(z,x);
 	int bx,by;
 	int bin = ZYHist->FindBin(z,y);
 //	ZYHist->SetBinContent(bin,x);
-	ZYHist->Fill(z,y);
-	YHist->Fill(y);
+	if(hough_flag->at(itr)<9999){
+		PadHist->Fill(z,x);
+		ZYHist->Fill(z,y);
+//		YHist->Fill(y);
+	}
 };
+void TPCManager::FillAntiProtonHist(){
+	int nt = charge->size();
+	double dz,rad;
+	for(int i=0;i<nt;++i){
+		if(!IsAntiProton(i)) continue;
+		auto posvx = track_cluster_x_center->at(i); 
+		auto posvy = track_cluster_y_center->at(i); 
+		auto posvz = track_cluster_z_center->at(i); 
+		int nh = posvx.size();
+		int min_layer = 100; int max_layer = -1;
+		double min_tcal,max_tcal;
+		cout<<nt<<endl;
+		cout<<track_cluster_layer->size()<<endl;
+		cout<<helix_t->size()<<endl;
+		auto layerv = track_cluster_layer->at(i);
+		auto tcalv = helix_t->at(i);
+		dz = helix_dz->at(i);
+		rad = helix_r->at(i);
+		for(int j=0;j<nh;++j){
+			double x = posvx.at(j);
+			double y = posvy.at(j);
+			double z = posvz.at(j);
+			int layer = layerv.at(j);
+			double tcal = tcalv.at(j);
+			int padId = tpc::findPadID(z,x);
+			if(!tpc::Dead(padId)){
+				PadHist->Fill(z,x);
+				ZYHist->Fill(z,y);
+			}
+			if(min_layer>layer){
+				min_layer=layer;
+				min_tcal = tcal;
+			}
+			if(max_layer<layer){
+				max_layer=layer;
+				max_tcal = tcal;
+			}
+		}
+		cout<<Form("Min( layer,t ) = (%d,%f), Max( layer,t ) = (%d,%f), rad = %f, dz=%f",min_layer,min_tcal,max_layer,max_tcal,rad,dz)<<endl;
+	}
+}
 void TPCManager::FillHistf(int itr){
 	TVector3 hitv = GetPositionf(itr);
 	double x = hitv.X();
@@ -398,7 +451,22 @@ TPCManager::ReconEvent(){
 	Xi = V.GetXi();
 	xiflg=Xi.Exist();
 }
+void TPCManager::DrawHelix(int it){
+		HelixTrack[it]->Draw("psame");
+}
+void TPCManager::DrawHelix(){
+	cout<<"DrawingHelix..."<<endl;
+	for(int it = 0; it< ntTpc;++it)DrawHelix(it);
+}
 
-
+void TPCManager::DrawHelixZY(int it){
+	for(int ip=0;ip<npts;ip++){ 
+		HelixTrackZY[it].at(ip)->Draw("same");
+	} 
+}
+void TPCManager::DrawHelixZY(){
+	cout<<"DrawingHelixZY..."<<endl;
+	for(int it = 0; it< ntTpc;++it)DrawHelixZY(it);
+}
 
 #endif

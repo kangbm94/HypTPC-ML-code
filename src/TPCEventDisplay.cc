@@ -1,5 +1,5 @@
 #include "TPCManager.cc"
-int runnum = 5000;
+int runnum = 5641;
 //TString dir = base_dir+"MayRun/rootfiles/CH2/TPC/";
 int SearchPeaks(TH1D* hist,vector<double> &peaks){
 	TSpectrum spec(30);
@@ -14,9 +14,12 @@ int SearchPeaks(TH1D* hist,vector<double> &peaks){
 	return npeaks;
 }
 TString dir = base_dir;
+
 //TString tpcfile = dir + Form("run0%d_TPC_RMSCut.root",runnum);
 //TString tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
-TString tpcfile = dir + Form("run05641_DstBeamRemover.root");
+//TString tpcfile = dir + Form("run05641_DstBeamRemover.root");
+TString tpcfile = dir + Form("SelectedHelix12.root");
+//TString tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
 //TString tpcfile = dir + Form("run0%d_DstSelectedTPCHelixTracking.root ",runnum);
 void TPCEventDisplay(){
 }
@@ -58,13 +61,96 @@ void TPCEventDisplayRaw(){
 //	h->Draw("colz");
 //	h->SetTitle(Form("Run%d",runnum));
 }
+void TPCEventDisplayAntiProton(){
+	gStyle->SetOptStat(0);
+	gTPCManager.InitializeHistograms();
+//	gTPCManager.LoadClusterFile(tpcfile,"tree");
+	gTPCManager.LoadClusterFile(tpcfile,"tpc");
+	auto h = gTPCManager.GetPadHistogram();
+	auto h2 = gTPCManager.GetZYHistogram();
+	int ent = gTPCManager.GetEntries();	
+	gTPCManager.SetBetheProton();	
+	TCanvas* c1 = new TCanvas("c1","c1",1600,1200);
+	c1->Divide(2,1);
+	bool Single = true;
+//	Single = false;
+	TFile* file = new TFile("SelectedEvents.root");
+	TTree* tree = (TTree*)file->Get("tree");
+	int xirn,xiev;
+	double xim2;
+	tree->SetBranchAddress("runnum",&xirn);
+	tree->SetBranchAddress("evnum",&xiev);
+	tree->SetBranchAddress("XiM2",&xim2);
+	int xient = tree->GetEntries();
+	for(int i=0;i<ent;++i){
+		if(i%1000==0) cout<<"Event "<<i<<endl;
+		gTPCManager.SetEvent(i);
+		int evnum = gTPCManager.GetEvnum();
+		int runnum = gTPCManager.GetRunnum();
+		bool go = false;
+		/*
+		for(int j=0;j<xient;j++){
+			tree->GetEntry(j);
+			if(runnum == xirn and evnum == xiev and abs(xim2-1314)<0.05){cout<<xirn<<endl; go = false;break;}
+			else{
+				go = true;
+			}
+		}
+		*/
+//		if(go) continue;
+		int nh=0;
+		nh=gTPCManager.GetNhits(1);
+		if(!nh) continue;
+		gTPCManager.InitializeHelix();
+		gTPCManager.ReconEvent();
+//		if(!gTPCManager.XiEvent()) continue;
+		if(Single){
+			for(int itr=0;itr<nh;++itr){
+//				if(gTPCManager.GetClDe(itr)>60)
+//				gTPCManager.FillHist(itr);
+			}
+			gTPCManager.FillAntiProtonHist();
+			if(h->GetEffectiveEntries()==0){
+				gTPCManager.ClearHistogram();
+				continue;
+			}
+			cout<<Form("Drawing Event (%d,%d)",runnum,evnum)<<endl;
+			c1->cd(1);
+			h->Draw("col");
+			h->SetTitle("CircleFit");
+		//	h->SetTitle(Form("MissMass = %f",xim2));
+		//	h->SetTitle(Form("MissMass = %f",xim2));
+			for(int i=0;i<gTPCManager.GetNTracks();++i){
+				if(gTPCManager.IsAntiProton(i))	gTPCManager.DrawHelix(i);
+			}
+//			if(gTPCManager.LambdaEvent())gTPCManager.DrawVertex();
+			c1->cd(2);
+			h2->Draw("col");
+			for(int i=0;i<gTPCManager.GetNTracks();++i){
+				if(gTPCManager.IsAntiProton(i))	gTPCManager.DrawHelixZY(i);
+			}
+//			if(gTPCManager.LambdaEvent())gTPCManager.DrawVertexZY();
+			c1->Modified();
+			c1->Update();
+			gSystem->ProcessEvents();
+			cin.ignore();
+			cout<<"Searching..."<<endl;
+			gTPCManager.ClearHistogram();
+		}
+	}
+	h->Draw("colz");
+	h->SetTitle(Form("Run%d",runnum));
+}
+
 void TPCEventDisplayHelix(){
 	gStyle->SetOptStat(0);
 	gTPCManager.InitializeHistograms();
 	gTPCManager.LoadClusterFile(tpcfile,"tree");
+//	gTPCManager.LoadClusterFile(tpcfile,"tpc");
 	auto h = gTPCManager.GetPadHistogram();
 	auto h2 = gTPCManager.GetZYHistogram();
 	int ent = gTPCManager.GetEntries();	
+	gTPCManager.SetBetheProton();	
 	TCanvas* c1 = new TCanvas("c1","c1",1600,1200);
 	c1->Divide(2,1);
 	bool Single = true;
@@ -96,23 +182,29 @@ void TPCEventDisplayHelix(){
 		if(!nh) continue;
 		gTPCManager.InitializeHelix();
 		gTPCManager.ReconEvent();
-		if(!gTPCManager.XiEvent()) continue;
+//		if(!gTPCManager.XiEvent()) continue;
 		if(Single){
 			for(int itr=0;itr<nh;++itr){
+//				if(gTPCManager.GetClDe(itr)>60)
 				gTPCManager.FillHist(itr);
+			}
+//			gTPCManager.FillAntiProtonHist();
+			if(h->GetEffectiveEntries()==0){
+				gTPCManager.ClearHistogram();
+				continue;
 			}
 			cout<<Form("Drawing Event (%d,%d)",runnum,evnum)<<endl;
 			c1->cd(1);
-			h->Draw();
+			h->Draw("col");
 			h->SetTitle("CircleFit");
-		//	h->SetTitle(Form("MissMass = %f",xim2));
-		//	h->SetTitle(Form("MissMass = %f",xim2));
 			gTPCManager.DrawHelix();
-			gTPCManager.DrawVertex();
+		//	h->SetTitle(Form("MissMass = %f",xim2));
+		//	h->SetTitle(Form("MissMass = %f",xim2));
+			if(gTPCManager.LambdaEvent())gTPCManager.DrawVertex();
 			c1->cd(2);
 			h2->Draw("col");
 			gTPCManager.DrawHelixZY();
-			gTPCManager.DrawVertexZY();
+			if(gTPCManager.LambdaEvent())gTPCManager.DrawVertexZY();
 			c1->Modified();
 			c1->Update();
 			gSystem->ProcessEvents();
@@ -124,6 +216,13 @@ void TPCEventDisplayHelix(){
 	h->Draw("colz");
 	h->SetTitle(Form("Run%d",runnum));
 }
+
+
+
+
+
+
+
 void DisplayBeamRemover(){
 	gTPCManager.InitializeHistograms();
 	gTPCManager.LoadClusterFile(tpcfile);
@@ -134,16 +233,16 @@ void DisplayBeamRemover(){
 	auto hb = gTPCManager.GetPadHistogramb();
 	auto hb2 = gTPCManager.GetZYHistogramb();
 	int ent = gTPCManager.GetEntries();	
-	TCanvas* c1 = new TCanvas("c1","c1",1200,600);
+	TCanvas* c1 = new TCanvas("c1","c1",1200,1200);
 	c1->Divide(2,2);
-	TCanvas* c2 = new TCanvas("c2","c2",1200,1200);
-	c2->Divide(2,2);
+	TCanvas* c2 = new TCanvas("c2","c2",1200,600);
+	c2->Divide(2,1);
 	TCanvas* c3 = new TCanvas("c3","c3",600,600);
 	TH1D* hist = new TH1D("bhy","bhy",140,-350,350);
 	bool Single = true;
 //	Single = false;
 	cout<<ent<<endl;
-	int start = 625;
+	int start = 0;
 	for(int i=start;i<ent;++i){
 		if(i%1==0) cout<<"Event "<<i<<endl;
 		gTPCManager.SetEvent(i);
@@ -178,7 +277,7 @@ void DisplayBeamRemover(){
 			c1->cd(3);
 			hb->Draw("colz");
 			auto by = gTPCManager.GetBeamY();
-			auto bv = gTPCManager.GetBeamY();
+			auto bv = gTPCManager.GetBeamV();
 			auto p0 = gTPCManager.GetBeamP0();
 			auto p1 = gTPCManager.GetBeamP1();
 			auto p2 = gTPCManager.GetBeamP2();
