@@ -9,7 +9,7 @@ double mp = 938.272/1000;
 double mL = 1115.677/1000;
 double mXi = 1321.71/1000;
 double mXiStar = 1535/1000;
-
+double mH = 2150./1000;
 
 class Track :public TLorentzVector{
 	private:
@@ -73,6 +73,7 @@ class Recon{
 		int CombID=-1;
 		double par[4];
 		double close_dist=-1;
+		int trid1=-1,trid2=-1;
 	public:
 		Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2){
 			LV.SetXYZM(0,0,0,0);Daughters = D;Vert=vertex;close_dist=clos_dist;
@@ -86,6 +87,7 @@ class Recon{
 			auto u = dir_t.X();
 			auto v = dir_t.Z();
 			par[0]=V_t.X()-V_t.Z()*u,par[1]=V_t.Z()-V_t.Y()*v,par[2]= u,par[3]=v;
+			trid1=id1;trid2=id2;
 		}
 		Recon(){}
 		void Clear(){
@@ -118,6 +120,12 @@ class Recon{
 		}
 		int GetID(){
 			return CombID;
+		}
+		int GetID1(){
+			return trid1;
+		}
+		int GetID2(){
+			return trid2;
 		}
 };
 
@@ -194,8 +202,39 @@ class VertexLH:public Vertex{
 			return val;
 		}
 };
+/*
+class VertexLL:public Vertex{
+	private:
+		vector<Recon>HCand;
+		vector<Recon>HCorCand;
+		vector<Recon>Recons1;
+		vector<Recon>Recons2;
+	public:
+		VertexLL(Recon p){
+			Recons.push_back(p);
+	}
+		virtual int NTrack(){
+			return Recons.size()+Tracks.size();
+		}
+		bool AddTrack(Track p);
+		void SearchXiCombination();
+		Recon GetH(){
+			double comp = 9999;
+			Recon val ;
+			int num = 0;
+			for(auto Hc : HCand){ if( abs(mH-Hc.Mass())<comp) {comp=abs(mH-Hc.Mass());val=Hc;}}
+			return val;
+		}
+		Recon GetHCor(){
+			double comp = 9999;
+			Recon val ;
+			int num = 0;
+			for(auto Hc : HCorCand){ if( abs(mH-Hc.Mass())<comp) {comp=abs(mH-Hc.Mass());val=Hc;}}
+			return val;
+		}
+};
 
 
-
+*/
 
 #endif

@@ -102,7 +102,10 @@ class TPCManager:public FileManager{
 		vector<TPCHit> m_Hits;
 		vector<TPCCluster> m_Clusters;
 		TEllipse* HelixTrack[20] ;
+		TEllipse* AccidentalTrack[20] ;
+		vector<int> *trigflag = new vector<int>;
 		vector<vector<TLine*>> HelixTrackZY ;
+		vector<vector<TLine*>> AccidentalTrackZY ;
 		vector<int> *padTpc = new vector<int>;
 		int iPadtpc[nhtpcmax];
 		double xtpc[nhtpcmax];
@@ -112,6 +115,7 @@ class TPCManager:public FileManager{
 		int idtpc[nhtpcmax];
 		int ititpc[nhtpcmax];
 		int ntrk[nhtpcmax];
+		int ntAcc;
 		int ntTpc;
 		int nclTpc;
 		int nclfTpc;
@@ -122,13 +126,16 @@ class TPCManager:public FileManager{
 		vector<double>* clxTpc = new vector<double>;
 		vector<double>* clyTpc = new vector<double>;
 		vector<double>* clzTpc = new vector<double>;
-		vector<double>* clxfTpc = new vector<double>;
-		vector<double>* clyfTpc = new vector<double>;
-		vector<double>* clzfTpc = new vector<double>;
-		vector<double>* clxbTpc = new vector<double>;
-		vector<double>* clybTpc = new vector<double>;
-		vector<double>* clzbTpc = new vector<double>;
+		vector<double>* resolution_x = new vector<double>;
+		vector<double>* resolution_y = new vector<double>;
+		vector<double>* resolution_z = new vector<double>;
+		vector<double>* resolution = new vector<double>;
 		vector<double>* chisqr = new vector<double>;
+		vector<double>* accidental_cx = new vector<double>;
+		vector<double>* accidental_cy = new vector<double>;
+		vector<double>* accidental_z0 = new vector<double>;
+		vector<double>* accidental_r = new vector<double>;
+		vector<double>* accidental_dz = new vector<double>;
 		vector<double>* helix_cx = new vector<double>;
 		vector<double>* helix_cy = new vector<double>;
 		vector<double>* helix_z0 = new vector<double>;
@@ -140,6 +147,7 @@ class TPCManager:public FileManager{
 		vector<int>* isBeam = new vector<int>;
 		vector<int>* clsize = new vector<int>;
 		vector<int>* hough_flag = new vector<int>;
+		vector<double>* hough_dist = new vector<double>;
 		vector<double>* dEdx = new vector<double>;
 		vector<double>* mom0 = new vector<double>;
 		vector<int>* pid = new vector<int>;
@@ -164,19 +172,20 @@ class TPCManager:public FileManager{
 		int ntBcOut=0;
 		int ntk=0;
 		double npts=100;
+		double anpts=5;
 		vector<double>* x0BcOut = new vector<double>;
 		vector<double>* y0BcOut = new vector<double>;
 		vector<double>* u0BcOut = new vector<double>;
 		vector<double>* v0BcOut = new vector<double>;
 		bool ldflg,xiflg;
 		Recon Ld,Xi;
-//		vector<>;
 		TF1* f_bethe = new TF1("f_betaP",HypTPCBethe,0.1,3,3);
-
 
 	Double_t bethe_pars[2] = {7195.92, -10.5616};
 	Double_t mprt  = 938.2720813;
-
+		
+		TH2D* ZYHistsAcc[20];
+		TH2D* CirHistsAcc[20];
 
 	public:
 		TPCManager(){};
@@ -209,111 +218,33 @@ class TPCManager:public FileManager{
 		int GetRunnum(){return runnum;}
 		void SetEvent(int evt){
 			evnum=-1;
-			//			dlTpc->clear();
-			cldeTpc->clear();
 			DataChain->GetEntry(evt);
-			for(int i=0;i<20;++i){
-				//				if(HelixTrack[i]) delete HelixTrack[i];
-			}
 		};
 		int GetNTracks(){
 			return ntTpc;
 		}
-
-
-		void InitializeHelix(){
-//			cout<<"InitializeHelix: "<<endl;
-			for(auto h : HelixTrackZY){
-				for(auto ht:h){
-					//					if(ht) delete ht;
-				}
+		int GetNTracksAcc(){
+			return ntAcc;
+		}
+		bool TagTrig(int i ){
+			if(trigflag->at(i)>0){
+				return true;
 			}
-			for(auto h : HelixTrack){
-				//			if(h) delete h;
-			}
-
-			HelixTrackZY.clear();		
-			HelixTrackZY.resize(ntTpc);		
-			for(int it = 0; it< ntTpc;++it){
-
-				double cx = helix_cx->at(it);
-				double cy = helix_cy->at(it);
-				double z0 = helix_z0->at(it);
-				double r = helix_r->at(it);
-				double dz = helix_dz->at(it);
-				//			cout<<Form("Params = (%f,%f,%f,%f,%f)",cx,cy,r,z0,dz)<<endl;
-				//				TString title = Form("Helix%d",it);
-				//				if(r>4000) continue;
-				double pars[5]={cx,cy,z0,r,dz};
-				double t_min = 100;
-				double t_max = -100;
-				auto xcl = track_cluster_x_center->at(it);
-				auto ycl = track_cluster_y_center->at(it);
-				auto zcl = track_cluster_z_center->at(it);
-				vector<double>tvec;
-				for(int ih=0;ih<xcl.size();++ih){
-//					cout<<"track : "<< it<<" hit: "<<ih<<endl;
-					double x = xcl.at(ih);
-					double y = ycl.at(ih);
-					double z = zcl.at(ih);
-					TVector3 pos(x,y,z);
-					double t = GetTcal(pars,pos);
-					if(t<t_min) t_min=t;
-					if(t>t_max) t_max=t;
-					double hx = cos(t),hy=sin(t);
-					double theta = atan2(-hx,hy);
-//					theta=fmod(theta*180./acos(-1)+360.*100,360.);
-					theta=fmod(theta*180./acos(-1),360.);
-					tvec.push_back(theta);
-				}
-				double theta_med = TMath::Median(tvec.size(),tvec.data());
-//				cout<<t_min<<","<<t_max<<endl;
-				double hx_min = cos(t_min),hy_min=sin(t_min);
-				double hx_max = cos(t_max),hy_max=sin(t_max);
-				double tc_min = atan2(-hx_min,hy_min),tc_max=atan2(-hx_max,hy_max);
-				//double theta1=fmod(tc_min*180./acos(-1)+360.*100.,360.),theta2=fmod(tc_max*180./acos(-1)+360.*100.,360.);
-				double theta1=fmod(tc_min*180./acos(-1),360.),theta2=fmod(tc_max*180./acos(-1),360.);
-				double th1_temp = theta1-theta_med;// = fmod(theta1-theta_med,360.);
-				double th2_temp = theta2-theta_med;// = fmod(theta2-theta_med,360.);
-//				cout<<Form("t1,tm,t2 = (%f,%f,%f)",theta1,theta_med,theta2)<<endl; 
-				
-				if( sin(th1_temp*acos(-1)/180.)>0  and sin(th2_temp*acos(-1)/180.)<0 ){
-					theta2=theta2-360;
-				}
-				
-//				cout<<Form("t1,tm,t2 = (%f,%f,%f)",theta1,theta_med,theta2)<<endl; 
-				//				theta1=360.-theta1;
-//				theta2=360.-theta2;
-			
-				/*
-				if(theta1>theta2){
-					double dum = theta2;
-					theta2=theta1;
-					theta1=dum;
-				}*/
-	//			cout<<theta1<<","<<theta2<<endl;
-				HelixTrack[it] = new TEllipse(cy+ZTarget,-cx,r,r,theta1,theta2);
-				HelixTrack[it]->SetNoEdges();
-				//				HelixTrack[it] = new TEllipse(cy+ZTarget,-cx,r,r,0.,360.);
-//				HelixTrack[it] = new TEllipse(cy+ZTarget,-cx,r,r);
-				HelixTrack[it]-> SetLineColor(kRed);
-				HelixTrack[it]-> SetFillStyle(0);
-				HelixTrack[it]-> SetLineColor(it+1);
-				HelixTrack[it]-> SetLineWidth(2);
-				double dt = (t_max-t_min)/npts;
-				for(int ip=0;ip<npts;ip++){
-					double t1 = t_min+dt*ip,t2 = t1+dt;
-					double y1 = r*dz*t1+z0,y2 = r*dz*t2+z0;
-					double z1 = r*sin(t1)+cy+ZTarget,z2 = r*sin(t2)+cy+ZTarget;
-					HelixTrackZY[it].push_back(new TLine(z1,y1,z2,y2));
-					HelixTrackZY[it].at(ip)->SetLineColor(it+1);
-					HelixTrackZY[it].at(ip)->SetLineWidth(2);
-				}
+			else{
+				return false;
 			}
 		}
+		void InitializeHelix();
+		void InitializeAccidental();
 		void ReconEvent();
 		void DrawHelix();
 		void DrawHelix(int it);
+		void DrawHelixZY(); 
+		void DrawHelixZY(int it); 
+		void DrawAccidental();
+		void DrawAccidental(int it);
+		void DrawAccidentalZY(); 
+		void DrawAccidentalZY(int it); 
 		void DrawVertex(){
 			TVector3 LV,XV;
 			bool ldflg = Ld.Exist(),xiflg = Xi.Exist();
@@ -385,8 +316,6 @@ class TPCManager:public FileManager{
 				xivert->SetLineColor(kCyan); xivert->Draw("psame"); 
 			} 
 		}
-		void DrawHelixZY(int it); 
-		void DrawHelixZY(); 
 		bool LambdaEvent(){return Ld.Exist();}
 		bool XiEvent(){return Xi.Exist();}
 		void SearchVertex();
@@ -395,21 +324,16 @@ class TPCManager:public FileManager{
 		void InitializeTPC();
 		void SetTitle(TString title){
 			PadHist->SetTitle(title);
-			PadHistf->SetTitle(title+"f");
-			PadHistb->SetTitle(title+"b");
 			ZYHist->SetTitle(title+"ZY");
-			ZYHistf->SetTitle(title+"ZYf");
-			ZYHistb->SetTitle(title+"ZYb");
 			FlatHist->SetTitle(title);
 		}
+
+		void FillAccHists();
+		
 		void FillHist(double z, double x);
-		void FillHistf(double z, double x);
-		void FillHistb(double z, double x);
 		void LoadTPC3D();
 		void FillHist(int itr);
 		void FillAntiProtonHist();
-		void FillHistf(int itr);
-		void FillHistb(int itr);
 		void FillFlatHist(int padID);
 		void SetPadContent(int padID,double cont);
 		void SetPadContent(int layer,int row,double cont);
@@ -422,14 +346,7 @@ class TPCManager:public FileManager{
 		void DrawPosHist(){
 			PosHist->Draw("colz");
 		}
-		void ClearHistogram(){
-			PadHist->Reset("");
-			PadHistf->Reset("");
-			PadHistb->Reset("");
-			ZYHist->Reset("");
-			ZYHistf->Reset("");
-			ZYHistb->Reset(""); YHist->Reset("");
-		}
+		void ClearHistogram();
 		void ClearTPC(){
 			//			TPC3D->Reset("");
 		}
@@ -466,6 +383,13 @@ class TPCManager:public FileManager{
 		TPCHit GetMHit(int i){return m_Hits[i];}
 		TPCCluster GetMCl(int i){return m_Clusters[i];}
 
+		vector<double>* GetAccidentalDist();
+		vector<double>* GetHoughDist(){
+			return hough_dist;
+		}
+		vector<int>* GetHoughFlag(){
+			return hough_flag;
+		}
 
 
 		virtual void Process(double* vals){};
@@ -485,12 +409,6 @@ class TPCManager:public FileManager{
 		};
 		int GetNhits(){
 			return nclTpc;
-		}
-		int GetNhitsf(){
-			return clxfTpc->size();
-		}
-		int GetNhitsb(){
-			return nclbTpc;
 		}
 		int GetPadID(int i){
 			cout<<i<<" : GetPadID"<<endl;
@@ -543,33 +461,6 @@ class TPCManager:public FileManager{
 			}
 			return pos;
 		}
-		TVector3 GetPositionf(int itr){
-			TVector3 pos;
-			if(!cluster){
-				pos =  tpc::getPosition(GetPadID(itr));
-				pos.SetY(GetDL(itr));
-			}
-			else{
-				pos = TVector3(clxfTpc->at(itr),clyfTpc->at(itr),clzfTpc->at(itr)); 
-			}
-			return pos;
-		}
-		TVector3 GetPositionb(int itr){
-			TVector3 pos;
-			if(!cluster){
-				pos =  tpc::getPosition(GetPadID(itr));
-				pos.SetY(GetDL(itr));
-			}
-			else{
-				pos = TVector3(clxbTpc->at(itr),clybTpc->at(itr),clzbTpc->at(itr)); 
-			}
-			return pos;
-		}
-		TVector3 GetClusterPosition(int itr){
-			TVector3 pos;
-			pos=TVector3(clxTpc->at(itr),clyTpc->at(itr),clzTpc->at(itr)); 
-			return pos;
-		}
 		TVector3 GetG4Position(int i){
 			return TVector3(xtpc[i],ytpc[i],ztpc[i]);
 		}
@@ -617,7 +508,18 @@ class TPCManager:public FileManager{
 	vector<double>GetBeamV(){
 		return *beam_v;
 	}
+	vector<double>GetAccidentalR(){
+		return * accidental_r;
+	}
+	vector<double>GetAccidentalZ0(){
+		return * accidental_z0;
+	}
+	vector<double>GetAccidentalDZ(){
+		return * accidental_dz;
+	}
 
+	TH2D* GetZYHistAcc(int i);
+	TH2D* GetCirHistAcc(int i);
 
 
 
@@ -652,9 +554,13 @@ void TPCManager::InitializeHistograms(){
 	//	FlatHist = new TH2I("PadRTheta","PadRTheta",32,0,32,240,0,240);
 	//	PosHist = new TH2D("PosHisto","PosHisto",128,-250,250,128,-250,250);
 	ZYHist = new TH2D("ZYHist","ZYHist",40,-250,250,140,-350,350);
-	ZYHistf = new TH2D("ZYHistf","ZYHistf",40,-250,250,50,-300,300);
-	ZYHistb = new TH2D("ZYHistb","ZYHistb",40,-250,250,50,-300,300);
 	YHist = new TH1D("YHist","YHist",140,-350,350);
+	for(int i = 0; i<20;++i){
+			TString titleZY = Form("HistZY_%d",i);
+			TString titleCir = Form("HistCir_%d",i);
+			ZYHistsAcc[i] = new TH2D(titleZY,titleZY,40,-250,250,50,-350,350);	
+			CirHistsAcc[i] = new TH2D(titleCir,titleCir,50,-250,250,50,-250,250);	
+	}
 }
 void TPCManager::InitializeTPC(){
 	TPC3D=TPCGeometry();

@@ -56,7 +56,7 @@ FADC::FADC(vector<double>tb,vector<double>fadc,vector<double>rawfadc,int l,int r
 	rawhist = new TH1D(Form("rawhist%d",nhist),Form("RawWaveform(%d,%d)_%d",layer,row,nhist),nb,t1,t2);
 	for(int i=0;i<nb;++i){
 		hist->SetBinContent(tb[i],fadc[i]-ped);
-		rawhist->SetBinContent(tb[i],rawfadc[i]-rawped);
+		rawhist->SetBinContent(tb[i],rawfadc[i]-rawped+200);
 	}
 	hist->GetYaxis()->SetRangeUser(-200,700);
 	rawhist->GetYaxis()->SetRangeUser(-200,700);
@@ -85,7 +85,7 @@ Baseline::Baseline(vector<double>tb,vector<double>fadc){
 	hist=nullptr;
 	hist = new TH1D(Form("hist%d",nhist),Form("Baseline_%d",nhist),nb,t1,t2);
 	for(int i=0;i<nb;++i){
-		hist->SetBinContent(tb[i],fadc[i]-ped);
+		hist->SetBinContent(tb[i],fadc[i]-ped+200);
 	}
 	hist->GetYaxis()->SetRangeUser(-200,700);
 	TSpectrum spec(20);
@@ -114,6 +114,7 @@ int FADC::DoFit(double* par){
 //	cout<<MultiGumbel<<endl;
 
 	func = new TF1("func",MultiGumbel,0,170);
+	func->SetLineWidth(3);
 	for(int i=0;i<npeaks;++i){
 		func->SetParameter(i*3,de[i]);
 		func->SetParameter(i*3+1,time[i]);
@@ -170,6 +171,12 @@ class FADCManager:public TPCManager{
 		int GetWaveNum(){
 			return fadclayerTpc->size();
 //			return FADCs.size();
+		}
+		vector<int>* GetLayers(){
+			return fadclayerTpc;
+		}
+		vector<int>* GetRows(){
+			return fadcrowTpc;
 		}
 		int GetBaseNum(){
 			cout<<"NBase = "<<Base.size()<<endl;
@@ -258,7 +265,7 @@ TH1D* FADCManager::GetWaveformHist(int layer=-1, int row=-1){
 			h=FADCs[i].GetHistogram();
 		}
 		else{
-			cout<<Form("Hist(%d,%d):Wave(%d,%d) Does not exist!",l_,r_,layer,row)<<endl;
+//			cout<<Form("Hist(%d,%d):Wave(%d,%d) Does not exist!",l_,r_,layer,row)<<endl;
 		}
 	}
 	return h;

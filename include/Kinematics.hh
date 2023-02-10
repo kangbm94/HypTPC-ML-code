@@ -187,7 +187,7 @@ double GetTcal(double* par,TVector3 pos){
 	fpar[6] = pos_.Y();
 	fpar[7] = pos_.Z();
 	fint.SetParameters(fpar);
-	double min_t = fint.GetMinimumX();
+  double min_t = fint.GetMinimumX(-2*acos(-1),3*acos(-1)); 
 	return min_t;
 }
 
