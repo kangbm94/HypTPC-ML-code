@@ -8,81 +8,6 @@
 #include "ReconTools.hh"
 #ifndef TPCManager_h
 #define TPCManager_h
-double ExplicitHelix(double x,double y,double cx,double cy,double z0,double dz){
-	double x0 = x-cx;
-	double y0 = y-cy;
-	double r = sqrt(x0*x0+y0*y0);
-	return 0;
-}
-Double_t HypTPCdEdx(Double_t Z, Double_t *x, Double_t *p){
-  //x : poq
-  //p[0] : converting constant p[1] : density effect correction p[2] : mass
-  Double_t me  = 0.5109989461;
-  Double_t rho = TMath::Power(10.,-3)*(0.9*1.662 + 0.1*0.6672); //[g cm-3]
-  Double_t K = 0.307075; //[MeV cm2 mol-1]
-  Double_t ZoverA = 17.2/37.6; //[mol g-1]
-  Double_t constant = rho*K*ZoverA; //[MeV cm-1]
-  Double_t I2 = 0.9*188.0 + 0.1*41.7; I2 = I2*I2; //Mean excitaion energy [eV]
-  Double_t MeVToeV = TMath::Power(10.,6);
-  Double_t mom = 1000.*x[0]*Z; //MeV
-  Double_t beta2 = mom*mom/(mom*mom+p[2]*p[2]);
-  Double_t gamma2 = 1./(1.-beta2);
-  Double_t Wmax = 2*me*beta2*gamma2/((me+p[2])*(me+p[2])+2*me*p[2]*(TMath::Sqrt(gamma2)-1));
-  Double_t dedx = p[0]*constant*Z*Z/beta2*(0.5*TMath::Log(2*me*beta2*gamma2*Wmax*MeVToeV*MeVToeV/I2)-beta2-p[1]);
-  return dedx;
-}
-
-Double_t HypTPCBethe(Double_t *x, Double_t *p){ return HypTPCdEdx(1, x, p); }
-Int_t HypTPCdEdxPID_temp(Double_t dedx, Double_t poq){
-  Double_t bethe_par[2] = {7195.92, -10.5616};
-  Double_t limit = 0.6; //GeV/c
-  Double_t mpi = 139.57039;
-  Double_t mk  = 493.677;
-  Double_t mp  = 938.2720813;
-  Double_t md  = 1875.612762;
-  TF1 *f_pim = new TF1("f_pim", HypTPCBethe, -3., 0., 3);
-  TF1 *f_km = new TF1("f_km", HypTPCBethe, -3., 0., 3);
-  TF1 *f_pip = new TF1("f_pip", HypTPCBethe, 0., 3., 3);
-  TF1 *f_kp = new TF1("f_kp", HypTPCBethe, 0., 3., 3);
-  TF1 *f_p = new TF1("f_p", HypTPCBethe, 0., 3., 3);
-  TF1 *f_d = new TF1("f_d", HypTPCBethe, 0., 3., 3);
-
-  f_pim -> SetParameters(bethe_par[0], bethe_par[1], mpi);
-  f_km -> SetParameters(bethe_par[0], bethe_par[1], mk);
-  f_pip -> SetParameters(bethe_par[0], bethe_par[1], mpi);
-  f_kp -> SetParameters(bethe_par[0], bethe_par[1], mk);
-  f_p -> SetParameters(bethe_par[0], bethe_par[1], mp);
-  f_d -> SetParameters(bethe_par[0], bethe_par[1], md);
-
-  Int_t pid[3] = {0};
-  if(poq >= limit){
-    pid[0]=1; pid[1]=1; pid[2]=1;
-  }
-  else if(limit > poq && poq >= 0.){
-    Double_t dedx_d = f_d -> Eval(poq); Double_t dedx_p = f_p -> Eval(poq);
-    Double_t dedx_kp = f_kp -> Eval(poq); Double_t dedx_pip = f_pip -> Eval(poq);
-    if(dedx_d > dedx && dedx >= dedx_kp) pid[2]=1;
-    if(dedx_p > dedx){
-      pid[0]=1; pid[1]=1;
-    }
-  }
-  else if(0.> poq && poq >= -limit){
-    pid[0]=1; pid[1]=1;
-  }
-  else{
-    pid[0]=1; pid[1]=1;
-  }
-
-  delete f_pim;
-  delete f_km;
-  delete f_pip;
-  delete f_kp;
-  delete f_p;
-  delete f_d;
-
-  Int_t output = pid[0] + pid[1]*2 + pid[2]*4;
-  return output;
-}
 
 class TPCManager:public FileManager{
 	protected:
@@ -96,16 +21,32 @@ class TPCManager:public FileManager{
 		TH2I* FlatHist=nullptr;
 		TH2D* PosHist=nullptr;
 		TH1D* YHist=nullptr;
+		TH3D* hist_Ci;
+		TH2D* hist_YTheta;
+		TH2D* hist_ZY;
+		vector<TLine*>ZYLine;
 		TGeoVolume *TPC3D;
-		TPolyMarker3D *tpcHit3d;
-		TCanvas* TPCCanv;
+		vector<TPolyMarker3D *>tpcHit3d;
+		vector<TPolyLine3D*> AccidentalTrack3D ;
+		vector<TPolyLine3D*> HelixTrack3D ;
 		vector<TPCHit> m_Hits;
 		vector<TPCCluster> m_Clusters;
-		TEllipse* HelixTrack[20] ;
-		TEllipse* AccidentalTrack[20] ;
+		vector<TEllipse*> HelixTrack;
+		vector<TEllipse*> AccidentalTrack;
 		vector<int> *trigflag = new vector<int>;
 		vector<vector<TLine*>> HelixTrackZY ;
 		vector<vector<TLine*>> AccidentalTrackZY ;
+
+
+		int ZYtheta_ndiv = 120;
+		double ZYtheta_min = 0.45*acos(-1);
+		double ZYtheta_max = 0.55*acos(-1);//-0.4*acos(-1);
+		int rho_ndiv = 500;
+		double rho_min = -500;
+		double rho_max = 500;
+
+
+
 		vector<int> *padTpc = new vector<int>;
 		int iPadtpc[nhtpcmax];
 		double xtpc[nhtpcmax];
@@ -123,9 +64,9 @@ class TPCManager:public FileManager{
 		vector<double>* dlTpc = new vector<double>;
 		vector<double>* deTpc = new vector<double>;
 		vector<double>* cldeTpc = new vector<double>;
-		vector<double>* clxTpc = new vector<double>;
-		vector<double>* clyTpc = new vector<double>;
-		vector<double>* clzTpc = new vector<double>;
+		vector<double>* cluster_x = new vector<double>;
+		vector<double>* cluster_y = new vector<double>;
+		vector<double>* cluster_z = new vector<double>;
 		vector<double>* resolution_x = new vector<double>;
 		vector<double>* resolution_y = new vector<double>;
 		vector<double>* resolution_z = new vector<double>;
@@ -141,6 +82,12 @@ class TPCManager:public FileManager{
 		vector<double>* helix_z0 = new vector<double>;
 		vector<double>* helix_r = new vector<double>;
 		vector<double>* helix_dz = new vector<double>;
+		vector<double>* helix_flag = new vector<double>;
+		vector<double>* hough_cx = new vector<double>;
+		vector<double>* hough_cy = new vector<double>;
+		vector<double>* hough_z0 = new vector<double>;
+		vector<double>* hough_r = new vector<double>;
+		vector<double>* hough_dz = new vector<double>;
 		vector<double>* vtx = new vector<double>;
 		vector<double>* vty = new vector<double>;
 		vector<double>* vtz = new vector<double>;
@@ -152,11 +99,6 @@ class TPCManager:public FileManager{
 		vector<double>* mom0 = new vector<double>;
 		vector<int>* pid = new vector<int>;
 		vector<int>* charge = new vector<int>;
-		vector<double>* beam_y = new vector<double>;
-		vector<double>* beam_p0 = new vector<double>;
-		vector<double>* beam_p1 = new vector<double>;
-		vector<double>* beam_p2 = new vector<double>;
-		vector<double>* beam_v = new vector<double>;
 		vector<vector<double>>* helix_t = new vector<vector<double>>;
 		vector<vector<double>>* track_cluster_layer = new vector<vector<double>>;
 		vector<vector<double>>* track_cluster_x_center = new vector<vector<double>>;
@@ -181,12 +123,11 @@ class TPCManager:public FileManager{
 		Recon Ld,Xi;
 		TF1* f_bethe = new TF1("f_betaP",HypTPCBethe,0.1,3,3);
 
-	Double_t bethe_pars[2] = {7195.92, -10.5616};
-	Double_t mprt  = 938.2720813;
-		
+		Double_t bethe_pars[2] = {7195.92, -10.5616};
+		Double_t mprt  = 938.2720813;
+
 		TH2D* ZYHistsAcc[20];
 		TH2D* CirHistsAcc[20];
-
 	public:
 		TPCManager(){};
 
@@ -241,6 +182,13 @@ class TPCManager:public FileManager{
 		void DrawHelix(int it);
 		void DrawHelixZY(); 
 		void DrawHelixZY(int it); 
+
+		void DrawZYHough(); 
+
+
+		void DrawAccidental3D();
+		void DrawHelix3D();
+		void DrawHelix3D(int it);
 		void DrawAccidental();
 		void DrawAccidental(int it);
 		void DrawAccidentalZY(); 
@@ -321,6 +269,7 @@ class TPCManager:public FileManager{
 		void SearchVertex();
 		//Histogram Methods//
 		void InitializeHistograms();
+		void InitializeHoughHistograms();
 		void InitializeTPC();
 		void SetTitle(TString title){
 			PadHist->SetTitle(title);
@@ -329,9 +278,11 @@ class TPCManager:public FileManager{
 		}
 
 		void FillAccHists();
-		
+
 		void FillHist(double z, double x);
 		void LoadTPC3D();
+		void LoadAccidental3D();
+		void LoadHelix3D();
 		void FillHist(int itr);
 		void FillAntiProtonHist();
 		void FillFlatHist(int padID);
@@ -350,6 +301,7 @@ class TPCManager:public FileManager{
 		void ClearTPC(){
 			//			TPC3D->Reset("");
 		}
+		void Process(double* val);
 		TH2Poly* GetPadHistogram(){
 			return PadHist;
 		}
@@ -391,21 +343,15 @@ class TPCManager:public FileManager{
 			return hough_flag;
 		}
 
-
-		virtual void Process(double* vals){};
+		//		virtual void Process(double* vals){};
 
 
 		void DrawTPC(){
-			//		auto* dir = gDirectory()->cd();
-			TPCCanv = new TCanvas("c1","c1",1200,600);
-			TPCCanv->cd();
-			TView3D *view = (TView3D*) TView::CreateView(1);
 			TPC3D->Draw("");
-			//			dir->cd();
 		}
 		int GetNhits(int clusters){
 			if(!clusters)	return Min(padTpc->size(),max_nh);//Min(nhittpc,max_nh);
-			else 					return Min(clxTpc->size(),max_nh);
+			else 					return Min(cluster_x->size(),max_nh);
 		};
 		int GetNhits(){
 			return nclTpc;
@@ -433,8 +379,7 @@ class TPCManager:public FileManager{
 			return idtpc[i];
 		}
 		int Getititpc(int i){
-			return ititpc[i];
-		}
+			return ititpc[i]; }
 		int Getntrk(int i){
 			return ntrk[i];
 		}
@@ -457,7 +402,7 @@ class TPCManager:public FileManager{
 				pos.SetY(GetDL(itr));
 			}
 			else{
-				pos = TVector3(clxTpc->at(itr),clyTpc->at(itr),clzTpc->at(itr)); 
+				pos = TVector3(cluster_x->at(itr),cluster_y->at(itr),cluster_z->at(itr)); 
 			}
 			return pos;
 		}
@@ -493,35 +438,21 @@ class TPCManager:public FileManager{
 			return Track(x0BcOut->at(it),y0BcOut->at(it),u0BcOut->at(it),v0BcOut->at(it));
 		}
 #endif
-	vector<double>GetBeamY(){
-		return *beam_y;
-	}
-	vector<double>GetBeamP0(){
-		return *beam_p0;
-	}
-	vector<double>GetBeamP1(){
-		return *beam_p1;
-	}
-	vector<double>GetBeamP2(){
-		return *beam_p2;
-	}
-	vector<double>GetBeamV(){
-		return *beam_v;
-	}
-	vector<double>GetAccidentalR(){
-		return * accidental_r;
-	}
-	vector<double>GetAccidentalZ0(){
-		return * accidental_z0;
-	}
-	vector<double>GetAccidentalDZ(){
-		return * accidental_dz;
-	}
+		vector<double>GetAccidentalR(){
+			return * accidental_r;
+		}
+		vector<double>GetAccidentalZ0(){
+			return * accidental_z0;
+		}
+		vector<double>GetAccidentalDZ(){
+			return * accidental_dz;
+		}
 
-	TH2D* GetZYHistAcc(int i);
-	TH2D* GetCirHistAcc(int i);
+		TH2D* GetZYHistAcc(int i);
+		TH2D* GetCirHistAcc(int i);
 
 
+		void DoZYHough();
 
 		int WhichEvent();
 		void AssignG4Event(short * x,short* y,short* z,double* dedx);
@@ -531,7 +462,7 @@ class TPCManager:public FileManager{
 		//		int NumberOfTracks(int min_points=6);
 		void SetBetheProton(){
 			f_bethe ->SetParameters(bethe_pars[0],bethe_pars[1],mprt);
-	}
+		}
 		bool IsAntiProton( int it){
 			if(charge->at(it)<0) return false;
 			double dedx_p = f_bethe->Eval(mom0->at(it));
@@ -556,10 +487,10 @@ void TPCManager::InitializeHistograms(){
 	ZYHist = new TH2D("ZYHist","ZYHist",40,-250,250,140,-350,350);
 	YHist = new TH1D("YHist","YHist",140,-350,350);
 	for(int i = 0; i<20;++i){
-			TString titleZY = Form("HistZY_%d",i);
-			TString titleCir = Form("HistCir_%d",i);
-			ZYHistsAcc[i] = new TH2D(titleZY,titleZY,40,-250,250,50,-350,350);	
-			CirHistsAcc[i] = new TH2D(titleCir,titleCir,50,-250,250,50,-250,250);	
+		TString titleZY = Form("HistZY_%d",i);
+		TString titleCir = Form("HistCir_%d",i);
+		ZYHistsAcc[i] = new TH2D(titleZY,titleZY,40,-250,250,50,-350,350);	
+		CirHistsAcc[i] = new TH2D(titleCir,titleCir,50,-250,250,50,-250,250);	
 	}
 }
 void TPCManager::InitializeTPC(){
@@ -589,21 +520,15 @@ void TPCManager::SearchVertex(){
 		}
 	}
 }
+void
+TPCManager::InitializeHoughHistograms(){
+
+	hist_ZY = new TH2D("histZY","theta[rad] : rho[mm]"
+			,ZYtheta_ndiv/3, ZYtheta_min,ZYtheta_max
+			,rho_ndiv, rho_min,rho_max);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
 
 #endif

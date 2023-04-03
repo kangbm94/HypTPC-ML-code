@@ -10,11 +10,11 @@ void MatrixTest(){
 	Mat.SetConstants(constants);
 	double variable[3];
 	Mat.Initialize(b);
-	cout<<"Before Gaussian Elimination"<<endl;
+//	cout<<"Before Gaussian Elimination"<<endl;
 //	Mat.Show();
-	cout<<"After Gaussian Elimination"<<endl;
+//	cout<<"After Gaussian Elimination"<<endl;
 	Mat.GaussianElimination(variable);
-//	Mat.Show();
+	Mat.Show();
 	cout<<"Solution : "<<endl;
 	for(int i=0;i<3;++i){
 		cout<<Form("%f /12, ",12*variable[i])<<endl;

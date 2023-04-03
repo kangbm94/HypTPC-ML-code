@@ -23,6 +23,7 @@ class TPCHit{
 //			cout<<"Row: "<<m_row<<endl;
 //			cout<<Form("P=%d,L=%d,R=%f",m_padID,m_layer,m_row)<<endl;
 	//		m_phi = ;
+			m_cluster = -1;
 		}
 		double GetPadID(){
 			return m_padID;

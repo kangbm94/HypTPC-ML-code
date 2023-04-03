@@ -1,9 +1,9 @@
 #include "TPCManager.cc"
-int runnum = 5641;
+int runnum = 5642;
 //TString dir = base_dir+"MayRun/rootfiles/CH2/TPC/";
 int SearchPeaks(TH1D* hist,vector<double> &peaks){
 	TSpectrum spec(30);
-	double sig=1,th=0.15;
+	double sig=2,th=0.1;
 	//	int npeaks = spec.Search(hist,sig,"goff",th);
 	int npeaks = spec.Search(hist,sig,"",th);
 	double* peaks_ = spec.GetPositionX();
@@ -14,83 +14,35 @@ int SearchPeaks(TH1D* hist,vector<double> &peaks){
 	return npeaks;
 }
 TString dir = base_dir;
+const Int_t nBin_rdiff = 220;
+const Double_t rdiff_min = -220.;
+const Double_t rdiff_max = 220.;
+const Int_t nBin_theta = 180;
+const Double_t theta_min = -0.3*acos(-1);
+const Double_t theta_max = 0.3*acos(-1);//Charge < -1
+const Int_t nBin_p = 100;
+const Double_t p_min = 1600.;//MeV/c
+const Double_t p_max = 2000.;//MeV/c
+const int    thetaY_ndiv =  180;
+const double thetaY_min  =  60.;
+const double thetaY_max  =  120.;
+const int    r_ndiv =  1000;
+const double r_min  = -500.;
+const double r_max  =  500.;
 
-//TString tpcfile = dir + Form("run0%d_TPC_RMSCut.root",runnum);
-//TString tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
-//TString tpcfile = dir + Form("run05641_DstBeamRemover.root");
-TString tpcfile = dir + Form("SelectedHelix12.root");
-//TString tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
-//TString tpcfile = dir + Form("run0%d_DstSelectedTPCHelixTracking.root ",runnum);
+
+TString tpcfile;
 void TPCEventDisplay(){
-}
-void TPCEventDisplayAntiProton(){
+	cout<<"TPCEventDisplayAccidental(int ievt)"<<endl;
+	
+	int runnum = 5641;
+	tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
+//	tpcfile = "test.root"; 
+	gTPCManager.LoadClusterFile(tpcfile,"tpc");
+
 	gStyle->SetOptStat(0);
 	gTPCManager.InitializeHistograms();
-	//	gTPCManager.LoadClusterFile(tpcfile,"tree");
-	gTPCManager.LoadClusterFile(tpcfile,"tpc");
-	auto h = gTPCManager.GetPadHistogram();
-	auto h2 = gTPCManager.GetZYHistogram();
-	int ent = gTPCManager.GetEntries();	
-	gTPCManager.SetBetheProton();	
-	TCanvas* c1 = new TCanvas("c1","c1",1600,1200);
-	c1->Divide(2,1);
-	bool Single = true;
-	//	Single = false;
-	TFile* file = new TFile("SelectedEvents.root");
-	TTree* tree = (TTree*)file->Get("tree");
-	int xirn,xiev;
-	double xim2;
-	tree->SetBranchAddress("runnum",&xirn);
-	tree->SetBranchAddress("evnum",&xiev);
-	tree->SetBranchAddress("XiM2",&xim2);
-	int xient = tree->GetEntries();
-	for(int i=0;i<ent;++i){
-		if(i%1000==0) cout<<"Event "<<i<<endl;
-		gTPCManager.SetEvent(i);
-		int evnum = gTPCManager.GetEvnum();
-		int runnum = gTPCManager.GetRunnum();
-		bool go = false;
-		int nh=0;
-		nh=gTPCManager.GetNhits(1);
-		if(!nh) continue;
-		gTPCManager.InitializeHelix();
-		gTPCManager.ReconEvent();
-		//		if(!gTPCManager.XiEvent()) continue;
-		if(Single){
-			for(int itr=0;itr<nh;++itr){
-				//				if(gTPCManager.GetClDe(itr)>60)
-				//				gTPCManager.FillHist(itr);
-			}
-			gTPCManager.FillAntiProtonHist();
-			if(h->GetEffectiveEntries()==0){
-				gTPCManager.ClearHistogram();
-				continue;
-			}
-			cout<<Form("Drawing Event (%d,%d)",runnum,evnum)<<endl; c1->cd(1);
-			h->Draw("col");
-			h->SetTitle("CircleFit");
-			//	h->SetTitle(Form("MissMass = %f",xim2));
-			//	h->SetTitle(Form("MissMass = %f",xim2));
-			for(int i=0;i<gTPCManager.GetNTracks();++i){
-				if(gTPCManager.IsAntiProton(i))	gTPCManager.DrawHelix(i);
-			}
-			//			if(gTPCManager.LambdaEvent())gTPCManager.DrawVertex();
-			c1->cd(2);
-			h2->Draw("col");
-			for(int i=0;i<gTPCManager.GetNTracks();++i){
-				if(gTPCManager.IsAntiProton(i))	gTPCManager.DrawHelixZY(i);
-			}
-			//			if(gTPCManager.LambdaEvent())gTPCManager.DrawVertexZY();
-			c1->Modified();
-			c1->Update();
-			gSystem->ProcessEvents();
-			cin.ignore();
-			cout<<"Searching..."<<endl;
-			gTPCManager.ClearHistogram();
-		}
-	}
-	h->Draw("colz");
-	h->SetTitle(Form("Run%d",runnum));
+	gTPCManager.InitializeTPC();
 }
 
 void TPCEventDisplayHelix(){
@@ -171,93 +123,93 @@ void TPCEventDisplayHelix(){
 
 
 
-void TPCEventDisplayAccidental(){
-	gStyle->SetOptStat(0);
-	gTPCManager.InitializeHistograms();
-	int runnum = 5641;
+void TPCEventDisplayAccidental(int ievt){
 //	tpcfile = dir + Form("run0%d_DstTPCHelixTrackingWTarget.root",runnum);
-	tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
-	tpcfile = dir + Form("test.root");
-	gTPCManager.LoadClusterFile(tpcfile,"tpc");
+//	tpcfile = dir + Form("test.root");
 	auto h = gTPCManager.GetPadHistogram();
 	auto h2 = gTPCManager.GetZYHistogram();
 	int ent = gTPCManager.GetEntries();	
+	TH1D* Yhist= new TH1D("histY","histY",500,-500,500);
 	gTPCManager.SetBetheProton();	
 	TCanvas* c1 = new TCanvas("c1","c1",1600,1200);
 	c1->Divide(2,1);
-	TCanvas* c2 = new TCanvas("c2","c2",1600,1200);
-	c2->Divide(4,3);
-	vector<double>* accidental_dist = new vector<double>;
-	for(int i=0;i<ent;++i){
-		if(i%1000==0) cout<<"Event "<<i<<endl;
-		gTPCManager.SetEvent(i);
-		gTPCManager.ClearHistogram();
-		int evnum = gTPCManager.GetEvnum();
-		bool go = false;
-		int nh=0;
-//		if(!gTPCManager.TagTrig(23)) continue;
-		nh=gTPCManager.GetNhits(1);
-		if(!nh) continue;
-		bool acc = false;
-		int iacc = 0;
-		auto RV = gTPCManager.GetAccidentalR();
-		auto Z0V = gTPCManager.GetAccidentalZ0();
-		auto DZV = gTPCManager.GetAccidentalDZ();
-		int nacc = RV.size();
-		for(int ia=0; ia<nacc;++ia){
-			double rr = RV[ia];
-			double z0v = Z0V[ia];
-			double dzv = DZV[ia];
-			if(rr<1000){
-				cout<<Form("%d : rad %f",iacc,rr)<<endl;
-				cout<<Form("z0,dz = (%f, %f)",z0v,dzv)<<endl;
-			}
-			iacc++;
-		}
-//		if(!acc) continue;
-		gTPCManager.InitializeHelix();
-		gTPCManager.InitializeAccidental();
-		accidental_dist = gTPCManager.GetAccidentalDist();	
-		for(int itr=0;itr<nh;++itr){
-			//				if(gTPCManager.GetClDe(itr)>60)
-			gTPCManager.FillHist(itr);
-			if( gTPCManager.GetHoughFlag()->at(itr)<990)
-			cout<<"ADist : "<<accidental_dist->at(itr)<<endl;
-		}
-		cout<<Form("Drawing Event (%d,%d)",runnum,evnum)<<endl;
-		c1->cd(1);
-		h->Draw("colz");
-		h->SetTitle("CircleFit");
-		gTPCManager.DrawHelix();
-		gTPCManager.DrawAccidental();
-		c1->cd(2);
-		h2->Draw("colz");
-		gTPCManager.DrawHelixZY();
-		gTPCManager.DrawAccidentalZY();
-		c1->Modified();
-		c1->Update();
-		gTPCManager.FillAccHists();
-		int ntAcc = gTPCManager.GetNTracksAcc();
-		cout<<ntAcc<<endl;	
-		for(int ic = 0 ;ic<6;++ic){
-			auto hzy = gTPCManager.GetZYHistAcc(ic);
-			auto hcir = gTPCManager.GetCirHistAcc(ic);
-			c2->cd(2*ic+1);
-			hcir->Draw("col");
-			if(ic<ntAcc) gTPCManager.DrawAccidental(ic);
-			c2->cd(2*ic+2);
-			hzy->Draw("col");
-			if(ic<ntAcc) gTPCManager.DrawAccidentalZY(ic);
-		}
-		c2->Modified();
-		c2->Update();
-		cout<<"Event "<<endl;
-		gSystem->ProcessEvents();
-		cin.ignore();
-		cout<<"Searching..."<<endl;
+	TCanvas* c3 = new TCanvas("c3","c3",50,50,900,900);
+	TCanvas* c4 = new TCanvas("c4","c4",650,650,300,300);
+//	TCanvas* c5 = new TCanvas("c5","c5",350,350,600,600);
+	gTPCManager.SetEvent(ievt);
+	while(gTPCManager.TagTrig(20)){
+		++ievt;
+		gTPCManager.SetEvent(ievt);
 	}
+	cout<<"Event = "<<ievt<<endl;
+	gTPCManager.ClearHistogram();
+	int evnum = gTPCManager.GetEvnum();
+	bool go = false;
+	int nh=0;
+	//		if(!gTPCManager.TagTrig(23)) continue;
+	nh=gTPCManager.GetNhits(1);
+	bool acc = false;
+	gTPCManager.InitializeHelix();
+	//		gTPCManager.InitializeAccidental();
+	//		accidental_dist = gTPCManager.GetAccidentalDist();	
+	for(int itr=0;itr<nh;++itr){
+		//				if(gTPCManager.GetClDe(itr)>60)
+		gTPCManager.FillHist(itr);
+		auto pos = gTPCManager.GetPosition(itr);
+		double x = pos.X(),y=pos.Y(),z=pos.Z();
+		if(-0 < x and x < 0 and -0 < y and y < 0)continue;
+			Yhist->Fill(y);
+//		if( gTPCManager.GetHoughFlag()->at(itr)<990)
+			//				cout<<"ADist : "<<accidental_dist->at(itr)<<endl;
+	}
+	cout<<Form("Drawing Event (%d,%d)",runnum,evnum)<<endl;
+	c1->cd(1);
 	h->Draw("colz");
-	h->SetTitle(Form("Run%d",runnum));
+	h->SetTitle("CircleFit");
+	gTPCManager.DrawHelix();
+	c1->cd(2);
+	h2->Draw("colz");
+	gTPCManager.DrawHelixZY();
+	c1->Modified();
+	c1->Update();
+	c3->cd();
+	c3->Clear("D");
+	gTPCManager.DrawTPC();
+	gTPCManager.LoadTPC3D();
+	gTPCManager.LoadHelix3D();
+	gTPCManager.LoadAccidental3D();
+	gTPCManager.DrawHelix3D();
+	gTPCManager.DrawAccidental3D();
+	c3->Modified();
+	c3->Update();
+	c4->cd();
+	vector<double>peaks;
+	Yhist->Draw();
+	int npeaks = SearchPeaks(Yhist,peaks);
+	double YWindow = 25;
+	double max = Yhist->GetMaximum();
+	vector<vector<TVector3>> peakarr;
+	peakarr.resize(npeaks);
+	for(int ip = 0; ip < npeaks; ++ip){
+		double peak = peaks.at(ip);
+		for(int itr=0;itr<nh;++itr){
+			auto pos = gTPCManager.GetPosition(itr);
+			double x = pos.X(),y=pos.Y(),z=pos.Z();
+			if(abs(peak - y)<YWindow){
+				peakarr.at(ip).push_back(pos);	
+			}
+		}
+		TLine* left = new TLine(peak-YWindow,0,peak-YWindow,max);
+		TLine* right = new TLine(peak+YWindow,0,peak+YWindow,max);
+		left->Draw("same");
+		left->SetLineColor(2);
+		right->Draw("same");
+		right->SetLineColor(3);
+	}
+	c4->Modified();
+	c4->Update();
+
+	gSystem->ProcessEvents();
 }
 
 void TPCAccidentalCD(){

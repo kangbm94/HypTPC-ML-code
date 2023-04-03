@@ -33,11 +33,11 @@ double Max(double a, double b){
 	}
 }
 double Power(double x,int n){
-		double value=1;
-		for(int i=0;i<n;i++){
-			value=value*x;
-		}
-		return value;
+	double value=1;
+	for(int i=0;i<n;i++){
+		value=value*x;
+	}
+	return value;
 }
 double Polynomial(double x, double* p,int n){
 	double value=0;
@@ -85,9 +85,9 @@ double T1(double a,double b, double c, double d){
 	double p2 = b*b-3*a*c;
 	double val= -b*p0-p0*(
 			pow((p1+sqrt(p1*p1-4*p2*p2*p2))/2,1./3)
-		 +pow((p1-sqrt(p1*p1-4*p2*p2*p2))/2,1./3)
+			+pow((p1-sqrt(p1*p1-4*p2*p2*p2))/2,1./3)
 			);
-		return val;
+	return val;
 }
 
 
@@ -118,9 +118,13 @@ TVector2 GenCircleRandom(double r, double phi1,double phi2){
 	return TVector2(x,y);
 }
 TVector2 Generate2DGaus(double z0,double x0,double sig){
-	double r = abs(gRandom->Gaus(0,sig));
+	//double r = abs(gRandom->Gaus(0,sig));
+	double dz = gRandom->Gaus(0,sig);
+	double dx = gRandom->Gaus(0,sig);
 	TVector2 V(z0,x0);
-	return V+GenCircleRandom(r,0,2*acos(-1));
+	TVector2 dV(dz,dx);
+	return V+dV;
+	//	return V+GenCircleRandom(r,0,2*acos(-1));
 }
 
 
@@ -152,4 +156,58 @@ double chebyshev(double x, int n){
 	}
 	return val;
 }
+void CircleFit(std::vector<TVector3> posarr,double* param){
+	int n =posarr.size();
+	double Sumx=0,Sumy=0;
+	double Sumx2=0,Sumy2=0,Sumxy=0;
+	double Sumx3=0,Sumy3=0,Sumx2y=0,Sumy2x=0;
+	for (Int_t i=0;i<n;i++) {
+		double x = posarr.at(i).X();
+		double y = posarr.at(i).Y();
+		Sumx+=x;Sumy+=y;
+		Sumx2+=x*x;Sumy2+=y*y;Sumxy+=x*y;
+		Sumx3+=x*x*x;Sumy3+=y*y*y;Sumx2y+=x*x*y;Sumy2x+=y*y*x;
+	}
+	double a_1 = Sumx3 + Sumy2x, a_2 = Sumx2, a_3 = Sumx;
+	double b_1 = Sumy3 + Sumx2y, b_2 = Sumy2, b_3 = Sumy;
+	double c_1 = a_2+b_2,c_2 = Sumx,c_3 = Sumy;
+	double A = (a_1*(b_2*n-b_3*c_3)+a_3*(b_1*c_3-b_2*c_1)+Sumxy*(b_3*c_1-b_1*n))
+		/ ( Sumxy*(n*Sumxy-a_3*c_3-b_3*c_2)+a_2*b_3*c_3+a_3*b_2*c_2-a_2*b_2*n);
+	double B = (b_1*(a_2*n-a_3*c_2)+b_3*(a_1*c_2-a_2*c_1)+Sumxy*(a_3*c_1-a_1*n))      
+		/ ( Sumxy*(n*Sumxy-a_3*c_3-b_3*c_2)+a_2*b_3*c_3+a_3*b_2*c_2-a_2*b_2*n);
+	double C = (c_1*(a_2*b_2-Sumxy*Sumxy)+c_2*(Sumxy*b_1-a_1*b_2)+c_3*(Sumxy*a_1-b_1*a_2))
+		/ ( Sumxy*(n*Sumxy-a_3*c_3-b_3*c_2)+a_2*b_3*c_3+a_3*b_2*c_2-a_2*b_2*n);
+	double cx = -0.5 * A;
+	double cy = -0.5 * B;
+	double rad = sqrt(cx*cx+cy*cy-C);	
+	param[0] = cx;
+	param[1] = cy;
+	param[2] = rad;
+	//	std::cout<<Form("(cx,cy,rad) = (%f,%f,%f)",cx,cy,rad)<<std::endl;
+}
+
+void
+LinearFit(std::vector<TVector3> posarr,double* param){
+	// y = ax + b;
+	int n =posarr.size();
+	double Sumx=0,Sumy=0;
+	double Sumx2=0,Sumxy=0;
+	for (Int_t i=0;i<n;i++) {
+		double x = posarr.at(i).X();
+		double y = posarr.at(i).Y();
+		Sumx+=x;Sumy+=y;
+		Sumx2+=x*x;Sumxy+=x*y;
+	}
+	double b = (Sumx*Sumxy-Sumx2*Sumy)/( Sumx*Sumx-n*Sumx2);	
+	double a = (Sumx*Sumy-n*Sumxy)/( Sumx*Sumx-n*Sumx2);	
+	param[0]=b;//b = z0;
+	param[1]=a;//a = dz;
+						 //	std::cout<<Form("(z0,dz) = (%f,%f)",b,a)<<std::endl;
+}
+bool SortY(TVector3 a, TVector3 b){
+	return a.Y()<b.Y();
+}
+
+
+
 #endif

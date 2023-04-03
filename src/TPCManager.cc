@@ -22,30 +22,25 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 
 	DataChain->SetBranchAddress("nclTpc",&nclTpc);
 	DataChain->SetBranchAddress("cluster_de",&cldeTpc);
-	DataChain->SetBranchAddress("cluster_x",&clxTpc);
-	DataChain->SetBranchAddress("cluster_y",&clyTpc);
-	DataChain->SetBranchAddress("cluster_z",&clzTpc);
-	DataChain->SetBranchAddress("resolution_x",&resolution_x);
-	DataChain->SetBranchAddress("resolution_y",&resolution_y);
-	DataChain->SetBranchAddress("resolution_z",&resolution_z);
-	DataChain->SetBranchAddress("resolution",&resolution);
+	DataChain->SetBranchAddress("cluster_x",&cluster_x);
+	DataChain->SetBranchAddress("cluster_y",&cluster_y);
+	DataChain->SetBranchAddress("cluster_z",&cluster_z);
 	DataChain->SetBranchAddress("hough_flag",&hough_flag);
 	DataChain->SetBranchAddress("hough_dist",&hough_dist);
 	
-	DataChain->SetBranchAddress("padTpc",&padTpc);
 
-	DataChain->SetBranchAddress("ntAcc",&ntAcc);
-	DataChain->SetBranchAddress("accidental_cx",&accidental_cx);	
-	DataChain->SetBranchAddress("accidental_cy",&accidental_cy);	
-	DataChain->SetBranchAddress("accidental_z0",&accidental_z0);	
-	DataChain->SetBranchAddress("accidental_r",&accidental_r);	
-	DataChain->SetBranchAddress("accidental_dz",&accidental_dz);	
 	DataChain->SetBranchAddress("ntTpc",&ntTpc);
 	DataChain->SetBranchAddress("helix_cx",&helix_cx);	
 	DataChain->SetBranchAddress("helix_cy",&helix_cy);	
 	DataChain->SetBranchAddress("helix_z0",&helix_z0);	
 	DataChain->SetBranchAddress("helix_r",&helix_r);	
 	DataChain->SetBranchAddress("helix_dz",&helix_dz);	
+	DataChain->SetBranchAddress("helix_flag",&helix_flag);	
+	DataChain->SetBranchAddress("hough_cx",&hough_cx);	
+	DataChain->SetBranchAddress("hough_cy",&hough_cy);	
+	DataChain->SetBranchAddress("hough_z0",&hough_z0);	
+	DataChain->SetBranchAddress("hough_r",&hough_r);	
+	DataChain->SetBranchAddress("hough_dz",&hough_dz);	
 	DataChain->SetBranchAddress("chisqr",&chisqr);	
 	DataChain->SetBranchAddress("isBeam",&isBeam);
 	DataChain->SetBranchAddress("pid",&pid);
@@ -59,13 +54,13 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("track_cluster_x_center",&track_cluster_x_center);
 	DataChain->SetBranchAddress("track_cluster_y_center",&track_cluster_y_center);
 	DataChain->SetBranchAddress("track_cluster_z_center",&track_cluster_z_center);
+	DataChain->SetBranchAddress("helix_t",&helix_t);
 	/*
 		 DataChain->SetBranchAddress("beam_y",&beam_y);
 		 DataChain->SetBranchAddress("beam_p0",&beam_p0);
 		 DataChain->SetBranchAddress("beam_p1",&beam_p1);
 		 DataChain->SetBranchAddress("beam_p2",&beam_p2);
 		 DataChain->SetBranchAddress("beam_v",&beam_v);
-		 DataChain->SetBranchAddress("helix_t",&helix_t);
 		 */
 	//	DataChain->SetBranchAddress("track_cluster_layer",&track_cluster_layer);
 	DataChain->SetBranchAddress("hitlayer",&track_cluster_layer);
@@ -103,9 +98,9 @@ void TPCManager::LoadTPCBcOutChain(TString ChainName ="tpc"){
 	DataChain->SetBranchAddress("u0BcOut",&u0BcOut);
 	DataChain->SetBranchAddress("v0BcOut",&v0BcOut);
 	DataChain->SetBranchAddress("nhTpc",&nhittpc);
-	DataChain->SetBranchAddress("cluster_x",&clxTpc);
-	DataChain->SetBranchAddress("cluster_y",&clyTpc);
-	DataChain->SetBranchAddress("cluster_z",&clzTpc);
+	DataChain->SetBranchAddress("cluster_x",&cluster_x);
+	DataChain->SetBranchAddress("cluster_y",&cluster_y);
+	DataChain->SetBranchAddress("cluster_z",&cluster_z);
 	DataChain->SetBranchAddress("cluster_de",&deTpc);
 	DataChain->SetBranchAddress("cluster_size",&clsize);
 
@@ -127,9 +122,9 @@ void TPCManager::FillAccHists(){
 	for(int ih = 0; ih < nh; ++ih){
 		int hf = hough_flag->at(ih) - 1000;
 		if(hf > -1 and hf < 20){
-			double x = clxTpc->at(ih);
-			double y = clyTpc->at(ih);
-			double z = clzTpc->at(ih);
+			double x = cluster_x->at(ih);
+			double y = cluster_y->at(ih);
+			double z = cluster_z->at(ih);
 			ZYHistsAcc[hf]->Fill(z,y);
 			CirHistsAcc[hf]->Fill(z,x);
 		}
@@ -164,20 +159,18 @@ void TPCManager::FillHist(double z, double x){
 }
 void TPCManager::FillHist(int itr){
 	TVector3 hitv = GetPosition(itr);
-	double res = resolution->at(itr);
+//	double res = resolution->at(itr);
 	double x = hitv.X();
 	double y = hitv.Y();
 	double z = hitv.Z();
 	int bx,by;
 	int bin = ZYHist->FindBin(z,y);
 	int padId = tpc::findPadID(z,x);
-	PadHist->SetBinContent(padId,res);
+	PadHist->SetBinContent(padId,1);
 	//	ZYHist->SetBinContent(bin,x);
 	//	if(hough_flag->at(itr)<9999){
 //	PadHist->Fill(z,x);
-	ZYHist->Fill(z,y);
-	if(hough_flag->at(itr)<990)
-	cout<<Form("Pos(%f,%f,%f)",x,y,z)<<endl;
+	if(hough_flag->at(itr) < 400 or hough_flag->at(itr)>499)ZYHist->Fill(z,y);
 	//		YHist->Fill(y);
 	//	}
 };
@@ -230,8 +223,7 @@ void TPCManager::SetPadContent(int layer,int row,double cont){
 	PadHist->SetBinContent(padID,cont);
 }
 void TPCManager::LoadTPC3D(){
-	TPCCanv->cd();
-	if(tpcHit3d) delete tpcHit3d;
+//	if(tpcHit3d) delete tpcHit3d;
 	int nh;
 	if(!cluster){
 		nh= GetNhits(0);
@@ -239,16 +231,21 @@ void TPCManager::LoadTPC3D(){
 	else{
 		nh=GetNhits(1);
 	}
-	tpcHit3d= new TPolyMarker3D(nh,8);    
+	tpcHit3d.clear();
+	tpcHit3d.resize(nh);
 	for(int i=0;i<nh;++i){
+		tpcHit3d.at(i) = new TPolyMarker3D();
+		int hf = hough_flag->at(i);
 		TVector3 pos = GetPosition(i);
 		double x=pos.x(),y=pos.y(),z=pos.z();
-		tpcHit3d->SetPoint(i,z,x,y);
+		tpcHit3d.at(i)->SetPoint(0,z,x,y);
+		tpcHit3d.at(i)->SetMarkerStyle(8);	
+		if(399 < hf and hf < 500){
+			tpcHit3d.at(i)->SetMarkerColor(hf - 399);	
+			tpcHit3d.at(i)->SetMarkerStyle(29);	
+		}
+		tpcHit3d.at(i)->Draw("SAME");
 	}
-	//  TView3D *view = (TView3D*) TView::CreateView(1);
-	tpcHit3d->Draw("SAME");
-	TPCCanv->Modified();
-	TPCCanv->Update();
 }
 
 
@@ -471,7 +468,25 @@ void TPCManager::DrawHelix(int it){
 	HelixTrack[it]->Draw("psame");
 }
 void TPCManager::DrawHelix(){
-	for(int it = 0; it< ntTpc;++it)DrawHelix(it);
+	for(int it = 0; it< HelixTrack.size();++it){
+		if(helix_flag->at(it)> 399 and helix_flag->at(it)<500){
+			DrawHelix(it);
+			cout<<it<<" , "<<helix_flag->at(it)<<endl;
+		}
+	}
+}
+void TPCManager::DrawHelix3D(int it){
+	HelixTrack3D[it]->Draw("same");
+}
+void TPCManager::DrawHelix3D(){
+	for(int it=0;it<HelixTrack3D.size();++it){
+		HelixTrack3D[it]->Draw("same");
+	}
+}
+void TPCManager::DrawAccidental3D(){
+	for(int it=0;it<AccidentalTrack3D.size();++it){
+		AccidentalTrack3D[it]->Draw("same");
+	}
 }
 
 void TPCManager::DrawAccidental(int it){
@@ -487,7 +502,7 @@ void TPCManager::DrawHelixZY(int it){
 	} 
 }
 void TPCManager::DrawHelixZY(){
-	for(int it = 0; it< ntTpc;++it)DrawHelixZY(it);
+	for(int it = 0; it< HelixTrack.size();++it)DrawHelixZY(it);
 }
 
 void TPCManager::DrawAccidentalZY(int it){
@@ -502,11 +517,11 @@ void TPCManager::InitializeAccidental(){
 	AccidentalTrackZY.clear();
 	AccidentalTrackZY.resize(ntAcc);
 	for(int it = 0; it< ntAcc;++it){
-		double cx = accidental_cx->at(it);
-		double cy = accidental_cy->at(it);
-		double z0 = accidental_z0->at(it);
-		double r = accidental_r->at(it);
-		double dz = accidental_dz->at(it);
+		double cx = helix_cx->at(it);
+		double cy = helix_cy->at(it);
+		double z0 = helix_z0->at(it);
+		double r = helix_r->at(it);
+		double dz = helix_dz->at(it);
 		double pars[5]={cx,cy,z0,r,dz};
 		double theta1=70;
 		double theta2=105;
@@ -542,15 +557,15 @@ vector<double>* TPCManager::GetAccidentalDist(){
 		double min_dist = 9999;
 		for(int iac = 0; iac < ntAcc;++iac){
 			TVector3 pos(
-				clxTpc->at(ih),
-				clyTpc->at(ih),
-				clzTpc->at(ih));
+				cluster_x->at(ih),
+				cluster_y->at(ih),
+				cluster_z->at(ih));
 			double par[8] = {
-				accidental_cx->at(iac),
-				accidental_cy->at(iac),
-				accidental_z0->at(iac),
-				accidental_r->at(iac),
-				accidental_dz->at(iac),
+				helix_cx->at(iac),
+				helix_cy->at(iac),
+				helix_z0->at(iac),
+				helix_r->at(iac),
+				helix_dz->at(iac),
 				pos.X(),pos.Y(),pos.Z()
 			};
 			double t = GetTcal(par,pos);
@@ -568,19 +583,18 @@ vector<double>* TPCManager::GetAccidentalDist(){
 }
 void TPCManager::InitializeHelix(){
 	//			cout<<"InitializeHelix: "<<endl;
-	//			HelixTrack.clear();		
-
+	HelixTrack.clear();		
 	HelixTrackZY.clear();		
-	HelixTrackZY.resize(ntTpc);		
+	AccidentalTrack.clear();		
+	AccidentalTrackZY.clear();		
+	int TrackNo = 0;
 	for(int it = 0; it< ntTpc;++it){
+		int hf = helix_flag ->at(it);
 		double cx = helix_cx->at(it);
 		double cy = helix_cy->at(it);
 		double z0 = helix_z0->at(it);
 		double r = helix_r->at(it);
 		double dz = helix_dz->at(it);
-		//			cout<<Form("Params = (%f,%f,%f,%f,%f)",cx,cy,r,z0,dz)<<endl;
-		//				TString title = Form("Helix%d",it);
-		//				if(r>4000) continue;
 		double pars[5]={cx,cy,z0,r,dz};
 		double t_min = 100;
 		double t_max = -100;
@@ -589,7 +603,6 @@ void TPCManager::InitializeHelix(){
 		auto zcl = track_cluster_z_center->at(it);
 		vector<double>tvec;
 		for(int ih=0;ih<xcl.size();++ih){
-			//					cout<<"track : "<< it<<" hit: "<<ih<<endl;
 			double x = xcl.at(ih);
 			double y = ycl.at(ih);
 			double z = zcl.at(ih);
@@ -599,54 +612,238 @@ void TPCManager::InitializeHelix(){
 			if(t>t_max) t_max=t;
 			double hx = cos(t),hy=sin(t);
 			double theta = atan2(-hx,hy);
-			//					theta=fmod(theta*180./acos(-1)+360.*100,360.);
 			theta=fmod(theta*180./acos(-1),360.);
 			tvec.push_back(theta);
 		}
 		double theta_med = TMath::Median(tvec.size(),tvec.data());
-		//				cout<<t_min<<","<<t_max<<endl;
 		double hx_min = cos(t_min),hy_min=sin(t_min);
 		double hx_max = cos(t_max),hy_max=sin(t_max);
 		double tc_min = atan2(-hx_min,hy_min),tc_max=atan2(-hx_max,hy_max);
-		//double theta1=fmod(tc_min*180./acos(-1)+360.*100.,360.),theta2=fmod(tc_max*180./acos(-1)+360.*100.,360.);
 		double theta1=fmod(tc_min*180./acos(-1),360.),theta2=fmod(tc_max*180./acos(-1),360.);
 		double th1_temp = theta1-theta_med;// = fmod(theta1-theta_med,360.);
 		double th2_temp = theta2-theta_med;// = fmod(theta2-theta_med,360.);
-																			 //				cout<<Form("t1,tm,t2 = (%f,%f,%f)",theta1,theta_med,theta2)<<endl; 
 
 		if( sin(th1_temp*acos(-1)/180.)>0  and sin(th2_temp*acos(-1)/180.)<0 ){
 			theta2=theta2-360;
 		}
 
-		//				cout<<Form("t1,tm,t2 = (%f,%f,%f)",theta1,theta_med,theta2)<<endl; 
-		//				theta1=360.-theta1;
-		//				theta2=360.-theta2;
-
-		/*
-			 if(theta1>theta2){
-			 double dum = theta2;
-			 theta2=theta1;
-			 theta1=dum;
-			 }*/
-		//			cout<<theta1<<","<<theta2<<endl;
-		HelixTrack[it] = new TEllipse(cy+ZTarget,-cx,r,r,theta1,theta2);
-		HelixTrack[it]->SetNoEdges();
-		//				HelixTrack[it] = new TEllipse(cy+ZTarget,-cx,r,r,0.,360.);
-		//				HelixTrack[it] = new TEllipse(cy+ZTarget,-cx,r,r);
-		HelixTrack[it]-> SetLineColor(kRed);
-		HelixTrack[it]-> SetFillStyle(0);
-		HelixTrack[it]-> SetLineColor(it+1);
-		HelixTrack[it]-> SetLineWidth(2);
+		auto Track= new TEllipse(cy+ZTarget,-cx,r,r,theta1,theta2);
+		Track->SetNoEdges();
+		Track-> SetLineColor(kRed);
+		Track-> SetFillStyle(0);
+		Track-> SetLineColor(it+1);
+		Track-> SetLineWidth(2);
+		vector<TLine*> TrackZY;
 		double dt = (t_max-t_min)/npts;
 		for(int ip=0;ip<npts;ip++){
 			double t1 = t_min+dt*ip,t2 = t1+dt;
 			double y1 = r*dz*t1+z0,y2 = r*dz*t2+z0;
 			double z1 = r*sin(t1)+cy+ZTarget,z2 = r*sin(t2)+cy+ZTarget;
-			HelixTrackZY[it].push_back(new TLine(z1,y1,z2,y2));
-			HelixTrackZY[it].at(ip)->SetLineColor(it+1);
-			HelixTrackZY[it].at(ip)->SetLineWidth(2);
+			TrackZY.push_back(new TLine(z1,y1,z2,y2));
+		}
+		if(hf> 399 and hf < 500){
+			TrackNo++;
+			Track-> SetLineColor(1);
+			Track-> SetLineWidth(2);
+			for(auto t: TrackZY){
+				t->SetLineColor(1);
+				t->SetLineStyle(kDashed);
+			}
+			AccidentalTrackZY.push_back(TrackZY);
+			AccidentalTrack.push_back(Track);
+		}
+		else{
+			Track-> SetLineColor(TrackNo);
+			Track-> SetLineWidth(2);
+			for(auto t: TrackZY){
+				t->SetLineColor(TrackNo);
+			}
+			HelixTrackZY.push_back(TrackZY);
+			HelixTrack.push_back(Track);
 		}
 	}
 	cout<<"HelixInit!"<<endl;
 }
+void TPCManager::LoadAccidental3D(){
+	AccidentalTrack3D.clear();
+	for(int it = 0; it< ntTpc;++it){
+		int track_flag = helix_flag->at(it);
+		if(track_flag < 400 or track_flag > 499) continue;
+		cout<<"flag : "<<track_flag<<endl;
+		
+		double cx = helix_cx->at(it);
+		double cy = helix_cy->at(it);
+		double z0 = helix_z0->at(it);
+		double r = helix_r->at(it);
+		double dz = helix_dz->at(it);
+		
+		double pars[5]={cx,cy,z0,r,dz};
+		double t_min = 100;
+		double t_max = -100;
+		vector<double>tvec;
+		vector<TVector3>tpos;
+		for(int ih=0;ih<helix_t->at(it).size();++ih){
+			cout<<"helix_t"<<endl;
+			double t = helix_t->at(it).at(ih);
+			if(t<t_min) t_min=t;
+			if(t>t_max) t_max=t;
+		}
+		sort(tvec.begin(),tvec.end());
+		int ntv = tvec.size();
+		int imedt=ntv/2;
+		double theta_med = 0;
+		if (imedt > 0)theta_med =tvec.at(imedt);
+		tvec.clear();
+		t_max = 1.1*acos(-1);
+		t_min = 0.9*acos(-1);
+		double dt = (t_max-t_min)/npts;
+		auto Track = new TPolyLine3D(npts);
+		Track ->SetLineColor(2);
+		Track ->SetLineWidth(3);
+		Track ->SetLineStyle(kDashed);
+		for(int ip=0;ip<npts;ip++){
+			double t1 = t_min+dt*ip,t2 = t1+dt;
+			double x1 = -(r*cos(t1)+cx); 
+			double y1 = r*dz*t1+z0;
+			double z1 = r*sin(t1)+cy+ZTarget;
+			Track->SetPoint(ip,z1,x1,y1);	
+		}
+		sort(tvec.begin(),tvec.end());
+		cout<<"Accidental Track " << it << " radius "<<r<<" rdz = "<<r*dz<<" z0 = "<<z0<<" T = ("<<t_min<<" , "<<t_max<<" )"<<endl; 
+		for(auto t:tvec){
+//			cout<<"Accidental Track " << it <<" "<<HelixPos(pars,t).Y()<< " T = "<<t<<endl; 
+		}
+		AccidentalTrack3D.push_back(Track);
+	}//ntTpc
+	cout<<"Accidental3D Loaded"<<endl;
+}
+void TPCManager::LoadHelix3D(){
+	HelixTrack3D.clear();
+	int TrackNo=0;
+	for(int it = 0; it< ntTpc;++it){
+		int track_flag = helix_flag->at(it);
+		cout<<"flag : "<<track_flag<<endl;
+		if(track_flag > 399 and track_flag < 500) continue;
+		TrackNo++;	
+		double cx = helix_cx->at(it);
+		double cy = helix_cy->at(it);
+		double z0 = helix_z0->at(it);
+		double r = helix_r->at(it);
+		double dz = helix_dz->at(it);
+		
+		double pars[5]={cx,cy,z0,r,dz};
+		double t_min = 100;
+		double t_max = -100;
+		vector<double>tvec;
+		vector<TVector3>tpos;
+		for(int ih=0;ih<helix_t->at(it).size();++ih){
+			double t = helix_t->at(it).at(ih);
+			tvec.push_back(t);
+			if(t<t_min) t_min=t;
+			if(t>t_max) t_max=t;
+		}
+		sort(tvec.begin(),tvec.end());
+		int ntv = tvec.size();
+		int imedt=ntv/2;
+		double theta_med =tvec.at(imedt);
+		cout<<theta_med<<endl;
+//		t_max = 1.1*acos(-1);
+//		t_min = 0.9*acos(-1);
+		double dt = (t_max-t_min)/npts;
+		auto Track = new TPolyLine3D(npts);
+		Track ->SetLineColor(TrackNo);
+		Track ->SetLineWidth(3);
+		for(int ip=0;ip<npts;ip++){
+			double t1 = t_min+dt*ip,t2 = t1+dt;
+			double x1 = -(r*cos(t1)+cx); 
+			double y1 = r*dz*t1+z0;
+			double z1 = r*sin(t1)+cy+ZTarget;
+			Track->SetPoint(ip,z1,x1,y1);	
+		}
+		sort(tvec.begin(),tvec.end());
+		cout<<"Track " << it << " radius "<<r<<" rdz = "<<r*dz<<" z0 = "<<z0<<" T = ("<<t_min<<" , "<<t_max<<" )"<<endl; 
+		for(auto t:tvec){
+			cout<<"Track " << it <<" "<<HelixPos(pars,t).Y()<< " T = "<<t<<endl; 
+		}
+		HelixTrack3D.push_back(Track);
+	}//ntTpc
+	cout<<"Helix3D Loaded"<<endl;
+}
+
+void
+TPCManager::DoZYHough(){
+	cout<<"ZYReset"<<endl;
+	hist_ZY->Reset();
+	ZYLine.clear();
+	cout<<"ZYReset"<<endl;
+	int nh = GetNhits(1);
+	cout<<"nh = "<<nh<<endl;
+	vector<bool>countflag(nh,false);
+	for(int it = 0; it < 10; ++it){
+		for(int ih = 0; ih < nh; ++ih){
+			if(countflag.at(ih)) continue;
+			if(hough_flag->at(ih)>0) continue;
+			auto pos = GetPosition(ih);
+			double x = pos.X(),y=pos.Y(),z=pos.Z();
+			for(int ti = 0; ti<ZYtheta_ndiv;++ti){
+				double theta = hist_ZY->GetXaxis()->GetBinCenter(ti+1);
+				double rho = cos(theta)*z + sin(theta)*y;
+				hist_ZY->Fill(theta,rho);
+			}//ti
+
+		}//ih
+		int maxbin = hist_ZY->GetMaximumBin();
+		int mx,my,mz;
+		hist_ZY->GetBinXYZ(maxbin,mx,my,mz);
+		double mtheta = hist_ZY->GetXaxis()->GetBinCenter(mx);
+		double mrho = hist_ZY->GetYaxis()->GetBinCenter(my);
+		double y0 = mrho/sin(mtheta);
+		double v = -cos(mtheta)/sin(mtheta);
+		vector<int> index;
+		int nc = 0;
+		for(int ih = 0; ih < nh; ++ih){
+			if(countflag.at(ih)) continue;
+			if(hough_flag->at(ih)>0) continue;
+			auto pos = GetPosition(ih);
+			double x = pos.X(),y=pos.Y(),z=pos.Z();
+			double Ydist = sqrt( (y0 + v*z  - y)/(v*v+1));
+			if(Ydist < 20){
+				index.push_back(ih);
+				nc++;
+			}
+		}
+		if(nc> 8){
+			for(auto ih : index){
+				countflag.at(ih)=true;
+			}
+			cout<<Form("Track %d: hits = %d , y = %f +  %f z ",it,nc,y0,v)<<endl;
+			cout<<Form("Params: (rho , theta ) = ( %f , %f) ",mrho,mtheta)<<endl;
+			ZYLine.push_back(new TLine(-250,y0-250*v,250,y0+250*v));		
+		}
+	}//it
+};
+void 
+TPCManager::DrawZYHough(){
+	int nZY = ZYLine.size();
+	for(int i=0;i<nZY;++i){
+		ZYLine.at(i)->Draw("same");
+		ZYLine.at(i)->SetLineColor(i+1);
+		ZYLine.at(i)->SetLineWidth(1);
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #endif

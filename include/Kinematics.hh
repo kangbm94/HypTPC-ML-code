@@ -1,9 +1,17 @@
 #include "TPCPadHelper.hh"
+#include "PhysicalConstants.hh"
 #ifndef Kinematics_h
 #define Kinematics_h
+double MassSquare(double p, double l, double t){
+	double beta = l / t / LightSpeed ;
+	return p*p*(1-beta*beta)/beta/beta;
+}
+
+
 const double& HS_field_0 = 0.9860;
 const double& HS_field_Hall_calc = 0.90607;
 const double& HS_field_Hall=  0.873800000;
+
 
 std::string s_tmp="pow([5]-([0]+([3]*cos(x))),2)+pow([6]-([1]+([3]*sin(x))),2)+pow([7]-([2]+([3]*[4]*x)),2)";
 TF1 fint("fint",s_tmp.c_str(),-4.,4.);
@@ -173,7 +181,42 @@ TVector3 CalcHelixMom(double par[5], double y)
 	return TVector3(px,py,pz);
 }
 
+TVector3 HelixPos(double* par, double t){
+	double cx = par[0],cy=par[1],z0 = par[2],r = par[3],dz = par[4];
+	double x = cx+r*cos(t);
+	double y = cy+r*sin(t);
+	double z = z0+r*dz*t;
+	return TVector3(-x,z,y+ZTarget);
+}
+TVector3 HelixPosInTarget(double* par, double t){
+	return GlobalToTarget(HelixPos(par,t));
+}
 
+double GetTcalWdist(double* par,TVector3 pos){
+	TVector3 pos_(-pos.X(),
+			pos.Z()-ZTarget,
+			pos.Y());
+	double fpar[8];
+	for(int ip=0; ip<5; ++ip){
+		fpar[ip] = par[ip];
+	}
+	fpar[5] = pos_.X();
+	fpar[6] = pos_.Y();
+	fpar[7] = pos_.Z();
+	fint.SetParameters(fpar);
+	double min_t=1e9 ;
+	double distYMin = 1e9;
+	for(int i = 0; i< 15; ++i){
+		double min_t_temp = fint.GetMinimumX((-14.+2*i)*acos(-1),(-14.+2*(i+1))*acos(-1)); 
+		double distY = (HelixPosInTarget(fpar,min_t_temp)-pos).Mag();
+		if(distY<distYMin){
+			distYMin = distY;
+			min_t = min_t_temp;
+		}
+	}
+	// min_t = fint.GetMinimumX(0.*acos(-1),2.*acos(-1)); 
+	return min_t;
+}
 
 double GetTcal(double* par,TVector3 pos){
 	TVector3 pos_(-pos.X(),
@@ -187,17 +230,25 @@ double GetTcal(double* par,TVector3 pos){
 	fpar[6] = pos_.Y();
 	fpar[7] = pos_.Z();
 	fint.SetParameters(fpar);
-  double min_t = fint.GetMinimumX(-2*acos(-1),3*acos(-1)); 
+  double min_t = fint.GetMinimumX(-2.5*acos(-1),2.5*acos(-1)); 
+	return min_t;
+}
+double GetTcalBeam(double* par,TVector3 pos){
+	TVector3 pos_(-pos.X(),
+			pos.Z()-ZTarget,
+			pos.Y());
+	double fpar[8];
+	for(int ip=0; ip<5; ++ip){
+		fpar[ip] = par[ip];
+	}
+	fpar[5] = pos_.X();
+	fpar[6] = pos_.Y();
+	fpar[7] = pos_.Z();
+	fint.SetParameters(fpar);
+  double min_t = fint.GetMinimumX(0.5*acos(-1),1.5*acos(-1)); 
 	return min_t;
 }
 
-TVector3 HelixPos(double* par, double t){
-	double cx = par[0],cy=par[1],z0 = par[2],r = par[3],dz = par[4];
-	double x = cx+r*cos(t);
-	double y = cy+r*sin(t);
-	double z = z0+r*dz*t;
-	return TVector3(-x,z,y+ZTarget);
-}
 
 double MinHelixDistance(double* par, TVector3 pos){
 	auto t = GetTcal(par,pos);

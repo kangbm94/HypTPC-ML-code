@@ -151,7 +151,7 @@ class Vertex{
 	public:
 		Vertex(Track p){
 			Tracks.push_back(p);Vert_id=pow(2,p.GetID());
-//			cout<<"Vertex"<<endl;
+			//			cout<<"Vertex"<<endl;
 		}
 		Vertex(){}
 		bool Counted(Track p){
@@ -181,7 +181,7 @@ class VertexLH:public Vertex{
 	public:
 		VertexLH(Recon p){
 			Recons.push_back(p);
-	}
+		}
 		virtual int NTrack(){
 			return Recons.size()+Tracks.size();
 		}
@@ -203,36 +203,36 @@ class VertexLH:public Vertex{
 		}
 };
 /*
-class VertexLL:public Vertex{
-	private:
-		vector<Recon>HCand;
-		vector<Recon>HCorCand;
-		vector<Recon>Recons1;
-		vector<Recon>Recons2;
-	public:
-		VertexLL(Recon p){
-			Recons.push_back(p);
-	}
-		virtual int NTrack(){
-			return Recons.size()+Tracks.size();
-		}
-		bool AddTrack(Track p);
-		void SearchXiCombination();
-		Recon GetH(){
-			double comp = 9999;
-			Recon val ;
-			int num = 0;
-			for(auto Hc : HCand){ if( abs(mH-Hc.Mass())<comp) {comp=abs(mH-Hc.Mass());val=Hc;}}
-			return val;
-		}
-		Recon GetHCor(){
-			double comp = 9999;
-			Recon val ;
-			int num = 0;
-			for(auto Hc : HCorCand){ if( abs(mH-Hc.Mass())<comp) {comp=abs(mH-Hc.Mass());val=Hc;}}
-			return val;
-		}
-};
+	 class VertexLL:public Vertex{
+	 private:
+	 vector<Recon>HCand;
+	 vector<Recon>HCorCand;
+	 vector<Recon>Recons1;
+	 vector<Recon>Recons2;
+	 public:
+	 VertexLL(Recon p){
+	 Recons.push_back(p);
+	 }
+	 virtual int NTrack(){
+	 return Recons.size()+Tracks.size();
+	 }
+	 bool AddTrack(Track p);
+	 void SearchXiCombination();
+	 Recon GetH(){
+	 double comp = 9999;
+	 Recon val ;
+	 int num = 0;
+	 for(auto Hc : HCand){ if( abs(mH-Hc.Mass())<comp) {comp=abs(mH-Hc.Mass());val=Hc;}}
+	 return val;
+	 }
+	 Recon GetHCor(){
+	 double comp = 9999;
+	 Recon val ;
+	 int num = 0;
+	 for(auto Hc : HCorCand){ if( abs(mH-Hc.Mass())<comp) {comp=abs(mH-Hc.Mass());val=Hc;}}
+	 return val;
+	 }
+	 };
 
 
 */
