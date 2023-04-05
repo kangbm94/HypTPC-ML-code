@@ -137,10 +137,12 @@ void TPCEventDisplayAccidental(int ievt){
 	TCanvas* c4 = new TCanvas("c4","c4",650,650,300,300);
 //	TCanvas* c5 = new TCanvas("c5","c5",350,350,600,600);
 	gTPCManager.SetEvent(ievt);
+	/*
 	while(gTPCManager.TagTrig(20)){
 		++ievt;
 		gTPCManager.SetEvent(ievt);
 	}
+	*/
 	cout<<"Event = "<<ievt<<endl;
 	gTPCManager.ClearHistogram();
 	int evnum = gTPCManager.GetEvnum();
@@ -150,17 +152,15 @@ void TPCEventDisplayAccidental(int ievt){
 	nh=gTPCManager.GetNhits(1);
 	bool acc = false;
 	gTPCManager.InitializeHelix();
+	gTPCManager.ReconEvent();
 	//		gTPCManager.InitializeAccidental();
 	//		accidental_dist = gTPCManager.GetAccidentalDist();	
 	for(int itr=0;itr<nh;++itr){
-		//				if(gTPCManager.GetClDe(itr)>60)
 		gTPCManager.FillHist(itr);
 		auto pos = gTPCManager.GetPosition(itr);
 		double x = pos.X(),y=pos.Y(),z=pos.Z();
 		if(-0 < x and x < 0 and -0 < y and y < 0)continue;
 			Yhist->Fill(y);
-//		if( gTPCManager.GetHoughFlag()->at(itr)<990)
-			//				cout<<"ADist : "<<accidental_dist->at(itr)<<endl;
 	}
 	cout<<Form("Drawing Event (%d,%d)",runnum,evnum)<<endl;
 	c1->cd(1);
@@ -180,6 +180,7 @@ void TPCEventDisplayAccidental(int ievt){
 	gTPCManager.LoadAccidental3D();
 	gTPCManager.DrawHelix3D();
 	gTPCManager.DrawAccidental3D();
+	gTPCManager.DrawVertex3D();
 	c3->Modified();
 	c3->Update();
 	c4->cd();

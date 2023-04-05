@@ -76,7 +76,10 @@ class Recon{
 		int trid1=-1,trid2=-1;
 	public:
 		Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2){
-			LV.SetXYZM(0,0,0,0);Daughters = D;Vert=vertex;close_dist=clos_dist;
+			LV.SetXYZM(0,0,0,0);
+			Daughters = D;
+			Vert=vertex;
+			close_dist=clos_dist;
 			for(auto lv:D) LV+=lv;
 			CombID = pow(2,id1)+pow(2,id2);
 			exist = true;

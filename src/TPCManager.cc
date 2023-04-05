@@ -416,6 +416,7 @@ TPCManager::ReconEvent(){
 	bool ldflg = false,xiflg=false;
 	Ld.Clear();Xi.Clear();
 	double chi_cut = 50;
+	LdPiID = -1;LdProtonID = -1;XiPiID=-1;
 	for(int nt1 = 0; nt1<ntTpc;++nt1){
 		if(chisqr->at(nt1)>chi_cut) continue; 
 		if(isBeam->at(nt1)) continue; 
@@ -449,10 +450,11 @@ TPCManager::ReconEvent(){
 	}
 	int nld= LdCand.size();
 	double comp = 9999;
-
 	for(auto m:LdCand){
 		if( abs(mL-m.Mass())<comp) {comp=abs(mL-m.Mass());Ld=m;}
 	}
+	LdProtonID = Ld.GetID1();
+	LdPiID = Ld.GetID2();
 	comp = 9999;
 	VertexLH V(Ld);
 
@@ -462,6 +464,7 @@ TPCManager::ReconEvent(){
 	ldflg=Ld.Exist();
 	if(ldflg)V.SearchXiCombination();	
 	Xi = V.GetXi();
+	XiPiID = Xi.GetID2();
 	xiflg=Xi.Exist();
 }
 void TPCManager::DrawHelix(int it){
@@ -723,8 +726,14 @@ void TPCManager::LoadHelix3D(){
 	for(int it = 0; it< ntTpc;++it){
 		int track_flag = helix_flag->at(it);
 		cout<<"flag : "<<track_flag<<endl;
-		if(track_flag > 399 and track_flag < 500) continue;
-		TrackNo++;	
+		if(track_flag > 399 and track_flag < 500){
+			HelixTrackID.push_back(-1);
+			continue;
+		}
+		else{
+			HelixTrackID.push_back(TrackNo);
+			TrackNo++;	
+		}
 		double cx = helix_cx->at(it);
 		double cy = helix_cy->at(it);
 		double z0 = helix_z0->at(it);
@@ -832,6 +841,82 @@ TPCManager::DrawZYHough(){
 	}
 }
 
+
+void TPCManager::DrawVertex3D(){
+			TVector3 LV,XV;
+			bool ldflg = Ld.Exist(),xiflg = Xi.Exist();
+			double z1=0,z2=0,z3=0,z4=0;
+			double x1=0,x2=0,x3=0,x4=0;
+			double y1=0,y2=0,y3=0,y4=0;
+			Vertex3d.clear();	
+			VertexTrack3D.clear();	
+			if(ldflg) {
+				LV = Ld.Vertex();
+				z1 = LV.Z();
+				x1 = LV.X();
+				y1 = LV.Y();
+				auto Dir = Ld.Momentum();
+				Dir = Dir* (1./Dir.Mag());
+				z2 = z1-Dir.Z()*150;
+				x2 = x1-Dir.X()*150;
+				y2 = y1-Dir.Y()*150;
+				cout<<Form("Lambda Vertex (%f,%f,%f) Mass: %f",LV.X(),LV.Y(),LV.Z(),Ld.Mass())<<endl;
+				auto LdVert = new TPolyMarker3D();
+				LdVert->SetPoint(0,z1,x1,y1);
+				LdVert->SetMarkerColor(kMagenta);
+				LdVert->SetMarkerStyle(39);
+				LdVert->SetMarkerSize(5);
+				Vertex3d.push_back(LdVert);
+				auto LdTrack = new TPolyLine3D(2);
+				LdTrack->SetPoint(0,z1,x1,y1);
+				LdTrack->SetPoint(1,z2,x2,y2);
+				LdTrack->SetLineColor(kMagenta);
+				LdTrack->SetLineWidth(2);
+				VertexTrack3D.push_back(LdTrack);
+				cout<<"LdPiID = "<<LdPiID<<endl;
+				cout<<"LdPiTrackID = "<<HelixTrackID.at(LdPiID)<<endl;
+				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineColor(kMagenta);
+				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineWidth(3);
+				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineStyle(2);
+				HelixTrack3D.at(HelixTrackID.at(LdProtonID))->SetLineColor(kMagenta);
+				HelixTrack3D.at(HelixTrackID.at(LdProtonID))->SetLineWidth(3);
+				HelixTrack3D.at(HelixTrackID.at(LdProtonID))->SetLineStyle(6);
+			}
+			if(xiflg){
+				XV = Xi.Vertex();
+				z3 = XV.Z();
+				x3 = XV.X();
+				y3 = XV.Y();
+				auto Dir = Xi.Momentum();
+				Dir = Dir* (1./Dir.Mag());
+				z4 = z3-Dir.Z()*100;
+				x4 = x3-Dir.X()*100;
+				y4 = y4-Dir.Y()*100;
+				cout<<Form("Xi Vertex (%f,%f,%f) Mass: %f",XV.X(),XV.Y(),XV.Z(),Xi.Mass())<<endl;
+				auto XiVert = new TPolyMarker3D();
+				XiVert->SetPoint(0,z3,x3,y3);
+				XiVert->SetMarkerColor(kCyan);
+				XiVert->SetMarkerStyle(39);
+				XiVert->SetMarkerSize(5);
+				Vertex3d.push_back(XiVert);
+				cout<<"PropDist : "<<(LV-XV).Mag()<<endl;
+				auto XiTrack = new TPolyLine3D(2);
+				XiTrack->SetPoint(0,z3,x3,y3);
+				XiTrack->SetPoint(1,z4,x4,y4);
+				XiTrack->SetLineColor(kCyan);
+				XiTrack->SetLineWidth(2);
+				VertexTrack3D.push_back(XiTrack);
+				HelixTrack3D.at(HelixTrackID.at(XiPiID))->SetLineColor(kCyan);
+				HelixTrack3D.at(HelixTrackID.at(XiPiID))->SetLineWidth(3);
+				HelixTrack3D.at(HelixTrackID.at(XiPiID))->SetLineStyle(2);
+			}
+			for(auto v :Vertex3d){
+				v->Draw("same");
+			}
+			for(auto t :VertexTrack3D){
+				t->Draw("same");
+			}
+}
 
 
 

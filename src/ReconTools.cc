@@ -12,7 +12,9 @@ bool Vertex::AddTrack(Track p){
 		auto pos = VertexPointHelix(par1,par2,cd,t1,t2);
 		if(cd<cdcut){
 			Tracks.push_back(p);
-			verts.push_back(pos);Vert_id+=pow(2,nt);SetVert();
+			verts.push_back(pos);
+			Vert_id+=pow(2,nt);
+			SetVert();
 			return true;
 		}
 	}
@@ -121,6 +123,10 @@ void VertexLH::SearchXiCombination(){
 			double cd_,t1_,t2_;
 			if(ld.Counted(pi)) continue;
 			auto ldpivert = VertexPointHelixLinear(pi.GetPar(),ld.GetPar(),cd_,t1_,t2_); 
+			TVector3 ldmomdir = ld.Momentum() * (1./ld.Momentum().Mag());
+			TVector3 lddir = ld.Vertex() - ldpivert;
+			lddir = lddir * (1./lddir.Mag());
+			if(ldmomdir * lddir < 0) continue;
 			auto p2 = CalcHelixMom(pi.GetPar(),ldpivert.y());
 			std::bitset<8>ldb(ld.GetID());
 //			cout<<"cd = "<<cd_<<" PiID,LdId = ("<<pi.GetID()<<" , "<<ldb<<" )"<<endl;

@@ -29,6 +29,9 @@ class TPCManager:public FileManager{
 		vector<TPolyMarker3D *>tpcHit3d;
 		vector<TPolyLine3D*> AccidentalTrack3D ;
 		vector<TPolyLine3D*> HelixTrack3D ;
+		vector<int> HelixTrackID;
+		vector<TPolyMarker3D *>Vertex3d;
+		vector<TPolyLine3D*> VertexTrack3D ;
 		vector<TPCHit> m_Hits;
 		vector<TPCCluster> m_Clusters;
 		vector<TEllipse*> HelixTrack;
@@ -44,7 +47,6 @@ class TPCManager:public FileManager{
 		int rho_ndiv = 500;
 		double rho_min = -500;
 		double rho_max = 500;
-
 
 
 		vector<int> *padTpc = new vector<int>;
@@ -113,7 +115,7 @@ class TPCManager:public FileManager{
 		bool cluster = false;
 		int ntBcOut=0;
 		int ntk=0;
-		double npts=100;
+		double npts=10;
 		double anpts=5;
 		vector<double>* x0BcOut = new vector<double>;
 		vector<double>* y0BcOut = new vector<double>;
@@ -121,6 +123,8 @@ class TPCManager:public FileManager{
 		vector<double>* v0BcOut = new vector<double>;
 		bool ldflg,xiflg;
 		Recon Ld,Xi;
+		int LdProtonID=-1,LdPiID=-1;
+		int XiPiID=-1;
 		TF1* f_bethe = new TF1("f_betaP",HypTPCBethe,0.1,3,3);
 
 		Double_t bethe_pars[2] = {7195.92, -10.5616};
@@ -264,6 +268,7 @@ class TPCManager:public FileManager{
 				xivert->SetLineColor(kCyan); xivert->Draw("psame"); 
 			} 
 		}
+		void DrawVertex3D();
 		bool LambdaEvent(){return Ld.Exist();}
 		bool XiEvent(){return Xi.Exist();}
 		void SearchVertex();
