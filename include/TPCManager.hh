@@ -115,14 +115,14 @@ class TPCManager:public FileManager{
 		bool cluster = false;
 		int ntBcOut=0;
 		int ntk=0;
-		double npts=10;
+		double npts=30;
 		double anpts=5;
 		vector<double>* x0BcOut = new vector<double>;
 		vector<double>* y0BcOut = new vector<double>;
 		vector<double>* u0BcOut = new vector<double>;
 		vector<double>* v0BcOut = new vector<double>;
 		bool ldflg,xiflg;
-		Recon Ld,Xi;
+		Recon Ld,Xi,XiCor;
 		int LdProtonID=-1,LdPiID=-1;
 		int XiPiID=-1;
 		TF1* f_bethe = new TF1("f_betaP",HypTPCBethe,0.1,3,3);

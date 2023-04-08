@@ -1,4 +1,5 @@
 #include "Kinematics.hh"
+#include "KinFit.hh"
 #ifndef ReconTools_h
 #define ReconTools_h
 
@@ -130,6 +131,9 @@ class Recon{
 		int GetID2(){
 			return trid2;
 		}
+		TLorentzVector GetDaughter(int i){
+			return Daughters.at(i);
+		}
 };
 
 
@@ -181,9 +185,11 @@ class VertexLH:public Vertex{
 		vector<TVector3>Ldmom;
 		vector<Recon>Recons;
 		vector<Track>Tracks;
+		KinematicFitter Fitter;
 	public:
 		VertexLH(Recon p){
 			Recons.push_back(p);
+			Fitter = KinematicFitter(mL);
 		}
 		virtual int NTrack(){
 			return Recons.size()+Tracks.size();

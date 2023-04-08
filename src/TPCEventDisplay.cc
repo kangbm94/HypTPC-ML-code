@@ -1,5 +1,5 @@
 #include "TPCManager.cc"
-int runnum = 5642;
+int runnum = 5643;
 //TString dir = base_dir+"MayRun/rootfiles/CH2/TPC/";
 int SearchPeaks(TH1D* hist,vector<double> &peaks){
 	TSpectrum spec(30);
@@ -13,7 +13,7 @@ int SearchPeaks(TH1D* hist,vector<double> &peaks){
 	}
 	return npeaks;
 }
-TString dir = base_dir;
+TString dir = base_dir+"before_mod/";
 const Int_t nBin_rdiff = 220;
 const Double_t rdiff_min = -220.;
 const Double_t rdiff_max = 220.;
@@ -29,13 +29,13 @@ const double thetaY_max  =  120.;
 const int    r_ndiv =  1000;
 const double r_min  = -500.;
 const double r_max  =  500.;
+vector<int> Xievnum;
 
 
 TString tpcfile;
 void TPCEventDisplay(){
 	cout<<"TPCEventDisplayAccidental(int ievt)"<<endl;
 	
-	int runnum = 5641;
 	tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
 //	tpcfile = "test.root"; 
 	gTPCManager.LoadClusterFile(tpcfile,"tpc");
@@ -43,6 +43,17 @@ void TPCEventDisplay(){
 	gStyle->SetOptStat(0);
 	gTPCManager.InitializeHistograms();
 	gTPCManager.InitializeTPC();
+	TFile* fileXi = new TFile("Sorted.root");
+	TTree* treeXi = (TTree*)fileXi->Get("tree");
+	int XiRunnum,XiEvnum;
+	treeXi->SetBranchAddress("runnum",&XiRunnum);
+	treeXi->SetBranchAddress("evnum",&XiEvnum);
+	for(int i = 0; i< treeXi->GetEntries();++i){
+		treeXi->GetEntry(i);
+		if(XiRunnum == runnum) Xievnum.push_back(XiEvnum);
+	}
+	cout<<"TPCXiDisplay(int iXi)"<<endl;
+	cout<<"NXi = "<<Xievnum.size()<<endl;
 }
 
 void TPCEventDisplayHelix(){
@@ -162,7 +173,6 @@ void TPCEventDisplayAccidental(int ievt){
 		if(-0 < x and x < 0 and -0 < y and y < 0)continue;
 			Yhist->Fill(y);
 	}
-	cout<<Form("Drawing Event (%d,%d)",runnum,evnum)<<endl;
 	c1->cd(1);
 	h->Draw("colz");
 	h->SetTitle("CircleFit");
@@ -209,9 +219,15 @@ void TPCEventDisplayAccidental(int ievt){
 	}
 	c4->Modified();
 	c4->Update();
+	cout<<Form("Drawing Event (%d,%d)",runnum,evnum)<<endl;
 
 	gSystem->ProcessEvents();
 }
+void TPCXiDisplay(int i){
+	int ievt = Xievnum.at(i);	
+	TPCEventDisplayAccidental(ievt);
+}
+
 
 void TPCAccidentalCD(){
 	int runnum = 5641;

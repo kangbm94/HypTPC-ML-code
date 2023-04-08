@@ -1,6 +1,7 @@
 #include "../include/ReconTools.hh"
 #ifndef ReconTools_C
 #define ReconTools_C
+#include "KinFit.cc"
 bool Vertex::AddTrack(Track p){
 	int np = NTrack();
 	int nt = p.GetID();
@@ -131,6 +132,7 @@ void VertexLH::SearchXiCombination(){
 			std::bitset<8>ldb(ld.GetID());
 //			cout<<"cd = "<<cd_<<" PiID,LdId = ("<<pi.GetID()<<" , "<<ldb<<" )"<<endl;
 			auto ldLV = ld.GetLV();
+
 			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv1 = {ldLV,piLV};
 			auto xilv1 = ldLV+piLV;
@@ -139,11 +141,24 @@ void VertexLH::SearchXiCombination(){
 			vector<TLorentzVector> lv2 = {ldLV,piLVInv};
 			auto xilv2 = ldLV+piLVInv;
 			if(xilv2.Vect().Mag()<mom_cut and xilv2.Vect().Mag()>mom_cutMin)XiCand.push_back(Recon(lv2,ldpivert,cd_,ld.GetID(),pi.GetID()));
-			double ldpx = ldLV.Vect().X();
-			double ldpy = ldLV.Vect().Y();
-			double ldpz = ldLV.Vect().Z();
-			auto ldLVCor = TLorentzVector();
-			ldLVCor.SetXYZM(ldpx,ldpy,ldpz,mL);
+		
+			
+			auto ldPLV = ld.GetDaughter(0);
+			auto ldPP = ldPLV.Vect(); 
+			auto ldPPres = ldPP * (0.03);
+			
+			auto ldpiLV = ld.GetDaughter(1);
+			auto ldpiP = ldpiLV.Vect(); 
+			auto ldpiPres = ldpiP * (0.03);
+
+			Fitter.AssignLorentzVector(ldPLV,ldpiLV);
+			Fitter.SetResolution(ldPPres,ldpiPres);
+			
+			Fitter.DoKinematicFit();
+			auto ldPCor = Fitter.GetFittedLV().at(0);
+			auto ldpiCor = Fitter.GetFittedLV().at(1);
+			auto ldLVCor = ldPCor+ldpiCor;
+
 			auto xiCorlv1 = ldLVCor+piLV;
 			vector<TLorentzVector> lv1Cor = {ldLVCor,piLV};
 			if(xiCorlv1.Vect().Mag()<mom_cut and xiCorlv1.Vect().Mag()>mom_cutMin)XiCorCand.push_back(Recon(lv1Cor,ldpivert,cd_,ld.GetID(),pi.GetID()));

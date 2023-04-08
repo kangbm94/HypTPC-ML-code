@@ -464,6 +464,7 @@ TPCManager::ReconEvent(){
 	ldflg=Ld.Exist();
 	if(ldflg)V.SearchXiCombination();	
 	Xi = V.GetXi();
+	XiCor = V.GetXiCor();
 	XiPiID = Xi.GetID2();
 	xiflg=Xi.Exist();
 }
@@ -686,7 +687,6 @@ void TPCManager::LoadAccidental3D(){
 		vector<double>tvec;
 		vector<TVector3>tpos;
 		for(int ih=0;ih<helix_t->at(it).size();++ih){
-			cout<<"helix_t"<<endl;
 			double t = helix_t->at(it).at(ih);
 			if(t<t_min) t_min=t;
 			if(t>t_max) t_max=t;
@@ -722,6 +722,7 @@ void TPCManager::LoadAccidental3D(){
 }
 void TPCManager::LoadHelix3D(){
 	HelixTrack3D.clear();
+	HelixTrackID.clear();
 	int TrackNo=0;
 	for(int it = 0; it< ntTpc;++it){
 		int track_flag = helix_flag->at(it);
@@ -755,7 +756,7 @@ void TPCManager::LoadHelix3D(){
 		int ntv = tvec.size();
 		int imedt=ntv/2;
 		double theta_med =tvec.at(imedt);
-		cout<<theta_med<<endl;
+//		cout<<theta_med<<endl;
 //		t_max = 1.1*acos(-1);
 //		t_min = 0.9*acos(-1);
 		double dt = (t_max-t_min)/npts;
@@ -772,7 +773,7 @@ void TPCManager::LoadHelix3D(){
 		sort(tvec.begin(),tvec.end());
 		cout<<"Track " << it << " radius "<<r<<" rdz = "<<r*dz<<" z0 = "<<z0<<" T = ("<<t_min<<" , "<<t_max<<" )"<<endl; 
 		for(auto t:tvec){
-			cout<<"Track " << it <<" "<<HelixPos(pars,t).Y()<< " T = "<<t<<endl; 
+//			cout<<"Track " << it <<" "<<HelixPos(pars,t).Y()<< " T = "<<t<<endl; 
 		}
 		HelixTrack3D.push_back(Track);
 	}//ntTpc
@@ -843,7 +844,7 @@ TPCManager::DrawZYHough(){
 
 
 void TPCManager::DrawVertex3D(){
-			TVector3 LV,XV;
+			TVector3 LV,XV,XVCor;
 			bool ldflg = Ld.Exist(),xiflg = Xi.Exist();
 			double z1=0,z2=0,z3=0,z4=0;
 			double x1=0,x2=0,x3=0,x4=0;
@@ -884,6 +885,7 @@ void TPCManager::DrawVertex3D(){
 			}
 			if(xiflg){
 				XV = Xi.Vertex();
+				XVCor = XiCor.Vertex();
 				z3 = XV.Z();
 				x3 = XV.X();
 				y3 = XV.Y();
@@ -893,6 +895,7 @@ void TPCManager::DrawVertex3D(){
 				x4 = x3-Dir.X()*100;
 				y4 = y4-Dir.Y()*100;
 				cout<<Form("Xi Vertex (%f,%f,%f) Mass: %f",XV.X(),XV.Y(),XV.Z(),Xi.Mass())<<endl;
+				cout<<Form("XiCor Vertex (%f,%f,%f) Mass: %f",XVCor.X(),XVCor.Y(),XVCor.Z(),XiCor.Mass())<<endl;
 				auto XiVert = new TPolyMarker3D();
 				XiVert->SetPoint(0,z3,x3,y3);
 				XiVert->SetMarkerColor(kCyan);
