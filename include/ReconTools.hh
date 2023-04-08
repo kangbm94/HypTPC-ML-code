@@ -134,6 +134,9 @@ class Recon{
 		TLorentzVector GetDaughter(int i){
 			return Daughters.at(i);
 		}
+		void SetCdCut(double cd){
+			cdcut = cd;
+		}
 };
 
 
