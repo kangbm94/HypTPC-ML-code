@@ -134,9 +134,6 @@ class Recon{
 		TLorentzVector GetDaughter(int i){
 			return Daughters.at(i);
 		}
-		void SetCdCut(double cd){
-			cdcut = cd;
-		}
 };
 
 
@@ -178,6 +175,9 @@ class Vertex{
 			int num = 0;
 			for(auto ldc : LdCand){ if( abs(mL-ldc.Mass())<comp) {comp=abs(mL-ldc.Mass());val=ldc;}}
 			return val;
+		}
+		void SetCdCut(double cd){
+			cdcut = cd;
 		}
 };
 class VertexLH:public Vertex{
