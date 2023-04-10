@@ -220,7 +220,7 @@ class VertexLH:public Vertex{
 		}
 		bool AddTrack(Track p);
 		void SearchXiCombination();
-		double GetLagMultiplier(){
+		double GetLagMulti(){
 			return laglambda;
 		}
 		Recon GetLd(){
