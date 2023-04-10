@@ -65,9 +65,9 @@ void KinematicFitter::DoKinematicFit(){
 	qx = par_cor[4];
 	qy = par_cor[5];
 	qz = par_cor[6];
-	cout<<Form("Corrected: labmda = %f",lambda)<<endl;
-	cout<<Form("Corrected: P -> PCor = (%f,%f,%f)->(%f,%f,%f)",px0,py0,pz0,px,py,pz)<<endl;
-	cout<<Form("Corrected: Q -> QCor = (%f,%f,%f)->(%f,%f,%f)",qx0,qy0,qz0,qx,qy,qz)<<endl;
+//	cout<<Form("Corrected: labmda = %f",lambda)<<endl;
+//	cout<<Form("Corrected: P -> PCor = (%f,%f,%f)->(%f,%f,%f)",px0,py0,pz0,px,py,pz)<<endl;
+//	cout<<Form("Corrected: Q -> QCor = (%f,%f,%f)->(%f,%f,%f)",qx0,qy0,qz0,qx,qy,qz)<<endl;
 
 	PCor.SetXYZM(px,py,pz, MP);
 	QCor.SetXYZM(qx,qy,qz, MQ);

@@ -143,6 +143,7 @@ void VertexLH::SearchXiCombination(){
 			if(xilv2.Vect().Mag()<mom_cut and xilv2.Vect().Mag()>mom_cutMin)XiCand.push_back(Recon(lv2,ldpivert,cd_,ld.GetID(),pi.GetID()));
 		
 			
+/*
 			auto ldPLV = ld.GetDaughter(0);
 			auto ldPP = ldPLV.Vect(); 
 			auto ldPPres = ldPP * (0.03);
@@ -150,7 +151,6 @@ void VertexLH::SearchXiCombination(){
 			auto ldpiLV = ld.GetDaughter(1);
 			auto ldpiP = ldpiLV.Vect(); 
 			auto ldpiPres = ldpiP * (0.03);
-
 			Fitter.AssignLorentzVector(ldPLV,ldpiLV);
 			Fitter.SetResolution(ldPPres,ldpiPres);
 			
@@ -165,6 +165,7 @@ void VertexLH::SearchXiCombination(){
 			auto xiCorlv2 = ldLVCor+piLVInv;
 			vector<TLorentzVector> lv2Cor = {ldLVCor,piLVInv};
 			if(xiCorlv2.Vect().Mag()<mom_cut and xiCorlv2.Vect().Mag()>mom_cutMin)XiCorCand.push_back(Recon(lv2Cor,ldpivert,cd_,ld.GetID(),pi.GetID()));
+		*/
 		}
 	}
 }

@@ -466,7 +466,7 @@ TPCManager::ReconEvent(){
 	ldflg=Ld.Exist();
 	if(ldflg)V.SearchXiCombination();	
 	Xi = V.GetXi();
-	XiCor = V.GetXiCor();
+//	XiCor = V.GetXiCor();
 	XiPiID = Xi.GetID2();
 	xiflg=Xi.Exist();
 }
@@ -887,7 +887,7 @@ void TPCManager::DrawVertex3D(){
 			}
 			if(xiflg){
 				XV = Xi.Vertex();
-				XVCor = XiCor.Vertex();
+//				XVCor = XiCor.Vertex();
 				z3 = XV.Z();
 				x3 = XV.X();
 				y3 = XV.Y();
@@ -897,7 +897,7 @@ void TPCManager::DrawVertex3D(){
 				x4 = x3-Dir.X()*100;
 				y4 = y4-Dir.Y()*100;
 				cout<<Form("Xi Vertex (%f,%f,%f) Mass: %f",XV.X(),XV.Y(),XV.Z(),Xi.Mass())<<endl;
-				cout<<Form("XiCor Vertex (%f,%f,%f) Mass: %f",XVCor.X(),XVCor.Y(),XVCor.Z(),XiCor.Mass())<<endl;
+//				cout<<Form("XiCor Vertex (%f,%f,%f) Mass: %f",XVCor.X(),XVCor.Y(),XVCor.Z(),XiCor.Mass())<<endl;
 				auto XiVert = new TPolyMarker3D();
 				XiVert->SetPoint(0,z3,x3,y3);
 				XiVert->SetMarkerColor(kCyan);

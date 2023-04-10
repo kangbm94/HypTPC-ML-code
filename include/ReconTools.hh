@@ -109,6 +109,9 @@ class Recon{
 		TLorentzVector GetLV(){
 			return LV;
 		}
+		void SetLV(TLorentzVector LV_){
+			LV = LV_;
+		}
 		double Mass(){
 			return LV.Mag();
 		}
@@ -190,15 +193,33 @@ class VertexLH:public Vertex{
 		vector<Track>Tracks;
 		KinematicFitter Fitter;
 	public:
-		VertexLH(Recon p){
+		VertexLH(Recon p, bool KinematicFit = true){
+			if(KinematicFit){
+				Fitter = KinematicFitter(mL);
+				auto PLV = p.GetDaughter(0);
+				auto PP = PLV.Vect();
+				auto PPres = PP * (0.03);
+				auto PiLV = p.GetDaughter(1);
+				auto PiP = PiLV.Vect();
+				auto PiPres = PiP * (0.03);
+				Fitter.AssignLorentzVector(PLV,PiLV);
+				Fitter.SetResolution(PPres,PiPres);
+				Fitter.DoKinematicFit();
+				auto PLVCor = Fitter.GetFittedLV().at(0);
+				auto PiLVCor = Fitter.GetFittedLV().at(1);
+				auto LVCor = PLVCor + PiLVCor;
+				p.SetLV(LVCor);
+			}
 			Recons.push_back(p);
-			Fitter = KinematicFitter(mL);
 		}
 		virtual int NTrack(){
 			return Recons.size()+Tracks.size();
 		}
 		bool AddTrack(Track p);
 		void SearchXiCombination();
+		Recon GetLd(){
+			return Recons[0];
+		}
 		Recon GetXi(){
 			double comp = 9999;
 			Recon val ;
