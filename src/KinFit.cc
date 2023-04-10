@@ -9,8 +9,10 @@ KinematicFitter::AssignLorentzVector(TLorentzVector P_,TLorentzVector Q_){
 
 void
 KinematicFitter::SetResolution(TVector3 Pres_,TVector3 Qres_){
-	Pres = Pres_;
-	Qres = Qres_;
+	for(int i = 0;i<3;++i){
+		Pres(i)=abs(Pres_(i));
+		Qres(i)=abs(Qres_(i));
+	}
 };
 vector<TLorentzVector>
 KinematicFitter::GetFittedLV(){

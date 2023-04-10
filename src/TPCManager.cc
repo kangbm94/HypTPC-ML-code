@@ -416,6 +416,7 @@ TPCManager::ReconEvent(){
 	bool ldflg = false,xiflg=false;
 	Ld.Clear();Xi.Clear();
 	double chi_cut = 50;
+	double cd_cut = 15;
 	LdPiID = -1;LdProtonID = -1;XiPiID=-1;
 	for(int nt1 = 0; nt1<ntTpc;++nt1){
 		if(chisqr->at(nt1)>chi_cut) continue; 
@@ -435,6 +436,7 @@ TPCManager::ReconEvent(){
 	if(np<1) return;
 	for(int nt1=0;nt1<np;++nt1){
 		Vertex f(parts[nt1]);
+		f.SetCdCut(cd_cut);
 		for(int nt2=nt1+1;nt2<np;++nt2){
 			f.AddTrack(parts[nt2]);	
 		}
@@ -457,7 +459,7 @@ TPCManager::ReconEvent(){
 	LdPiID = Ld.GetID2();
 	comp = 9999;
 	VertexLH V(Ld);
-
+	V.SetCdCut(cd_cut);
 	for(auto p : parts){
 		V.AddTrack(p);
 	}
