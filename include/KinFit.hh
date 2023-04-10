@@ -35,13 +35,13 @@ namespace{
 		double L_E = P_E+Q_E;
 		double L_M = sqrt(L_E*L_E -((px+qx)*(px+qx)+(py+qy)*(py+qy)+(pz+qz)*(pz+qz)));
 
-		double eq_px = px0 - px - psx*psx*lambda*(-qx+Q_E/P_E*px)/InvM; 
-		double eq_py = py0 - py - psy*psy*lambda*(-qy+Q_E/P_E*py)/InvM; 
-		double eq_pz = pz0 - pz - psz*psz*lambda*(-qz+Q_E/P_E*pz)/InvM; 
+		double eq_px = px0 - px - psx*psx*lambda*(-qx+Q_E/P_E*px)/L_M; 
+		double eq_py = py0 - py - psy*psy*lambda*(-qy+Q_E/P_E*py)/L_M; 
+		double eq_pz = pz0 - pz - psz*psz*lambda*(-qz+Q_E/P_E*pz)/L_M; 
 
-		double eq_qx = qx0 - qx - qsx*qsx*lambda*(-px+P_E/Q_E*qx)/InvM; 
-		double eq_qy = qy0 - qy - qsy*qsy*lambda*(-py+P_E/Q_E*qy)/InvM; 
-		double eq_qz = qz0 - qz - qsz*qsz*lambda*(-pz+P_E/Q_E*qz)/InvM; 
+		double eq_qx = qx0 - qx - qsx*qsx*lambda*(-px+P_E/Q_E*qx)/L_M; 
+		double eq_qy = qy0 - qy - qsy*qsy*lambda*(-py+P_E/Q_E*qy)/L_M; 
+		double eq_qz = qz0 - qz - qsz*qsz*lambda*(-pz+P_E/Q_E*qz)/L_M; 
 
 		double eq_IM = (L_M - InvM);
 
