@@ -35,6 +35,7 @@ void KinematicFitter::DoKinematicFit(){
 		gpar[i] = par[i];
 	}
 	minimizer->SetFCN(fcn);
+	minimizer->SetPrintLevel(-1);
 	double arglist[30];
 	int ierflg = 0;
 	arglist[0]=1;
