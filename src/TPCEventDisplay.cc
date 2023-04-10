@@ -13,7 +13,8 @@ int SearchPeaks(TH1D* hist,vector<double> &peaks){
 	}
 	return npeaks;
 }
-TString dir = base_dir+"before_mod/";
+//TString dir = base_dir+"before_mod/";
+TString dir = base_dir;//+"before_mod/";
 const Int_t nBin_rdiff = 220;
 const Double_t rdiff_min = -220.;
 const Double_t rdiff_max = 220.;
@@ -35,7 +36,7 @@ vector<int> Xievnum;
 TString tpcfile;
 void TPCEventDisplay(){
 	cout<<"TPCEventDisplayAccidental(int ievt)"<<endl;
-	
+	cout<<dir<<endl;	
 	tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
 //	tpcfile = "test.root"; 
 	gTPCManager.LoadClusterFile(tpcfile,"tpc");

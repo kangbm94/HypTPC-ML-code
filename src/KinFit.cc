@@ -52,7 +52,7 @@ void KinematicFitter::DoKinematicFit(){
 	arglist[0]=1000;//maxcalls
 	arglist[1]=0.01;//tolerance
 	minimizer->mnexcm("MIGRAD",arglist,2,ierflg);
-	double lambda,px,py,pz,qx,qy,qz;
+	double px,py,pz,qx,qy,qz;
 	double par_cor[7];
 	double par_err[7];
 	for(int i=0;i<7;++i){

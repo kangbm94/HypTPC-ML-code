@@ -61,7 +61,7 @@ class KinematicFitter{
 		TLorentzVector Q;
 		TVector3 Qres;
 		TLorentzVector QCor;
-
+		double lambda = 0;
 //		TMinuitMinimizer minimizer;
 		TMinuit* minimizer = new TMinuit(7);
 	public:
@@ -72,6 +72,9 @@ class KinematicFitter{
 		void AssignLorentzVector(TLorentzVector P_,TLorentzVector Q_);
 		void SetResolution(TVector3 Pres_,TVector3 Qres_);
 		void DoKinematicFit();
+		double GetLambda(){
+			return lambda;
+		}
 		vector<TLorentzVector> GetFittedLV();
 };
 #endif

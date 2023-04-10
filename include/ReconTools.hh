@@ -192,6 +192,7 @@ class VertexLH:public Vertex{
 		vector<Recon>Recons;
 		vector<Track>Tracks;
 		KinematicFitter Fitter;
+		double laglambda = 0;
 	public:
 		VertexLH(Recon p, bool KinematicFit = true){
 			if(KinematicFit and p.Exist()){
@@ -210,6 +211,7 @@ class VertexLH:public Vertex{
 				auto PiLVCor = Fitter.GetFittedLV().at(1);
 				auto LVCor = PLVCor + PiLVCor;
 				p.SetLV(LVCor);
+				laglambda = Fitter.GetLambda();
 			}
 			Recons.push_back(p);
 		}
@@ -218,6 +220,9 @@ class VertexLH:public Vertex{
 		}
 		bool AddTrack(Track p);
 		void SearchXiCombination();
+		double GetLagMultiplier(){
+			return laglambda;
+		}
 		Recon GetLd(){
 			return Recons[0];
 		}
