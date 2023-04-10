@@ -194,7 +194,8 @@ class VertexLH:public Vertex{
 		KinematicFitter Fitter;
 	public:
 		VertexLH(Recon p, bool KinematicFit = true){
-			if(KinematicFit){
+			if(KinematicFit and p.Exist()){
+				
 				Fitter = KinematicFitter(mL);
 				auto PLV = p.GetDaughter(0);
 				auto PP = PLV.Vect();
