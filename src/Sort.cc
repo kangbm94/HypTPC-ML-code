@@ -19,8 +19,8 @@ void Sort(){
 	int ent = tree->GetEntries();
 	for(int i=0;i<ent;++i){
 		tree->GetEntry(i);
-		bool Acpt = true;
-		//		bool Acpt = abs(MM-1.315)<0.1 and abs(InvMXi-1.315)<0.1;
+//		bool Acpt = true;
+				bool Acpt = abs(MM-1.315)<0.1 and abs(InvMXi-1.315)<0.1;
 		if(FlgLd and FlgXi and Acpt) SortedTree->Fill();
 //		SortedTree->Fill();
 	}

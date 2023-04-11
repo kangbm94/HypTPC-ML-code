@@ -24,7 +24,7 @@ bool Vertex::AddTrack(Track p){
 		auto point = HelixPos(p.GetPar(),t);
 		double cd = (vert-point).Mag();
 		double ct,t1,t2;
-		if(cd<cdcut){
+		if(cd<cdcut*1.5){
 			vector<TVector3> cand;
 			for(auto pt:Tracks){
 				cand.push_back(VertexPointHelix(pt.GetPar(),p.GetPar(),ct,t1,t2));
@@ -53,6 +53,7 @@ void Vertex::SearchLdCombination(){
 			double cd_,t1_,t2_;
 			if(p.GetID() == pi.GetID()) continue;
 			auto ppivert = VertexPointHelix(p.GetPar(),pi.GetPar(),cd_,t1_,t2_); 
+			if(cd_>cdcut) continue;
 			auto p1 = CalcHelixMom(p.GetPar(),ppivert.y());
 			auto p2 = CalcHelixMom(pi.GetPar(),ppivert.y());
 			auto pLV = TLorentzVector(p1,sqrt(mp*mp+p1.Mag2()));
