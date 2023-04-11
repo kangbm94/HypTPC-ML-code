@@ -1,7 +1,7 @@
 #ifndef KinFit_h
 #define KinFit_h
 namespace{
-	double gpar[15]={0};
+	double gpar[16]={0};
 	void fcn(int& npar, double* grad, double& fval, double* par, int flag){
 		//Kinematic fitting of two particles, L ->  P + Q with invariant mass of InvM.
 
@@ -30,6 +30,7 @@ namespace{
 		double MP = gpar[12];
 		double MQ = gpar[13];
 		double InvM = gpar[14];
+		double InvMSig = gpar[15];
 		double P_E = sqrt(MP*MP+px*px+py*py+pz*pz); 
 		double Q_E = sqrt(MQ*MQ+qx*qx+qy*qy+qz*qz); 
 		double L_E = P_E+Q_E;

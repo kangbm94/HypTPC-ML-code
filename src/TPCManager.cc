@@ -416,7 +416,7 @@ TPCManager::ReconEvent(){
 	bool ldflg = false,xiflg=false;
 	Ld.Clear();Xi.Clear();
 	double chi_cut = 50;
-	double cd_cut = 15;
+	double cd_cut = 30;
 	LdPiID = -1;LdProtonID = -1;XiPiID=-1;
 	for(int nt1 = 0; nt1<ntTpc;++nt1){
 		if(chisqr->at(nt1)>chi_cut) continue; 
@@ -458,7 +458,7 @@ TPCManager::ReconEvent(){
 	LdProtonID = Ld.GetID1();
 	LdPiID = Ld.GetID2();
 	comp = 9999;
-	VertexLH V(Ld);
+	VertexLH V(Ld,false);
 	V.SetCdCut(cd_cut);
 	for(auto p : parts){
 		V.AddTrack(p);
@@ -675,7 +675,7 @@ void TPCManager::LoadAccidental3D(){
 	for(int it = 0; it< ntTpc;++it){
 		int track_flag = helix_flag->at(it);
 		if(track_flag < 400 or track_flag > 499) continue;
-		cout<<"flag : "<<track_flag<<endl;
+//		cout<<"flag : "<<track_flag<<endl;
 		
 		double cx = helix_cx->at(it);
 		double cy = helix_cy->at(it);
@@ -714,7 +714,7 @@ void TPCManager::LoadAccidental3D(){
 			Track->SetPoint(ip,z1,x1,y1);	
 		}
 		sort(tvec.begin(),tvec.end());
-		cout<<"Accidental Track " << it << " radius "<<r<<" rdz = "<<r*dz<<" z0 = "<<z0<<" T = ("<<t_min<<" , "<<t_max<<" )"<<endl; 
+//		cout<<"Accidental Track " << it << " radius "<<r<<" rdz = "<<r*dz<<" z0 = "<<z0<<" T = ("<<t_min<<" , "<<t_max<<" )"<<endl; 
 		for(auto t:tvec){
 //			cout<<"Accidental Track " << it <<" "<<HelixPos(pars,t).Y()<< " T = "<<t<<endl; 
 		}
@@ -728,7 +728,7 @@ void TPCManager::LoadHelix3D(){
 	int TrackNo=0;
 	for(int it = 0; it< ntTpc;++it){
 		int track_flag = helix_flag->at(it);
-		cout<<"flag : "<<track_flag<<endl;
+//		cout<<"flag : "<<track_flag<<endl;
 		if(track_flag > 399 and track_flag < 500){
 			HelixTrackID.push_back(-1);
 			continue;
@@ -773,7 +773,7 @@ void TPCManager::LoadHelix3D(){
 			Track->SetPoint(ip,z1,x1,y1);	
 		}
 		sort(tvec.begin(),tvec.end());
-		cout<<"Track " << it << " radius "<<r<<" rdz = "<<r*dz<<" z0 = "<<z0<<" T = ("<<t_min<<" , "<<t_max<<" )"<<endl; 
+//		cout<<"Track " << it << " radius "<<r<<" rdz = "<<r*dz<<" z0 = "<<z0<<" T = ("<<t_min<<" , "<<t_max<<" )"<<endl; 
 		for(auto t:tvec){
 //			cout<<"Track " << it <<" "<<HelixPos(pars,t).Y()<< " T = "<<t<<endl; 
 		}

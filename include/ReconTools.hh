@@ -213,6 +213,14 @@ class VertexLH:public Vertex{
 				p.SetLV(LVCor);
 				laglambda = Fitter.GetLambda();
 			}
+			else if (p.Exist()){
+				auto LdLV = p.GetLV();
+				auto LdP = LdLV.Vect();
+				double x = LdP.X(),y=LdP.Y(),z=LdP.Z();
+				auto LdLVCor = TLorentzVector();
+				LdLVCor.SetXYZM(x,y,z,mL);
+				p.SetLV(LdLVCor);
+			}
 			Recons.push_back(p);
 		}
 		virtual int NTrack(){
