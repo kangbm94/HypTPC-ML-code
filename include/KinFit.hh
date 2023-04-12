@@ -35,16 +35,17 @@ namespace{
 		double Q_E = sqrt(MQ*MQ+qx*qx+qy*qy+qz*qz); 
 		double L_E = P_E+Q_E;
 		double L_M = sqrt(L_E*L_E -((px+qx)*(px+qx)+(py+qy)*(py+qy)+(pz+qz)*(pz+qz)));
-
-		double eq_px = px0 - px - psx*psx*lambda*(-qx+Q_E/P_E*px)/L_M; 
-		double eq_py = py0 - py - psy*psy*lambda*(-qy+Q_E/P_E*py)/L_M; 
-		double eq_pz = pz0 - pz - psz*psz*lambda*(-qz+Q_E/P_E*pz)/L_M; 
-
-		double eq_qx = qx0 - qx - qsx*qsx*lambda*(-px+P_E/Q_E*qx)/L_M; 
-		double eq_qy = qy0 - qy - qsy*qsy*lambda*(-py+P_E/Q_E*qy)/L_M; 
-		double eq_qz = qz0 - qz - qsz*qsz*lambda*(-pz+P_E/Q_E*qz)/L_M; 
-
+		
 		double eq_IM = (L_M - InvM);
+
+		double eq_px = px0 - px - psx*psx*lambda*(-qx+Q_E/P_E*px)/L_M * eq_IM/InvMSig/InvMSig; 
+		double eq_py = py0 - py - psy*psy*lambda*(-qy+Q_E/P_E*py)/L_M * eq_IM/InvMSig/InvMSig; 
+		double eq_pz = pz0 - pz - psz*psz*lambda*(-qz+Q_E/P_E*pz)/L_M * eq_IM/InvMSig/InvMSig; 
+
+		double eq_qx = qx0 - qx - qsx*qsx*lambda*(-px+P_E/Q_E*qx)/L_M * eq_IM/InvMSig/InvMSig; 
+		double eq_qy = qy0 - qy - qsy*qsy*lambda*(-py+P_E/Q_E*qy)/L_M * eq_IM/InvMSig/InvMSig; 
+		double eq_qz = qz0 - qz - qsz*qsz*lambda*(-pz+P_E/Q_E*qz)/L_M * eq_IM/InvMSig/InvMSig; 
+
 
 		fval = eq_px*eq_px + eq_py*eq_py + eq_pz*eq_pz
 			+ eq_qx*eq_qx + eq_qy*eq_qy + eq_qz*eq_qz

@@ -486,7 +486,8 @@ TPCManager::ReconEvent(){
 	LdProtonID = Ld.GetID1();
 	LdPiID = Ld.GetID2();
 	comp = 9999;
-	VertexLH V(Ld,false);
+	bool KinematicFit = true;
+	VertexLH V(Ld,KinematicFit);
 	V.SetCdCut(cd_cut);
 	for(auto p : parts){
 		V.AddTrack(p);
@@ -806,7 +807,7 @@ void TPCManager::LoadHelix3D(){
 			double tg2 = tvec2.at(it+1)-tvec2.at(it);
 			if(tgap2 < tg) tgap2 = tg2;
 		}
-		if(tgap1 >tgap2){
+		if(tgap1 >tgap2 and 0){
 			t_min = tvec2.at(0);
 			t_max = tvec2.at(nt-1);
 		}
@@ -830,13 +831,13 @@ void TPCManager::LoadHelix3D(){
 			Track ->SetLineStyle(kDashDotted);
 		}
 		for(int ip=0;ip<npts;ip++){
-			double t1 = t_min+dt*ip,t2 = t1+dt;
+			double t1 = t_min+dt*ip;
 			double x1 = -(r*cos(t1)+cx); 
 			double y1 = r*dz*t1+z0;
+			if(abs(y1)>250) cout<<Form("y>250! t1 = %f, z0 = %f",t1,z0)<<endl;
 			double z1 = r*sin(t1)+cy+ZTarget;
 			Track->SetPoint(ip,z1,x1,y1);	
 		}
-		sort(tvec.begin(),tvec.end());
 		cout<<"Track "<<it <<"Momentum "<<mom<<"MeV/c"<<endl;
 //		cout<<"Track " << it << " radius "<<r<<" rdz = "<<r*dz<<" z0 = "<<z0<<" T = ("<<t_min<<" , "<<t_max<<" )"<<endl; 
 		for(auto t:tvec){

@@ -28,10 +28,11 @@ void KinematicFitter::DoKinematicFit(){
 	double psx = Pres.X(),psy=Pres.Y(),psz=Pres.Z(); 
 	double qsx = Qres.X(),qsy=Qres.Y(),qsz=Qres.Z(); 
 	double MP=P.Mag(),MQ=Q.Mag();
-	double par[15]={px0,py0,pz0,qx0,qy0,qz0,
+	double InvMRes = 0.005;//5MeV
+	double par[16]={px0,py0,pz0,qx0,qy0,qz0,
 							psx,psy,psz,qsx,qsy,qsz,
-							MP,MQ,InvMass};
-	for(int i=0;i<15;++i){
+							MP,MQ,InvMass,InvMRes};
+	for(int i=0;i<16;++i){
 		gpar[i] = par[i];
 	}
 	minimizer->SetFCN(fcn);
