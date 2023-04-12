@@ -37,7 +37,7 @@ TString tpcfile;
 void TPCEventDisplay(){
 	cout<<"TPCEventDisplayAccidental(int ievt)"<<endl;
 	cout<<dir<<endl;	
-	tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
+	tpcfile = dir + Form("run0%d_DstTPCKuramaSelectedHelixTracking.root",runnum);
 //	tpcfile = "test.root"; 
 	gTPCManager.LoadClusterFile(tpcfile,"tpc");
 

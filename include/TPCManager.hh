@@ -30,6 +30,7 @@ class TPCManager:public FileManager{
 		vector<TPolyLine3D*> AccidentalTrack3D ;
 		vector<TPolyLine3D*> HelixTrack3D ;
 		vector<int> HelixTrackID;
+		vector<double> HelixTrackMom;
 		vector<TPolyMarker3D *>Vertex3d;
 		vector<TPolyLine3D*> VertexTrack3D ;
 		vector<TPCHit> m_Hits;
@@ -115,7 +116,7 @@ class TPCManager:public FileManager{
 		bool cluster = false;
 		int ntBcOut=0;
 		int ntk=0;
-		double npts=30;
+		double npts=100;
 		double anpts=5;
 		vector<double>* x0BcOut = new vector<double>;
 		vector<double>* y0BcOut = new vector<double>;

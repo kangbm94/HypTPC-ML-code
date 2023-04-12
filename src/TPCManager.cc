@@ -2,6 +2,21 @@
 #include "ReconTools.cc"
 #ifndef TPCManager_C
 #define TPCManager_C
+namespace{
+	bool IsAccidental(int hf){
+		if(399 < hf and hf < 500) return true;
+		else return false;
+	}
+	bool IsKurama(int hf){
+		if(299 < hf and hf < 400) return true;
+		else return false;
+	}
+	bool IsK18(int hf){
+		if(199 < hf and hf < 300) return true;
+		else return false;
+	}
+
+}
 const int max_ntrk = 16;
 TPCManager gTPCManager;
 void TPCManager::LoadChain(TString ChainName ){
@@ -244,6 +259,14 @@ void TPCManager::LoadTPC3D(){
 			tpcHit3d.at(i)->SetMarkerColor(hf - 399);	
 			tpcHit3d.at(i)->SetMarkerStyle(29);	
 		}
+		if(hf == 200){
+			tpcHit3d.at(i)->SetMarkerColor(46);	
+			tpcHit3d.at(i)->SetMarkerStyle(101);	
+		}
+		if(hf == 300){
+			tpcHit3d.at(i)->SetMarkerColor(40);	
+			tpcHit3d.at(i)->SetMarkerStyle(103);	
+		}
 		tpcHit3d.at(i)->Draw("SAME");
 	}
 }
@@ -415,12 +438,16 @@ TPCManager::ReconEvent(){
 	vector<Track> parts;
 	bool ldflg = false,xiflg=false;
 	Ld.Clear();Xi.Clear();
-	double chi_cut = 50;
-	double cd_cut = 30;
+	double chi_cut = 150;
+	double cd_cut = 15;
 	LdPiID = -1;LdProtonID = -1;XiPiID=-1;
 	for(int nt1 = 0; nt1<ntTpc;++nt1){
 		if(chisqr->at(nt1)>chi_cut) continue; 
-		if(isBeam->at(nt1)) continue; 
+//		if(isBeam->at(nt1)) continue; 
+		int hf = helix_flag->at(nt1);
+		if(IsAccidental(hf)) continue;
+		if(IsKurama(hf)) continue;
+		if(IsK18(hf)) continue;
 		int nh = helix_cx->size();
 		double hcx = helix_cx->at(nt1);
 		double hcy = helix_cy->at(nt1);
@@ -455,6 +482,7 @@ TPCManager::ReconEvent(){
 	for(auto m:LdCand){
 		if( abs(mL-m.Mass())<comp) {comp=abs(mL-m.Mass());Ld=m;}
 	}
+
 	LdProtonID = Ld.GetID1();
 	LdPiID = Ld.GetID2();
 	comp = 9999;
@@ -725,12 +753,16 @@ void TPCManager::LoadAccidental3D(){
 void TPCManager::LoadHelix3D(){
 	HelixTrack3D.clear();
 	HelixTrackID.clear();
+	HelixTrackMom.clear();
+	const double Const = 0.299792458; // =c/10^9
+	const double dMagneticField = HS_field_0*(HS_field_Hall/HS_field_Hall_calc);
 	int TrackNo=0;
 	for(int it = 0; it< ntTpc;++it){
 		int track_flag = helix_flag->at(it);
 //		cout<<"flag : "<<track_flag<<endl;
 		if(track_flag > 399 and track_flag < 500){
 			HelixTrackID.push_back(-1);
+			HelixTrackMom.push_back(1800);
 			continue;
 		}
 		else{
@@ -743,28 +775,60 @@ void TPCManager::LoadHelix3D(){
 		double r = helix_r->at(it);
 		double dz = helix_dz->at(it);
 		
+		double pt = abs(r)* Const*dMagneticField;
+		double pz = pt * dz;
+		double mom = sqrt(pt*pt+pz*pz);
+		HelixTrackMom.push_back(mom);
 		double pars[5]={cx,cy,z0,r,dz};
 		double t_min = 100;
 		double t_max = -100;
 		vector<double>tvec;
+		vector<double>tvec2;
 		vector<TVector3>tpos;
 		for(int ih=0;ih<helix_t->at(it).size();++ih){
 			double t = helix_t->at(it).at(ih);
 			tvec.push_back(t);
-			if(t<t_min) t_min=t;
-			if(t>t_max) t_max=t;
+			if(t>0){
+				tvec2.push_back(t);
+			}
+			else{
+				tvec2.push_back(t+2*acos(-1));
+			}
 		}
 		sort(tvec.begin(),tvec.end());
-		int ntv = tvec.size();
-		int imedt=ntv/2;
-		double theta_med =tvec.at(imedt);
+		sort(tvec2.begin(),tvec2.end());
+		double tgap1=-999;
+		double tgap2=-999;
+		int nt= tvec.size();
+		for(int it=0;it<nt-1;++it){
+			double tg = tvec.at(it+1)-tvec.at(it);
+			if(tgap1 < tg) tgap1 = tg;
+			double tg2 = tvec2.at(it+1)-tvec2.at(it);
+			if(tgap2 < tg) tgap2 = tg2;
+		}
+		if(tgap1 >tgap2){
+			t_min = tvec2.at(0);
+			t_max = tvec2.at(nt-1);
+		}
+		else{
+			t_min = tvec.at(0);
+			t_max = tvec.at(nt-1);
+		}
+		double dt = (t_max-t_min)/npts;
 //		cout<<theta_med<<endl;
 //		t_max = 1.1*acos(-1);
 //		t_min = 0.9*acos(-1);
-		double dt = (t_max-t_min)/npts;
 		auto Track = new TPolyLine3D(npts);
 		Track ->SetLineColor(TrackNo);
 		Track ->SetLineWidth(3);
+		if(track_flag == 200){
+			Track ->SetLineColor(46);
+			Track ->SetLineStyle(kDashDotted);
+		}
+		if(track_flag == 300){
+			Track ->SetLineColor(40);
+			Track ->SetLineStyle(kDashDotted);
+		}
 		for(int ip=0;ip<npts;ip++){
 			double t1 = t_min+dt*ip,t2 = t1+dt;
 			double x1 = -(r*cos(t1)+cx); 
@@ -773,6 +837,7 @@ void TPCManager::LoadHelix3D(){
 			Track->SetPoint(ip,z1,x1,y1);	
 		}
 		sort(tvec.begin(),tvec.end());
+		cout<<"Track "<<it <<"Momentum "<<mom<<"MeV/c"<<endl;
 //		cout<<"Track " << it << " radius "<<r<<" rdz = "<<r*dz<<" z0 = "<<z0<<" T = ("<<t_min<<" , "<<t_max<<" )"<<endl; 
 		for(auto t:tvec){
 //			cout<<"Track " << it <<" "<<HelixPos(pars,t).Y()<< " T = "<<t<<endl; 
@@ -846,6 +911,8 @@ TPCManager::DrawZYHough(){
 
 
 void TPCManager::DrawVertex3D(){
+			const double Const = 0.299792458; // =c/10^9
+			const double dMagneticField = HS_field_0*(HS_field_Hall/HS_field_Hall_calc);
 			TVector3 LV,XV,XVCor;
 			bool ldflg = Ld.Exist(),xiflg = Xi.Exist();
 			double z1=0,z2=0,z3=0,z4=0;
@@ -868,7 +935,7 @@ void TPCManager::DrawVertex3D(){
 				LdVert->SetPoint(0,z1,x1,y1);
 				LdVert->SetMarkerColor(kMagenta);
 				LdVert->SetMarkerStyle(39);
-				LdVert->SetMarkerSize(5);
+				LdVert->SetMarkerSize(2);
 				Vertex3d.push_back(LdVert);
 				auto LdTrack = new TPolyLine3D(2);
 				LdTrack->SetPoint(0,z1,x1,y1);
@@ -876,8 +943,17 @@ void TPCManager::DrawVertex3D(){
 				LdTrack->SetLineColor(kMagenta);
 				LdTrack->SetLineWidth(2);
 				VertexTrack3D.push_back(LdTrack);
+				auto Pi = Ld.GetDaughter(1);
+				auto PiP = Pi.Vect()*1000;
 				cout<<"LdPiID = "<<LdPiID<<endl;
+				cout<<Form("LdPiMom = (%f,%f,%f), mag = %f MeV/c, cd = %f mm",PiP.X(),PiP.Y(),PiP.Z(),HelixTrackMom.at(LdPiID),Ld.GetCD())<<endl;
 				cout<<"LdPiTrackID = "<<HelixTrackID.at(LdPiID)<<endl;
+				
+				auto Proton = Ld.GetDaughter(0);
+				auto PP = Proton.Vect()*1000;
+				cout<<"LdProtonID = "<<LdProtonID<<endl;
+				cout<<Form("LdProtonMom = (%f,%f,%f), mag = %f MeV/c",PP.X(),PP.Y(),PP.Z(),HelixTrackMom.at(LdProtonID))<<endl;
+				cout<<"LdProtonTrackID = "<<HelixTrackID.at(LdProtonID)<<endl;
 				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineColor(kMagenta);
 				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineWidth(3);
 				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineStyle(2);
@@ -891,18 +967,23 @@ void TPCManager::DrawVertex3D(){
 				z3 = XV.Z();
 				x3 = XV.X();
 				y3 = XV.Y();
+				auto XiPi = Xi.GetDaughter(1);
+				auto XiPiP = XiPi.Vect()*1000;
 				auto Dir = Xi.Momentum();
 				Dir = Dir* (1./Dir.Mag());
 				z4 = z3-Dir.Z()*100;
 				x4 = x3-Dir.X()*100;
 				y4 = y4-Dir.Y()*100;
 				cout<<Form("Xi Vertex (%f,%f,%f) Mass: %f",XV.X(),XV.Y(),XV.Z(),Xi.Mass())<<endl;
+				cout<<"XiPiID = "<<XiPiID<<endl;
+				cout<<Form("XiPiMom = (%f,%f,%f), mag = %f MeV/c, cd = %f mm",XiPiP.X(),XiPiP.Y(),XiPiP.Z(),HelixTrackMom.at(XiPiID),Xi.GetCD())<<endl;
+				cout<<"XiPiTrackID = "<<HelixTrackID.at(XiPiID)<<endl;
 //				cout<<Form("XiCor Vertex (%f,%f,%f) Mass: %f",XVCor.X(),XVCor.Y(),XVCor.Z(),XiCor.Mass())<<endl;
 				auto XiVert = new TPolyMarker3D();
 				XiVert->SetPoint(0,z3,x3,y3);
 				XiVert->SetMarkerColor(kCyan);
 				XiVert->SetMarkerStyle(39);
-				XiVert->SetMarkerSize(5);
+				XiVert->SetMarkerSize(2);
 				Vertex3d.push_back(XiVert);
 				cout<<"PropDist : "<<(LV-XV).Mag()<<endl;
 				auto XiTrack = new TPolyLine3D(2);
