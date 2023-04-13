@@ -21,7 +21,8 @@ TVector3 GlobalToTarget(TVector3 pos){
 	double y = pos.Y();
 	double z = pos.Z();
 	double x_=-x;
-	double y_=z-ZTarget; double z_=y; return TVector3(x_,y_,z_);
+	double y_=z-ZTarget; double z_=y;
+	return TVector3(x_,y_,z_);
 }
 TVector3 TargetToGlobal(TVector3 pos){
 	double x = pos.X();
@@ -43,6 +44,40 @@ TVector3 TargetToGlobalMom(TVector3 mom){
 }
 TVector3 GlobalToTargetMom(TVector3 mom){
 	return TargetToGlobalMom(mom);
+}
+void GetHelixParameter(TVector3 Pos, TVector3 Mom,double charge,double* par){
+	
+	const double Const = 0.299792458; // =c/10^9
+	const double dMagneticField = HS_field_0*(HS_field_Hall/HS_field_Hall_calc);
+
+	auto Pos_helix = GlobalToTarget(Pos); 
+	auto Mom_helix = GlobalToTargetMom(Mom); 
+	double px = Mom_helix.X()*1000.;
+	double py = Mom_helix.Y()*1000.;
+	double pz = Mom_helix.Z()*1000.;
+
+	double x = Pos_helix.X()*1000.;
+	double y = Pos_helix.Y()*1000.;
+	double z = Pos_helix.Z()*1000.;
+
+	double pt = sqrt(px*px+py*py);
+	double t;
+	if(charge>0){
+		t = atan2(py,px)-0.5*acos(-1);
+	}
+	if(charge<0){
+		t = atan2(py,px)+0.5*acos(-1);
+	}
+	double r = pt/(Const*dMagneticField);	
+	double cx = x-r*cos(t);
+	double cy = y-r*sin(t);
+	double dz = pz / pt;
+	double z0 =	z - r*dz*t;
+	par[0]=cx;
+	par[1]=cy;
+	par[2]=z0;
+	par[3]=r;
+	par[4]=dz;
 }
 
 TVector3 VertexPointHelix(const Double_t par1[5], const Double_t par2[5],
@@ -300,6 +335,41 @@ static inline void fcn2(int &npar, double *gin, double &f, double *par, int ifla
     dof++;
   } 
   f = chisqr/(double)(dof-5);
+}
+TVector3
+VertexPoint(const TVector3& Xin, const TVector3& Xout,
+            const TVector3& Pin, const TVector3& Pout)
+{
+  Double_t xi=Xin.x(), yi=Xin.y(), xo=Xout.x(), yo=Xout.y();
+  Double_t ui=Pin.x()/Pin.z(), vi=Pin.y()/Pin.z();
+  Double_t uo=Pout.x()/Pout.z(), vo=Pout.y()/Pout.z();
+
+  Double_t z=((xi-xo)*(uo-ui)+(yi-yo)*(vo-vi))/
+    ((uo-ui)*(uo-ui)+(vo-vi)*(vo-vi));
+  Double_t x1=xi+ui*z, y1=yi+vi*z;
+  Double_t x2=xo+uo*z, y2=yo+vo*z;
+  Double_t x = 0.5*(x1+x2);
+  Double_t y = 0.5*(y1+y2);
+  if(std::isnan(x) || std::isnan(y) || std::isnan(z))
+    return TVector3(NAN, NAN, NAN);
+
+  return TVector3(x, y, z);
+
+}
+Double_t
+CloseDist(const TVector3& Xin, const TVector3& Xout,
+          const TVector3& Pin, const TVector3& Pout)
+{
+  Double_t xi=Xin.x(), yi=Xin.y(), xo=Xout.x(), yo=Xout.y();
+  Double_t ui=Pin.x()/Pin.z(), vi=Pin.y()/Pin.z();
+  Double_t uo=Pout.x()/Pout.z(), vo=Pout.y()/Pout.z();
+
+  Double_t z=((xi-xo)*(uo-ui)+(yi-yo)*(vo-vi))/
+    ((uo-ui)*(uo-ui)+(vo-vi)*(vo-vi));
+  Double_t x1=xi+ui*z, y1=yi+vi*z;
+  Double_t x2=xo+uo*z, y2=yo+vo*z;
+
+  return TMath::Sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
 }
 
 

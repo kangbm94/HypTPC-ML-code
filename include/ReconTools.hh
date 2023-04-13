@@ -21,6 +21,8 @@ class Track :public TLorentzVector{
 		int tid_ = -1;
 		bool isHelix = true;
 	public: 
+		Track(){
+		}
 		Track(int pid, int Q, double* par,int tid){
 			Q_  = Q;
 			pid_= pid;
@@ -40,8 +42,25 @@ class Track :public TLorentzVector{
 			if(pid_%2/1) return true;
 			else return false;
 		}
+		void SetP(){
+			pid_ = 4;
+		}
+		void SetK(){
+			pid_ = 2;
+		}
+		void SetPi(){
+			pid_ = 1;
+		}
+		void SetQ(int charge){
+			Q_=charge;
+		}
+
 		bool GetQ(){
 			return Q_;
+		}
+		bool IsNegative(){
+			if(Q_ > -1) return false;
+			else return true;
 		}
 		int GetID(){
 			return tid_;
@@ -65,34 +84,20 @@ bool InTarget(TVector3 Vect){
 }
 
 class Recon{
-	private:
+	protected:
 		vector<TLorentzVector>Daughters;
 		TLorentzVector LV;
 		TVector3 Vert;
 		bool exist = false;
 		bool proper = false;
 		int CombID=-1;
-		double par[4];
+		double par[5];
 		double close_dist=-1;
 		int trid1=-1,trid2=-1;
+		Track ReconTrack;
+		int charge;
 	public:
-		Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2){
-			LV.SetXYZM(0,0,0,0);
-			Daughters = D;
-			Vert=vertex;
-			close_dist=clos_dist;
-			for(auto lv:D) LV+=lv;
-			CombID = pow(2,id1)+pow(2,id2);
-			exist = true;
-			auto V_t = GlobalToTarget(Vert);
-			auto mom = LV.Vect();
-			auto dir_t = GlobalToTargetMom(mom);
-			dir_t = dir_t* (1/dir_t.Y());
-			auto u = dir_t.X();
-			auto v = dir_t.Z();
-			par[0]=V_t.X()-V_t.Z()*u,par[1]=V_t.Z()-V_t.Y()*v,par[2]= u,par[3]=v;
-			trid1=id1;trid2=id2;
-		}
+		Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2,int charge_=0);
 		Recon(){}
 		void Clear(){
 			exist = false;LV.SetXYZM(0,0,0,0);Daughters.clear();Vert.SetXYZ(0,0,0);
@@ -101,7 +106,10 @@ class Recon{
 			return Vert;
 		}
 		double* GetPar(){
-			return par;
+				return par;
+		}
+		void SetExistance(bool flag){
+			exist = flag;
 		}
 		bool Exist(){
 			return exist;
@@ -136,6 +144,12 @@ class Recon{
 		}
 		TLorentzVector GetDaughter(int i){
 			return Daughters.at(i);
+		}
+		void SetTrack(Track T){
+			ReconTrack = T;
+		}
+		Track GetTrack(){
+			return ReconTrack;
 		}
 };
 
@@ -193,6 +207,8 @@ class VertexLH:public Vertex{
 		vector<Track>Tracks;
 		KinematicFitter Fitter;
 		double laglambda = 0;
+		vector<Track> KuramaTracks  ;
+		bool KuramaFlag = false;
 	public:
 		VertexLH(Recon p, bool KinematicFit = true){
 			if(KinematicFit and p.Exist()){
@@ -227,6 +243,7 @@ class VertexLH:public Vertex{
 			return Recons.size()+Tracks.size();
 		}
 		bool AddTrack(Track p);
+		void AddKuramaTrack(Track p);
 		void SearchXiCombination();
 		double GetLagMulti(){
 			return laglambda;
@@ -249,6 +266,20 @@ class VertexLH:public Vertex{
 			return val;
 		}
 };
+class XiStarRecon: public Recon{
+	private:
+		vector<TVector3>KMmom;
+		vector<TVector3>KMPos;	
+		vector<TVector3>KPmom;
+		vector<TVector3>KPPos;	
+		TVector3 TargetPos = TVector3(0,0,-143);
+		double mass = mXiStar;
+	public:
+		XiStarRecon(){}
+		XiStarRecon(vector<TVector3>KMX,vector<TVector3>KMP,vector<TVector3>KPX,vector<TVector3>KPP);
+
+};
+
 /*
 	 class VertexLL:public Vertex{
 	 private:
@@ -283,5 +314,12 @@ class VertexLH:public Vertex{
 
 
 */
+class VertexMM: public Vertex{
+	protected:
+		Recon Pi0;
+	public:
+		VertexMM();
+		VertexMM(XiStarRecon XiStar,Recon Xi);
+};
 
 #endif

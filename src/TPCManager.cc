@@ -51,11 +51,6 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("helix_r",&helix_r);	
 	DataChain->SetBranchAddress("helix_dz",&helix_dz);	
 	DataChain->SetBranchAddress("helix_flag",&helix_flag);	
-	DataChain->SetBranchAddress("hough_cx",&hough_cx);	
-	DataChain->SetBranchAddress("hough_cy",&hough_cy);	
-	DataChain->SetBranchAddress("hough_z0",&hough_z0);	
-	DataChain->SetBranchAddress("hough_r",&hough_r);	
-	DataChain->SetBranchAddress("hough_dz",&hough_dz);	
 	DataChain->SetBranchAddress("chisqr",&chisqr);	
 	DataChain->SetBranchAddress("isBeam",&isBeam);
 	DataChain->SetBranchAddress("pid",&pid);
@@ -70,15 +65,24 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("track_cluster_y_center",&track_cluster_y_center);
 	DataChain->SetBranchAddress("track_cluster_z_center",&track_cluster_z_center);
 	DataChain->SetBranchAddress("helix_t",&helix_t);
-	/*
-		 DataChain->SetBranchAddress("beam_y",&beam_y);
-		 DataChain->SetBranchAddress("beam_p0",&beam_p0);
-		 DataChain->SetBranchAddress("beam_p1",&beam_p1);
-		 DataChain->SetBranchAddress("beam_p2",&beam_p2);
-		 DataChain->SetBranchAddress("beam_v",&beam_v);
-		 */
-	//	DataChain->SetBranchAddress("track_cluster_layer",&track_cluster_layer);
 	DataChain->SetBranchAddress("hitlayer",&track_cluster_layer);
+
+	DataChain->SetBranchAddress("ntKurama",&ntKurama);
+	DataChain->SetBranchAddress("qKurama",qKurama);
+	DataChain->SetBranchAddress("m2",m2);
+	DataChain->SetBranchAddress("pKurama",pKurama);
+	DataChain->SetBranchAddress("xtgtKurama",xtgtKurama);
+	DataChain->SetBranchAddress("ytgtKurama",ytgtKurama);
+	DataChain->SetBranchAddress("ztgtKurama",ztgtKurama);
+	DataChain->SetBranchAddress("utgtKurama",utgtKurama);
+	DataChain->SetBranchAddress("vtgtKurama",vtgtKurama);
+
+	DataChain->SetBranchAddress("pHS",pHS);
+	DataChain->SetBranchAddress("xtgtHS",xtgtHS);
+	DataChain->SetBranchAddress("ytgtHS",ytgtHS);
+	DataChain->SetBranchAddress("ztgtHS",ztgtHS);
+	DataChain->SetBranchAddress("utgtHS",utgtHS);
+	DataChain->SetBranchAddress("vtgtHS",vtgtHS);
 }
 void TPCManager::LoadTPCBcOut(TString filename){
 	LoadFile(filename);	
@@ -432,73 +436,6 @@ bool TPCManager::MakeUpClusters(double Vth=3){
 #endif
 	return true;
 }
-void
-TPCManager::ReconEvent(){
-	vector<Vertex> verts;
-	vector<Track> parts;
-	bool ldflg = false,xiflg=false;
-	Ld.Clear();Xi.Clear();
-	double chi_cut = 150;
-	double cd_cut = 15;
-	LdPiID = -1;LdProtonID = -1;XiPiID=-1;
-	for(int nt1 = 0; nt1<ntTpc;++nt1){
-		if(chisqr->at(nt1)>chi_cut) continue; 
-//		if(isBeam->at(nt1)) continue; 
-		int hf = helix_flag->at(nt1);
-		if(IsAccidental(hf)) continue;
-		if(IsKurama(hf)) continue;
-		if(IsK18(hf)) continue;
-		int nh = helix_cx->size();
-		double hcx = helix_cx->at(nt1);
-		double hcy = helix_cy->at(nt1);
-		double hz0 = helix_z0->at(nt1);
-		double hr = helix_r->at(nt1);
-		double hdz = helix_dz->at(nt1);
-		double par1[5] = {hcx,hcy,hz0,hr,hdz};
-		int id1 = pid->at(nt1);
-		double q1 = charge->at(nt1);
-		parts.push_back(Track(id1,q1,par1,nt1));
-	}
-	int np = parts.size();
-	if(np<1) return;
-	for(int nt1=0;nt1<np;++nt1){
-		Vertex f(parts[nt1]);
-		f.SetCdCut(cd_cut);
-		for(int nt2=nt1+1;nt2<np;++nt2){
-			f.AddTrack(parts[nt2]);	
-		}
-		//if(f.NTrack()>1) verts.push_back(f);
-		verts.push_back(f);
-	}
-	vector<Recon>LdCand;
-	int nvt = verts.size();
-	for(auto vt: verts){
-		vt.SearchLdCombination();
-		auto Ldc = vt.GetLd();
-		LdCand.push_back(Ldc);
-	}
-	int nld= LdCand.size();
-	double comp = 9999;
-	for(auto m:LdCand){
-		if( abs(mL-m.Mass())<comp) {comp=abs(mL-m.Mass());Ld=m;}
-	}
-
-	LdProtonID = Ld.GetID1();
-	LdPiID = Ld.GetID2();
-	comp = 9999;
-	bool KinematicFit = true;
-	VertexLH V(Ld,KinematicFit);
-	V.SetCdCut(cd_cut);
-	for(auto p : parts){
-		V.AddTrack(p);
-	}
-	ldflg=Ld.Exist();
-	if(ldflg)V.SearchXiCombination();	
-	Xi = V.GetXi();
-//	XiCor = V.GetXiCor();
-	XiPiID = Xi.GetID2();
-	xiflg=Xi.Exist();
-}
 void TPCManager::DrawHelix(int it){
 	HelixTrack[it]->Draw("psame");
 }
@@ -721,15 +658,9 @@ void TPCManager::LoadAccidental3D(){
 			double t = helix_t->at(it).at(ih);
 			if(t<t_min) t_min=t;
 			if(t>t_max) t_max=t;
+			tvec.push_back(t);
 		}
 		sort(tvec.begin(),tvec.end());
-		int ntv = tvec.size();
-		int imedt=ntv/2;
-		double theta_med = 0;
-		if (imedt > 0)theta_med =tvec.at(imedt);
-		tvec.clear();
-		t_max = 1.1*acos(-1);
-		t_min = 0.9*acos(-1);
 		double dt = (t_max-t_min)/npts;
 		auto Track = new TPolyLine3D(npts);
 		Track ->SetLineColor(2);
@@ -742,7 +673,6 @@ void TPCManager::LoadAccidental3D(){
 			double z1 = r*sin(t1)+cy+ZTarget;
 			Track->SetPoint(ip,z1,x1,y1);	
 		}
-		sort(tvec.begin(),tvec.end());
 //		cout<<"Accidental Track " << it << " radius "<<r<<" rdz = "<<r*dz<<" z0 = "<<z0<<" T = ("<<t_min<<" , "<<t_max<<" )"<<endl; 
 		for(auto t:tvec){
 //			cout<<"Accidental Track " << it <<" "<<HelixPos(pars,t).Y()<< " T = "<<t<<endl; 
@@ -1007,6 +937,87 @@ void TPCManager::DrawVertex3D(){
 
 
 
+void
+TPCManager::ReconEvent(){
+	vector<Vertex> verts;
+	vector<Track> parts;
+	vector<Track> kuramas;
+	bool ldflg = false,xiflg=false;
+	Ld.Clear();Xi.Clear();
+	double chi_cut = 150;
+	double cd_cut = 30;
+	LdPiID = -1;LdProtonID = -1;XiPiID=-1;
+	for(int nt1 = 0; nt1<ntTpc;++nt1){
+		if(chisqr->at(nt1)>chi_cut) continue; 
+//		if(isBeam->at(nt1)) continue; 
+		int hf = helix_flag->at(nt1);
+		if(IsAccidental(hf)) continue;
+		if(IsK18(hf)) continue;
+		int nh = helix_cx->size();
+		double hcx = helix_cx->at(nt1);
+		double hcy = helix_cy->at(nt1);
+		double hz0 = helix_z0->at(nt1);
+		double hr = helix_r->at(nt1);
+		double hdz = helix_dz->at(nt1);
+		double par1[5] = {hcx,hcy,hz0,hr,hdz};
+		int id1 = pid->at(nt1);
+		double q1 = charge->at(nt1);
+		if(IsKurama(hf)){
+			if(q1 <0){
+				cout<<Form("Warning! Kurama charge =%f!",q1)<<endl;
+				q1 = 1.;
+			}
+			auto T = Track(id1,q1,par1,nt1);
+			T.SetK();
+			kuramas.push_back(Track(id1,q1,par1,nt1));
+		}
+		else{
+			parts.push_back(Track(id1,q1,par1,nt1));
+		}
+	}
+	int np = parts.size();
+	if(np<1) return;
+	for(int nt1=0;nt1<np;++nt1){
+		Vertex f(parts[nt1]);
+		f.SetCdCut(cd_cut);
+		for(int nt2=nt1+1;nt2<np;++nt2){
+			f.AddTrack(parts[nt2]);	
+		}
+		//if(f.NTrack()>1) verts.push_back(f);
+		verts.push_back(f);
+	}
+	vector<Recon>LdCand;
+	int nvt = verts.size();
+	for(auto vt: verts){
+		vt.SearchLdCombination();
+		auto Ldc = vt.GetLd();
+		LdCand.push_back(Ldc);
+	}
+	int nld= LdCand.size();
+	double comp = 9999;
+	for(auto m:LdCand){
+		if( abs(mL-m.Mass())<comp) {comp=abs(mL-m.Mass());Ld=m;}
+	}
+
+	LdProtonID = Ld.GetID1();
+	LdPiID = Ld.GetID2();
+	comp = 9999;
+	bool KinematicFit = true;
+	VertexLH V(Ld,KinematicFit);
+	for(auto kurama:kuramas){
+		V.AddKuramaTrack(kurama);
+	}
+	V.SetCdCut(cd_cut);
+	for(auto p : parts){
+		V.AddTrack(p);
+	}
+	ldflg=Ld.Exist();
+	if(ldflg)V.SearchXiCombination();	
+	Xi = V.GetXi();
+//	XiCor = V.GetXiCor();
+	XiPiID = Xi.GetID2();
+	xiflg=Xi.Exist();
+}
 
 
 

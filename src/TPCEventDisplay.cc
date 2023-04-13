@@ -158,6 +158,7 @@ void TPCEventDisplayAccidental(int ievt){
 	cout<<"Event = "<<ievt<<endl;
 	gTPCManager.ClearHistogram();
 	int evnum = gTPCManager.GetEvnum();
+	gTPCManager.SetXiStarFlag(true);
 	bool go = false;
 	int nh=0;
 	//		if(!gTPCManager.TagTrig(23)) continue;

@@ -8,6 +8,7 @@
 #include "ReconTools.hh"
 #ifndef TPCManager_h
 #define TPCManager_h
+const int MaxHits = 500;
 
 class TPCManager:public FileManager{
 	protected:
@@ -116,13 +117,23 @@ class TPCManager:public FileManager{
 		bool cluster = false;
 		int ntBcOut=0;
 		int ntk=0;
-		double npts=100;
-		double anpts=5;
 		vector<double>* x0BcOut = new vector<double>;
 		vector<double>* y0BcOut = new vector<double>;
 		vector<double>* u0BcOut = new vector<double>;
 		vector<double>* v0BcOut = new vector<double>;
+		
+		int ntKurama,ntK18;
+		double pKurama[MaxHits],qKurama[MaxHits],m2[MaxHits];
+		double xtgtKurama[MaxHits],ytgtKurama[MaxHits],ztgtKurama[MaxHits],utgtKurama[MaxHits],vtgtKurama[MaxHits];
+		double pHS[MaxHits];
+		double xtgtHS[MaxHits],ytgtHS[MaxHits],ztgtHS[MaxHits],utgtHS[MaxHits],vtgtHS[MaxHits];
+
+
+
 		bool ldflg,xiflg;
+		bool xistarflg;
+		double npts=100;
+		double anpts=5;
 		Recon Ld,Xi,XiCor;
 		int LdProtonID=-1,LdPiID=-1;
 		int XiPiID=-1;
@@ -350,7 +361,9 @@ class TPCManager:public FileManager{
 		}
 
 		//		virtual void Process(double* vals){};
-
+		void SetXiStarFlag(bool flag){
+			xistarflg = flag;
+		}
 
 		void DrawTPC(){
 			TPC3D->Draw("");
