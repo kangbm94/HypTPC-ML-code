@@ -5,11 +5,12 @@
 
 double PI = acos(-1);
 double mpi = 139.570/1000;//GeV
+double mpi0 = 134.976/1000;//GeV
 double mk = 493.677/1000;
 double mp = 938.272/1000;
 double mL = 1115.677/1000;
 double mXi = 1321.71/1000;
-double mXiStar = 1535/1000;
+double mXiStar = 1535./1000;
 double mH = 2150./1000;
 
 class Track :public TLorentzVector{
@@ -55,7 +56,7 @@ class Track :public TLorentzVector{
 			Q_=charge;
 		}
 
-		bool GetQ(){
+		int GetQ(){
 			return Q_;
 		}
 		bool IsNegative(){
@@ -98,6 +99,7 @@ class Recon{
 		int charge;
 	public:
 		Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2,int charge_=0);
+		Recon(Recon P,Recon Q,double m1,double m2);
 		Recon(){}
 		void Clear(){
 			exist = false;LV.SetXYZM(0,0,0,0);Daughters.clear();Vert.SetXYZ(0,0,0);
@@ -110,6 +112,9 @@ class Recon{
 		}
 		void SetExistance(bool flag){
 			exist = flag;
+		}
+		int GetCharge(){
+			return charge;
 		}
 		bool Exist(){
 			return exist;
@@ -235,7 +240,8 @@ class VertexLH:public Vertex{
 				double x = LdP.X(),y=LdP.Y(),z=LdP.Z();
 				auto LdLVCor = TLorentzVector();
 				LdLVCor.SetXYZM(x,y,z,mL);
-				p.SetLV(LdLVCor);
+//				p.SetLV(LdLVCor);
+				p.SetLV(LdLV);
 			}
 			Recons.push_back(p);
 		}
@@ -274,10 +280,29 @@ class XiStarRecon: public Recon{
 		vector<TVector3>KPPos;	
 		TVector3 TargetPos = TVector3(0,0,-143);
 		double mass = mXiStar;
+		TVector3 IniMom;
+		int kpid = 0;
+		int kmid = 0;
+		Track K18Track;
+		Track KuramaTrack;
 	public:
 		XiStarRecon(){}
-		XiStarRecon(vector<TVector3>KMX,vector<TVector3>KMP,vector<TVector3>KPX,vector<TVector3>KPP);
-
+		void Construct(vector<TVector3>KMX,vector<TVector3>KMP,vector<TVector3>KPX,vector<TVector3>KPP);
+		TVector3 GetIniMom(){
+			return IniMom;
+		}
+		void SetK18Track(Track T){
+			K18Track = T;
+		}
+		void SetKuramaTrack(Track T){
+			KuramaTrack = T;
+		}
+		TVector3 GetKMMom(){
+			return KMmom.at(kmid);	
+		}
+		TVector3 GetKPMom(){
+			return KPmom.at(kpid);	
+		}
 };
 
 /*
@@ -314,12 +339,10 @@ class XiStarRecon: public Recon{
 
 
 */
-class VertexMM: public Vertex{
-	protected:
-		Recon Pi0;
+class Pi0Recon: public Recon{
 	public:
-		VertexMM();
-		VertexMM(XiStarRecon XiStar,Recon Xi);
+		Pi0Recon(){};
+		Pi0Recon(XiStarRecon XiStar,Recon Xi);
 };
 
 #endif

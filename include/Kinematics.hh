@@ -56,9 +56,9 @@ void GetHelixParameter(TVector3 Pos, TVector3 Mom,double charge,double* par){
 	double py = Mom_helix.Y()*1000.;
 	double pz = Mom_helix.Z()*1000.;
 
-	double x = Pos_helix.X()*1000.;
-	double y = Pos_helix.Y()*1000.;
-	double z = Pos_helix.Z()*1000.;
+	double x = Pos_helix.X();
+	double y = Pos_helix.Y();
+	double z = Pos_helix.Z();
 
 	double pt = sqrt(px*px+py*py);
 	double t;

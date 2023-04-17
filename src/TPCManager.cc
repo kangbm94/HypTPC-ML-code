@@ -29,7 +29,6 @@ void TPCManager::LoadChain(TString ChainName ){
 };
 void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	cluster = true;
-	cout<<"LoadingFile..."<<endl;
 	DataChain	= (TChain*) DataFile->Get(ChainName);
 	DataChain->SetBranchAddress("trigflag",&trigflag);
 	DataChain->SetBranchAddress("runnum",&runnum);
@@ -77,6 +76,7 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("utgtKurama",utgtKurama);
 	DataChain->SetBranchAddress("vtgtKurama",vtgtKurama);
 
+	DataChain->SetBranchAddress("ntK18",&ntK18);
 	DataChain->SetBranchAddress("pHS",pHS);
 	DataChain->SetBranchAddress("xtgtHS",xtgtHS);
 	DataChain->SetBranchAddress("ytgtHS",ytgtHS);
@@ -341,7 +341,6 @@ void TPCManager::AssignG4Event( short* x,short* y,short* z,double* dedx){
 	for(int j=0;j<max_nh;++j){
 		x[j]=0;y[j]=0;z[j]=0;
 	}
-	//	cout<<"Initialized"<<endl;
 	for(int j=0;j<GetNhitsG4();++j){
 		TVector3 vec = GetG4Position(j);
 		double x_ = vec.X();double y_=vec.Y();double z_ = vec.Z();
@@ -353,7 +352,6 @@ void TPCManager::AssignG4EventD(int* trkid,int* pid, double* x,double* y,double*
 	for(int j=0;j<max_nh;++j){
 		trkid[j]=-999;x[j]=0;y[j]=0;z[j]=0;
 	}
-	//	cout<<"Initialized"<<endl;
 	for(int j=0;j<GetNhitsG4();++j){
 		TVector3 vec = GetG4Position(j);
 		int trid = Getntrk(j);
@@ -443,7 +441,7 @@ void TPCManager::DrawHelix(){
 	for(int it = 0; it< HelixTrack.size();++it){
 		if(helix_flag->at(it)> 399 and helix_flag->at(it)<500){
 			DrawHelix(it);
-			cout<<it<<" , "<<helix_flag->at(it)<<endl;
+//			cout<<it<<" , "<<helix_flag->at(it)<<endl;
 		}
 	}
 }
@@ -554,7 +552,6 @@ vector<double>* TPCManager::GetAccidentalDist(){
 	return dists;
 }
 void TPCManager::InitializeHelix(){
-	//			cout<<"InitializeHelix: "<<endl;
 	HelixTrack.clear();		
 	HelixTrackZY.clear();		
 	AccidentalTrack.clear();		
@@ -634,7 +631,6 @@ void TPCManager::InitializeHelix(){
 			HelixTrack.push_back(Track);
 		}
 	}
-	cout<<"HelixInit!"<<endl;
 }
 void TPCManager::LoadAccidental3D(){
 	AccidentalTrack3D.clear();
@@ -679,7 +675,6 @@ void TPCManager::LoadAccidental3D(){
 		}
 		AccidentalTrack3D.push_back(Track);
 	}//ntTpc
-	cout<<"Accidental3D Loaded"<<endl;
 }
 void TPCManager::LoadHelix3D(){
 	HelixTrack3D.clear();
@@ -764,18 +759,17 @@ void TPCManager::LoadHelix3D(){
 			double t1 = t_min+dt*ip;
 			double x1 = -(r*cos(t1)+cx); 
 			double y1 = r*dz*t1+z0;
-			if(abs(y1)>250) cout<<Form("y>250! t1 = %f, z0 = %f",t1,z0)<<endl;
+//			if(abs(y1)>250) cout<<Form("y>250! t1 = %f, z0 = %f",t1,z0)<<endl;
 			double z1 = r*sin(t1)+cy+ZTarget;
 			Track->SetPoint(ip,z1,x1,y1);	
 		}
-		cout<<"Track "<<it <<"Momentum "<<mom<<"MeV/c"<<endl;
+//		cout<<"Track "<<it <<"Momentum "<<mom<<"MeV/c"<<endl;
 //		cout<<"Track " << it << " radius "<<r<<" rdz = "<<r*dz<<" z0 = "<<z0<<" T = ("<<t_min<<" , "<<t_max<<" )"<<endl; 
 		for(auto t:tvec){
 //			cout<<"Track " << it <<" "<<HelixPos(pars,t).Y()<< " T = "<<t<<endl; 
 		}
 		HelixTrack3D.push_back(Track);
 	}//ntTpc
-	cout<<"Helix3D Loaded"<<endl;
 }
 
 void
@@ -857,11 +851,13 @@ void TPCManager::DrawVertex3D(){
 				x1 = LV.X();
 				y1 = LV.Y();
 				auto Dir = Ld.Momentum();
+				auto LVM = Ld.Momentum();
 				Dir = Dir* (1./Dir.Mag());
 				z2 = z1-Dir.Z()*150;
 				x2 = x1-Dir.X()*150;
 				y2 = y1-Dir.Y()*150;
 				cout<<Form("Lambda Vertex (%f,%f,%f) Mass: %f",LV.X(),LV.Y(),LV.Z(),Ld.Mass())<<endl;
+				cout<<Form("Lambda Mom (%f,%f,%f) mag: %f",LVM.X(),LVM.Y(),LVM.Z(),LVM.Mag())<<endl;
 				auto LdVert = new TPolyMarker3D();
 				LdVert->SetPoint(0,z1,x1,y1);
 				LdVert->SetMarkerColor(kMagenta);
@@ -873,18 +869,18 @@ void TPCManager::DrawVertex3D(){
 				LdTrack->SetPoint(1,z2,x2,y2);
 				LdTrack->SetLineColor(kMagenta);
 				LdTrack->SetLineWidth(2);
-				VertexTrack3D.push_back(LdTrack);
+//				VertexTrack3D.push_back(LdTrack);
 				auto Pi = Ld.GetDaughter(1);
 				auto PiP = Pi.Vect()*1000;
-				cout<<"LdPiID = "<<LdPiID<<endl;
-				cout<<Form("LdPiMom = (%f,%f,%f), mag = %f MeV/c, cd = %f mm",PiP.X(),PiP.Y(),PiP.Z(),HelixTrackMom.at(LdPiID),Ld.GetCD())<<endl;
-				cout<<"LdPiTrackID = "<<HelixTrackID.at(LdPiID)<<endl;
+//				cout<<"LdPiID = "<<LdPiID<<endl;
+//				cout<<Form("LdPiMom = (%f,%f,%f), mag = %f MeV/c, cd = %f mm",PiP.X(),PiP.Y(),PiP.Z(),HelixTrackMom.at(LdPiID),Ld.GetCD())<<endl;
+//				cout<<"LdPiTrackID = "<<HelixTrackID.at(LdPiID)<<endl;
 				
 				auto Proton = Ld.GetDaughter(0);
 				auto PP = Proton.Vect()*1000;
-				cout<<"LdProtonID = "<<LdProtonID<<endl;
-				cout<<Form("LdProtonMom = (%f,%f,%f), mag = %f MeV/c",PP.X(),PP.Y(),PP.Z(),HelixTrackMom.at(LdProtonID))<<endl;
-				cout<<"LdProtonTrackID = "<<HelixTrackID.at(LdProtonID)<<endl;
+//				cout<<"LdProtonID = "<<LdProtonID<<endl;
+//				cout<<Form("LdProtonMom = (%f,%f,%f), mag = %f MeV/c",PP.X(),PP.Y(),PP.Z(),HelixTrackMom.at(LdProtonID))<<endl;
+//				cout<<"LdProtonTrackID = "<<HelixTrackID.at(LdProtonID)<<endl;
 				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineColor(kMagenta);
 				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineWidth(3);
 				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineStyle(2);
@@ -901,14 +897,16 @@ void TPCManager::DrawVertex3D(){
 				auto XiPi = Xi.GetDaughter(1);
 				auto XiPiP = XiPi.Vect()*1000;
 				auto Dir = Xi.Momentum();
+				auto XVM = Xi.Momentum();
 				Dir = Dir* (1./Dir.Mag());
-				z4 = z3-Dir.Z()*100;
-				x4 = x3-Dir.X()*100;
-				y4 = y4-Dir.Y()*100;
+				z4 = z3+Dir.Z()*1000;
+				x4 = x3+Dir.X()*1000;
+				y4 = y4+Dir.Y()*1000;
 				cout<<Form("Xi Vertex (%f,%f,%f) Mass: %f",XV.X(),XV.Y(),XV.Z(),Xi.Mass())<<endl;
-				cout<<"XiPiID = "<<XiPiID<<endl;
-				cout<<Form("XiPiMom = (%f,%f,%f), mag = %f MeV/c, cd = %f mm",XiPiP.X(),XiPiP.Y(),XiPiP.Z(),HelixTrackMom.at(XiPiID),Xi.GetCD())<<endl;
-				cout<<"XiPiTrackID = "<<HelixTrackID.at(XiPiID)<<endl;
+				cout<<Form("Xi Mom (%f,%f,%f) mag: %f",XVM.X(),XVM.Y(),XVM.Z(),XVM.Mag())<<endl;
+//				cout<<"XiPiID = "<<XiPiID<<endl;
+//				cout<<Form("XiPiMom = (%f,%f,%f), mag = %f MeV/c, cd = %f mm",XiPiP.X(),XiPiP.Y(),XiPiP.Z(),HelixTrackMom.at(XiPiID),Xi.GetCD())<<endl;
+//				cout<<"XiPiTrackID = "<<HelixTrackID.at(XiPiID)<<endl;
 //				cout<<Form("XiCor Vertex (%f,%f,%f) Mass: %f",XVCor.X(),XVCor.Y(),XVCor.Z(),XiCor.Mass())<<endl;
 				auto XiVert = new TPolyMarker3D();
 				XiVert->SetPoint(0,z3,x3,y3);
@@ -916,16 +914,63 @@ void TPCManager::DrawVertex3D(){
 				XiVert->SetMarkerStyle(39);
 				XiVert->SetMarkerSize(2);
 				Vertex3d.push_back(XiVert);
-				cout<<"PropDist : "<<(LV-XV).Mag()<<endl;
+//				cout<<"PropDist : "<<(LV-XV).Mag()<<endl;
 				auto XiTrack = new TPolyLine3D(2);
 				XiTrack->SetPoint(0,z3,x3,y3);
 				XiTrack->SetPoint(1,z4,x4,y4);
 				XiTrack->SetLineColor(kCyan);
 				XiTrack->SetLineWidth(2);
-				VertexTrack3D.push_back(XiTrack);
+//				VertexTrack3D.push_back(XiTrack);
 				HelixTrack3D.at(HelixTrackID.at(XiPiID))->SetLineColor(kCyan);
 				HelixTrack3D.at(HelixTrackID.at(XiPiID))->SetLineWidth(3);
 				HelixTrack3D.at(HelixTrackID.at(XiPiID))->SetLineStyle(2);
+				if(XiStarSearch and XiStar.Exist()){
+					auto XiStarVert = new TPolyMarker3D();
+					auto XSV = XiStar.Vertex();
+					auto XSM = XiStar.GetIniMom()*1000;
+					double x5=XSV.x(),y5=XSV.y(),z5=XSV.z();
+					double x6=XSM.x(),y6=XSM.y(),z6=XSM.z();
+					x6+=x5;
+					y6+=y5;
+					z6+=z5;
+					XiStarVert->SetPoint(0,z5,x5,y5);
+					XiStarVert->SetMarkerStyle(39);
+					XiStarVert->SetMarkerSize(2);
+					XiStarVert->SetMarkerColor(kGreen);
+					Vertex3d.push_back(XiStarVert);
+					auto XiStarTrack = new TPolyLine3D(2);
+					XiStarTrack->SetPoint(0,z5,x5,y5);
+					XiStarTrack->SetPoint(1,z6,x6,y6);
+					XiStarTrack->SetLineColor(kGreen);
+					XiStarTrack->SetLineWidth(2);
+//					VertexTrack3D.push_back(XiStarTrack);
+					auto KMTrack = new TPolyLine3D(2);
+					auto KMMom = XiStar.GetKMMom();
+					double kmx=KMMom.x(),kmy=KMMom.y(),kmz=KMMom.z();
+					KMTrack->SetPoint(0,z5,x5,y5);
+					KMTrack->SetPoint(1,z5-kmz*1000,x5-kmx*1000,y5-kmy*1000);
+					KMTrack->SetLineColor(kBlack);
+					KMTrack->SetLineWidth(2);
+//					VertexTrack3D.push_back(KMTrack);
+					
+					auto KPTrack = new TPolyLine3D(2);
+					auto KPMom = XiStar.GetKPMom();
+					double kpx=KPMom.x(),kpy=KPMom.y(),kpz=KPMom.z();
+					KPTrack->SetPoint(0,z5,x5,y5);
+					KPTrack->SetPoint(1,z5+kpz*1000,x5+kpx*1000,y5+kpy*1000);
+					KPTrack->SetLineColor(kBlack);
+					KPTrack->SetLineWidth(2);
+//					VertexTrack3D.push_back(KPTrack);
+					auto Pi0Vert = new TPolyMarker3D();
+					auto Pi0V = Pi0.Vertex();
+					double x7=Pi0V.x(),y7=Pi0V.y(),z7=Pi0V.z();
+					Pi0Vert->SetPoint(0,z7,x7,y7);
+					Pi0Vert->SetMarkerStyle(39);
+					Pi0Vert->SetMarkerSize(2);
+					Pi0Vert->SetMarkerColor(kBlue);
+					Vertex3d.push_back(Pi0Vert);
+					cout<<Form("Pi0 Mass = %f GeV",Pi0.Mass())<<endl;
+				}
 			}
 			for(auto v :Vertex3d){
 				v->Draw("same");
@@ -947,12 +992,11 @@ TPCManager::ReconEvent(){
 	double chi_cut = 150;
 	double cd_cut = 30;
 	LdPiID = -1;LdProtonID = -1;XiPiID=-1;
+	Track K18Track,KuramaTrack;
 	for(int nt1 = 0; nt1<ntTpc;++nt1){
 		if(chisqr->at(nt1)>chi_cut) continue; 
-//		if(isBeam->at(nt1)) continue; 
 		int hf = helix_flag->at(nt1);
 		if(IsAccidental(hf)) continue;
-		if(IsK18(hf)) continue;
 		int nh = helix_cx->size();
 		double hcx = helix_cx->at(nt1);
 		double hcy = helix_cy->at(nt1);
@@ -962,7 +1006,17 @@ TPCManager::ReconEvent(){
 		double par1[5] = {hcx,hcy,hz0,hr,hdz};
 		int id1 = pid->at(nt1);
 		double q1 = charge->at(nt1);
-		if(IsKurama(hf)){
+		bool kurama = true;
+		if(IsK18(hf)){
+			K18Track = Track(id1,q1,par1,nt1);
+			cout<<"K18"<<endl;
+		}
+		else if(IsKurama(hf)){
+			if(kurama){
+				KuramaTrack = Track(id1,q1,par1,nt1);
+				cout<<"Kurama"<<endl;
+				kurama = false;
+			}
 			if(q1 <0){
 				cout<<Form("Warning! Kurama charge =%f!",q1)<<endl;
 				q1 = 1.;
@@ -974,6 +1028,45 @@ TPCManager::ReconEvent(){
 		else{
 			parts.push_back(Track(id1,q1,par1,nt1));
 		}
+	}
+	if(XiStarSearch){
+		vector<TVector3> KMX,KMP,KPX,KPP;
+		for(int ikm=0;ikm<ntK18;++ikm){
+			double xkm = xtgtHS[ikm];		
+			double ykm = ytgtHS[ikm];		
+			double zkm = ztgtHS[ikm];	
+			double ukm = utgtHS[ikm];		
+			double vkm = vtgtHS[ikm];
+			double pkm = pHS[ikm];
+			double pzkm = pkm/sqrt(1+ukm*ukm+vkm*vkm);
+			double pxkm = pzkm * ukm;
+			double pykm = pzkm * vkm;
+//			cout<<Form("param : x,y,z,u,v,p = (%f,%f,%f,%f,%f,%f)",xkm,ykm,zkm,ukm,vkm,pkm)<<endl;
+			KMX.push_back(TVector3(xkm,ykm,zkm));
+			KMP.push_back(TVector3(pxkm,pykm,pzkm));
+		}
+		for(int ikp=0;ikp<ntKurama;++ikp){
+			double xkp = xtgtKurama[ikp];		
+			double ykp = ytgtKurama[ikp];		
+			double zkp = ztgtKurama[ikp];	
+			double ukp = utgtKurama[ikp];		
+			double vkp = vtgtKurama[ikp];	
+			double pkp = pKurama[ikp];
+			double pzkp = pkp/sqrt(1+ukp*ukp+vkp*vkp);
+			double pxkp = pzkp * ukp;
+			double pykp = pzkp * vkp;
+//			cout<<Form("param : x,y,z,u,v,p = (%f,%f,%f,%f,%f,%f)",xkp,ykp,zkp,ukp,vkp,pkp)<<endl;
+			KPX.push_back(TVector3(xkp,ykp,zkp));
+			KPP.push_back(TVector3(pxkp,pykp,pzkp));
+		}
+//		cout<<Form("nkm,nkp = %d, %d KMX.size()",KMX.size(),KPX.size())<<endl;
+		XiStar.SetK18Track(K18Track);
+		XiStar.SetKuramaTrack(KuramaTrack);
+		XiStar.Construct(KMX,KMP,KPX,KPP);
+		cout<<"ID"<<endl;
+		cout<<K18Track.GetID()<<endl;
+		cout<<KuramaTrack.GetID()<<endl;
+		cout<<"ID"<<endl;
 	}
 	int np = parts.size();
 	if(np<1) return;
@@ -1002,7 +1095,7 @@ TPCManager::ReconEvent(){
 	LdProtonID = Ld.GetID1();
 	LdPiID = Ld.GetID2();
 	comp = 9999;
-	bool KinematicFit = true;
+	bool KinematicFit = false;
 	VertexLH V(Ld,KinematicFit);
 	for(auto kurama:kuramas){
 		V.AddKuramaTrack(kurama);
@@ -1017,6 +1110,9 @@ TPCManager::ReconEvent(){
 //	XiCor = V.GetXiCor();
 	XiPiID = Xi.GetID2();
 	xiflg=Xi.Exist();
+	if(XiStarSearch){
+		Pi0=Recon(XiStar,Xi,mXiStar,mXi);
+	}
 }
 
 

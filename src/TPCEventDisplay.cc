@@ -1,5 +1,5 @@
 #include "TPCManager.cc"
-int runnum = 5641;
+int runnum = 5644;
 //TString dir = base_dir+"MayRun/rootfiles/CH2/TPC/";
 int SearchPeaks(TH1D* hist,vector<double> &peaks){
 	TSpectrum spec(30);
@@ -31,12 +31,11 @@ const int    r_ndiv =  1000;
 const double r_min  = -500.;
 const double r_max  =  500.;
 vector<int> Xievnum;
-
+vector<double> XIMM;
 
 TString tpcfile;
 void TPCEventDisplay(){
 	cout<<"TPCEventDisplayAccidental(int ievt)"<<endl;
-	cout<<dir<<endl;	
 	tpcfile = dir + Form("run0%d_DstTPCKuramaSelectedHelixTracking.root",runnum);
 //	tpcfile = "test.root"; 
 	gTPCManager.LoadClusterFile(tpcfile,"tpc");
@@ -47,11 +46,16 @@ void TPCEventDisplay(){
 	TFile* fileXi = new TFile("Sorted.root");
 	TTree* treeXi = (TTree*)fileXi->Get("tree");
 	int XiRunnum,XiEvnum;
+	double XiMM;
 	treeXi->SetBranchAddress("runnum",&XiRunnum);
 	treeXi->SetBranchAddress("evnum",&XiEvnum);
+	treeXi->SetBranchAddress("MM",&XiMM);
 	for(int i = 0; i< treeXi->GetEntries();++i){
 		treeXi->GetEntry(i);
-		if(XiRunnum == runnum) Xievnum.push_back(XiEvnum);
+		if(XiRunnum == runnum){
+			Xievnum.push_back(XiEvnum);
+			XIMM.push_back(XiMM);
+		}
 	}
 	cout<<"TPCXiDisplay(int iXi)"<<endl;
 	cout<<"NXi = "<<Xievnum.size()<<endl;
@@ -226,7 +230,9 @@ void TPCEventDisplayAccidental(int ievt){
 	gSystem->ProcessEvents();
 }
 void TPCXiDisplay(int i){
-	int ievt = Xievnum.at(i);	
+	int ievt = Xievnum.at(i);
+	double mxi =  XIMM.at(i);
+	cout<<"MassXi = "<<mxi<<endl; 
 	TPCEventDisplayAccidental(ievt);
 }
 

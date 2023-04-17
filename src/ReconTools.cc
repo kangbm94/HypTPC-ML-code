@@ -84,8 +84,8 @@ void Vertex::SearchLdCombination(){
 		if(p.IsP())PCand.push_back(p);
 		if(p.IsPi() and p.IsNegative())PiCand.push_back(p);
 	}
-	double mom_cut = 0.9;//1.2 for XiStar, 0.9 for Xi
-	double mom_cutMin = 0.2;//0.3 for XiStar, 0.2 for Xi
+	double mom_cut = 0.9;//1.2  
+	double mom_cutMin = 0.2;//0.3  
 	for(auto p:PCand){
 		for(auto pi:PiCand){
 			double cd_,t1_,t2_;
@@ -155,8 +155,8 @@ void VertexLH::SearchXiCombination(){
 	for(auto p:Tracks){
 		if(p.IsPi() and p.IsNegative())PiCand.push_back(p);
 	}
-	double mom_cut = 0.9;//Xi->0.9 XiStar->1.2
-	double mom_cutMin = 0.4;//Xi-> 0.4 XiStar->0.8
+	double mom_cut = 0.9;//Xi->0.9 
+	double mom_cutMin = 0.4;//Xi-> 0.4 
 	for(auto ld:Recons) LdCand.push_back(ld);
 	for(auto ld:LdCand){
 		for(auto pi:PiCand){
@@ -213,23 +213,35 @@ void VertexLH::AddKuramaTrack(Track p){
 	KuramaFlag = true;
 	KuramaTracks.push_back(p);
 }
-
-XiStarRecon::XiStarRecon(vector<TVector3>KMX,vector<TVector3>KMP,vector<TVector3>KPX,vector<TVector3>KPP){
+void
+XiStarRecon::Construct(vector<TVector3>KMX,vector<TVector3>KMP,vector<TVector3>KPX,vector<TVector3>KPP){
 	int ntK18 = KMX.size();
 	int ntKurama = KPX.size();
+	KMPos=KMX;
+	KMmom=KMP;
+	KPPos=KPX;
+	KPmom=KPP;
 	charge = -1;
 	vector<double>close_dists;
 	vector<double>MMs;
 	vector<TLorentzVector>LVs;
 	vector<TVector3> verts;
+	vector<int>kpids;
+	vector<int>kmids;
+	bool Correction = true;
+	if(!K18Track.GetQ() and !KuramaTrack.GetQ()) Correction = true;
+	Correction = false;
 	for(int ikm = 0;ikm<ntK18;++ikm){
 		auto xkm = KMX.at(ikm);
 		auto pkm = KMP.at(ikm);
+		
 		for(int ikp = 0;ikp<ntKurama;++ikp){
 			auto xkp = KPX.at(ikp);
 			auto pkp = KPP.at(ikp);
 			auto kkvert = VertexPoint(xkm, xkp, pkm, pkp);
+//			cout<<Form("Xi0Vertex (%f,%f,%f)",kkvert.x(),kkvert.y(),kkvert.z())<<endl;
 			double cd = CloseDist(xkm,xkp,pkm,pkp); 
+//			cout<<cd<<endl;
 			if(!InTarget(kkvert,cd))continue;
 			TLorentzVector LVKM(pkm,sqrt(mk*mk+pkm*pkm));
 			TLorentzVector LVKP(pkp,sqrt(mk*mk+pkp*pkp));
@@ -240,43 +252,154 @@ XiStarRecon::XiStarRecon(vector<TVector3>KMX,vector<TVector3>KMP,vector<TVector3
 			close_dists.push_back(cd);
 			LVs.push_back(LVMM);
 			MMs.push_back(MM);
+			kmids.push_back(ikm);
+			kpids.push_back(ikp);
 		}
 	}
 	double dif = 1e9;
 	int id = -1;
+	double mxistar = 0.;
 	for(int im=0;im<MMs.size();++im){
 		if(dif >abs( MMs.at(im) - mXiStar)){
 			dif = abs(MMs.at(im)-mXiStar);
 			id = im;
+			mxistar = MMs.at(im);
+			kmid=kmids.at(im);
+			kpid=kpids.at(im);
+			cout<<"XiStar "<<mxistar<<"GeV"<<endl;
 		}
 	}
-	if(id>0){
+	if(id>-1){
 		exist = true;
-		auto vert_ = verts.at(id);
-		double x = vert_.X();	
-		double y = vert_.Y();	
-		double z = vert_.Z();	
-		z=ZTarget;
-		Vert= TVector3(x,y,z);
-		auto LV = LVs.at(id);	
-		auto mom = LV.Vect();
-		LV.SetXYZM(mom.X(),mom.Y(),mom.Z(),mXiStar);
-		GetHelixParameter(Vert,mom,charge,par);
+		double cd,t1,t2;
+		if(Correction){
+			auto p1 = K18Track.GetPar();
+			auto p2 = KuramaTrack.GetPar();
+			/*
+			double xt = verts.at(id).x();
+			double yt = verts.at(id).y();
+			double zt = verts.at(id).z();
+			double dx = xt-( -p1[0]);//cx_helix = -cx_real
+			double dz = xt-( p1[1]+ZTarget);//cy_helix = cz_real+ZTarget
+			double t = atan2(dx,dz);
+			double vkm = p1[4];
+			double dirz = -sin(t)/sqrt(1+vkm*vkm);
+			double dirx = cos(t)/sqrt(1+vkm*vkm);
+			TVector3 KMDir(dirx,vkm,dirz); 
+			if(dirz<0)KMDir = -KMDir;
+			dx = xt-( -p2[0]);//cx_helix = -cx_real
+			dz = xt-( p2[1]+ZTarget);//cy_helix = cz_real+ZTarget
+			t=atan2(dx,dz);
+			double vkp = p2[4];
+			dirz = -sin(t)/sqrt(1+vkp*vkp);
+			dirx = cos(t)/sqrt(1+vkp*vkp);
+			TVector3 KPDir(dirx,vkp,dirz); 
+			if(dirz<0)KPDir = -KPDir;
+			TVector3 PK18 = KMDir*(KMP.at(kmid)).Mag();
+			TVector3 PKurama = KPDir*(KPP.at(kpid)).Mag();
+			Vert = TVector3(xt,yt,ZTarget);
+			*/
+						Vert = VertexPointHelix(K18Track.GetPar(),KuramaTrack.GetPar(), cd,t1,t2);
+			
+//			cout<<Form("Vertex  = (%f,%f,%f)",Vert.X(),Vert.Y(),Vert.Z())<<endl;
+//			Vert.SetZ(ZTarget);	
+//			cout<<Form("Vertex  = (%f,%f,%f)",Vert.X(),Vert.Y(),Vert.Z())<<endl;
+			auto PK18 = KMP.at(kmid);//= CalcHelixMom(K18Track.GetPar(),Vert.y());
+			if(PK18.z()<0) PK18 = -PK18;
+//			auto PKurama = 1.*CalcHelixMom(KuramaTrack.GetPar(),Vert.y());
+			PK18 = PK18 *( 1./(PK18.Mag()) )* KMP.at(kmid).Mag();
+			auto PKurama = KPP.at(kpid);
+			//			PKurama = PKurama * (1./(PKurama.Mag()) )* KPP.at(kpid).Mag();
+
+	
+			//			cout<<"KPMom = "<<KPP.at(kpid).Mag()<<endl;
+//			if(PK18.z()<0) PK18 = -PK18;
+//			if(PKurama.z()<0) PKurama = -PKurama;
+			cout<<Form("KM Mom = (%f,%f,%f)",PK18.X(),PK18.Y(),PK18.Z())<<endl;
+			cout<<Form("KP Mom = (%f,%f,%f)",PKurama.X(),PKurama.Y(),PKurama.Z())<<endl;
+
+			TLorentzVector LVKM(PK18,sqrt(mk*mk+PK18.Mag2()));
+			TLorentzVector LVKP(PKurama,sqrt(mk*mk+PKurama.Mag2()));
+			TLorentzVector LVTarget(0,0,0,mp);
+			TLorentzVector LV = LVKM+LVTarget-LVKP;
+			double MMraw = LV.Mag();
+			double angle = acos( PK18*PKurama /	PK18.Mag()/PKurama.Mag());
+			double diff = - sin(angle)*PK18.Mag()*PKurama.Mag()/sqrt(MMraw);
+			double dtheta = (MMraw-mXiStar)/diff; //diff*dtheta = MXi +dM =MM
+			cout<<"MMraw = "<<MMraw<<endl;
+			cout<<"CorAngle = "<<dtheta<<endl;
+			PKurama.RotateY(dtheta);
+			LVKP= TLorentzVector(PKurama,sqrt(mk*mk+PKurama.Mag2()));
+			LV = LVKM+LVTarget-LVKP;
+			double MM = LV.Mag();
+				
+			IniMom = LV.Vect();
+			cout<<"KMKP Recon Mass = "<<LV.Mag()<<endl;
+			cout<<Form("KMKP Mom = (%f,%f,%f)",IniMom.X(),IniMom.Y(),IniMom.Z())<<endl;
+			GetHelixParameter(Vert,IniMom,charge,par);
+		}
+		else{
+			auto vert_ = verts.at(id);
+			double x = vert_.X();	
+			double y = vert_.Y();	
+			double z = vert_.Z();	
+			z=ZTarget;
+			Vert= TVector3(x,y,z);
+			auto LV = LVs.at(id);	
+			IniMom = LV.Vect();
+			GetHelixParameter(Vert,IniMom,charge,par);
+			//		cout<<Form("Mom = (%f,%f,%f)",IniMom.X(),IniMom.Y(),IniMom.Z())<<endl;
+		}
+		auto momcal = CalcHelixMom(par,Vert.y());
+		cout<<Form("MomRecal = (%f,%f,%f)",momcal.X(),momcal.Y(),momcal.Z())<<endl;
 	}
 }
-VertexMM::VertexMM(XiStarRecon XiStar,Recon Xi){
-	auto XiStarPar =	XiStar.GetPar();
-	auto XiPar =	Xi.GetPar();
+Recon::Recon(Recon P,Recon Q,double m1,double m2){
+	// Q + L = P -> L = P - Q;
+	auto PPar =	P.GetPar();
+	auto QPar =	Q.GetPar();
 	double cd,t1,t2;
-	vert  = VertexPointHelix(XiStarPar,XiPar,cd,t1,t2);
-	auto XiStarp = CalcHelixMom(XiStarPar,vert.y());
-	auto Xip = CalcHelixMom(XiPar,vert.y());
-	TLorentzVector LVXiStar(XiStarp, sqrt(XiStarp.Mag2()+mXiStar*mXiStar));	
-	TLorentzVector LVXi(Xip, sqrt(Xip.Mag2()+mXi*mXi));	
+	auto vp = P.Vertex();
+	auto pp = CalcHelixMom(PPar,vp.y());
+	auto vq = Q.Vertex();
+	auto pq = CalcHelixMom(QPar,vq.y());
+		
+//	cout<<Form("XiStarVertex (%f,%f,%f)",vp.x(),vp.y(),vp.z())<<endl;
+//	cout<<Form("MomRecal = (%f,%f,%f),%f",pp.X(),pp.Y(),pp.Z(),pp.Mag())<<endl;
 
-	auto LVPi0 = LVXiStar - LVXi;
-	Recon Pi0;
-	Pi0.SetLV(LVPi0);
-	Pi0.SetExistance(true);
+//	Vert  = VertexPointHelix(PPar,QPar,cd,t1,t2);
+//	Vert = (vp+vq)*0.5;
+		Vert = vp;
+//	Vert = VertexPoint(vp,vq,vp,vq);
+//	cout<<"Pi0CD = "<<(Vert-P.Vertex()).Mag()<<endl;
+	cout<<"Pi0CD = "<<cd<<endl;
+	auto Pp = P.GetCharge()*CalcHelixMom(PPar,Vert.y());
+	auto Qp = Q.GetCharge()*CalcHelixMom(QPar,Vert.y());
+	cout<<Form("MomP = (%f,%f,%f),%f, MomQ =(%f,%f,%f),%f,cos = %f,dif = %f",Pp.X(),Pp.Y(),Pp.Z(),Pp.Mag(),Qp.X(),Qp.Y(),Qp.Z(),Qp.Mag(),Pp*Qp/(Pp.Mag()*Qp.Mag()),(Pp-Qp).Mag())<<endl;
+	TLorentzVector LVP(Pp, sqrt(Pp.Mag2()+m1*m1));	
+	TLorentzVector LVQ(Qp, sqrt(Qp.Mag2()+m2*m2));	
+	cout<<Form("EP = %f, EQ = %f, PPi0= %f GeV/c",LVP.T(),LVQ.T(),sqrt((LVP.T()-LVQ.T())*(LVP.T()-LVQ.T())-mpi0*mpi0))<<endl;
+	LV = LVP - LVQ;
+	double PM = Pp.Mag(),QM= Qp.Mag();
+	double angle_raw = acos( Pp*Qp/PM/QM )*180./acos(-1);
+	double cos = (mpi0*mpi0-LV.T()*LV.T()+PM*PM+QM*QM)   / (2*PM*QM);
+	double angle = acos(cos)*180./acos(-1);
+	cout<<Form("Angle raw , real = (%f,%f),cos = %f",angle_raw,angle,cos)<<endl;
+
+	auto Mom = LV.Vect();
+	cout<<Form("Pi0Vert = (%f,%f,%f)",Vert.x(),Vert.y(),Vert.z())<<endl;
+	cout<<Form("Pi0Mom = (%f,%f,%f)",Mom.x(),Mom.y(),Mom.z())<<endl;
+	cout<<Form("Pi0Mass = %f",LV.Mag())<<endl;
+	exist = true;
+	auto V_t = GlobalToTarget(Vert);
+	auto mom = LV.Vect();
+	auto dir_t = GlobalToTargetMom(mom);
+	dir_t = dir_t* (1/dir_t.Y());
+	auto u = dir_t.X();
+	auto v = dir_t.Z();
+	par[0]=V_t.X()-V_t.Z()*u,par[1]=V_t.Z()-V_t.Y()*v,par[2]= u,par[3]=v;
+	if(charge){
+		GetHelixParameter(Vert,mom,charge,par);
+	}
 }
 #endif

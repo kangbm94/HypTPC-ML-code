@@ -130,11 +130,12 @@ class TPCManager:public FileManager{
 
 
 
-		bool ldflg,xiflg;
-		bool xistarflg;
+		bool ldflg,xiflg,xistarflag,pi0flag;
+		bool XiStarSearch;
 		double npts=100;
 		double anpts=5;
-		Recon Ld,Xi,XiCor;
+		Recon Ld,Xi,XiCor,Pi0;
+		XiStarRecon XiStar;
 		int LdProtonID=-1,LdPiID=-1;
 		int XiPiID=-1;
 		TF1* f_bethe = new TF1("f_betaP",HypTPCBethe,0.1,3,3);
@@ -362,7 +363,7 @@ class TPCManager:public FileManager{
 
 		//		virtual void Process(double* vals){};
 		void SetXiStarFlag(bool flag){
-			xistarflg = flag;
+			XiStarSearch = flag;
 		}
 
 		void DrawTPC(){
