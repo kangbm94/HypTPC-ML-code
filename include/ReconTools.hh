@@ -107,6 +107,9 @@ class Recon{
 		TVector3 Vertex(){
 			return Vert;
 		}
+		void SetVertex(TVector3 v){
+			Vert = v;
+		}
 		double* GetPar(){
 				return par;
 		}
