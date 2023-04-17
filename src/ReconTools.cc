@@ -357,7 +357,7 @@ Recon::Recon(Recon P,Recon Q,double m1,double m2){
 		Vert = vp;
 //	Vert = VertexPoint(vp,vq,vp,vq);
 //	cout<<"Pi0CD = "<<(Vert-P.Vertex()).Mag()<<endl;
-	cout<<"Pi0CD = "<<cd<<endl;
+//	cout<<"Pi0CD = "<<cd<<endl;
 	auto Pp = P.GetCharge()*CalcHelixMom(PPar,Vert.y());
 	auto Qp = Q.GetCharge()*CalcHelixMom(QPar,Vert.y());
 //	cout<<Form("MomP = (%f,%f,%f),%f, MomQ =(%f,%f,%f),%f,cos = %f,dif = %f",Pp.X(),Pp.Y(),Pp.Z(),Pp.Mag(),Qp.X(),Qp.Y(),Qp.Z(),Qp.Mag(),Pp*Qp/(Pp.Mag()*Qp.Mag()),(Pp-Qp).Mag())<<endl;
