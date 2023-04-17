@@ -1,5 +1,5 @@
 #include "TPCManager.cc"
-int runnum = 5644;
+int runnum = 5641;
 //TString dir = base_dir+"MayRun/rootfiles/CH2/TPC/";
 int SearchPeaks(TH1D* hist,vector<double> &peaks){
 	TSpectrum spec(30);

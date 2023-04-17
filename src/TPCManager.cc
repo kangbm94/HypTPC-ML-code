@@ -246,6 +246,9 @@ void TPCManager::LoadTPC3D(){
 		int hf = hough_flag->at(i);
 		TVector3 pos = GetPosition(i);
 		double x=pos.x(),y=pos.y(),z=pos.z();
+		if(z < -143 and abs(y)<50){
+			cout<<Form("(%f,%f,%f)",x,y,z)<<endl;
+		}
 		tpcHit3d.at(i)->SetPoint(0,z,x,y);
 		tpcHit3d.at(i)->SetMarkerStyle(8);	
 		if(399 < hf and hf < 500){

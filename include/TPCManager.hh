@@ -92,9 +92,6 @@ class TPCManager:public FileManager{
 		vector<double>* hough_z0 = new vector<double>;
 		vector<double>* hough_r = new vector<double>;
 		vector<double>* hough_dz = new vector<double>;
-		vector<double>* vtx = new vector<double>;
-		vector<double>* vty = new vector<double>;
-		vector<double>* vtz = new vector<double>;
 		vector<int>* isBeam = new vector<int>;
 		vector<int>* clsize = new vector<int>;
 		vector<int>* hough_flag = new vector<int>;
@@ -519,6 +516,7 @@ void TPCManager::InitializeTPC(){
 	TPC3D=TPCGeometry();
 }
 void TPCManager::SearchVertex(){
+/*
 	for(int nt1 = 0; nt1<ntTpc;++nt1){
 		double hcx = helix_cx->at(nt1);
 		double hcy = helix_cy->at(nt1);
@@ -541,6 +539,7 @@ void TPCManager::SearchVertex(){
 			//			TVector3 mom_vtx = tp->CalcHelixMom(par1, vert.y());
 		}
 	}
+*/
 }
 void
 TPCManager::InitializeHoughHistograms(){
