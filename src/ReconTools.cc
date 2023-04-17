@@ -377,7 +377,7 @@ Recon::Recon(Recon P,Recon Q,double m1,double m2){
 	auto Qp = Q.GetCharge()*CalcHelixMom(QPar,Vert.y());
 	cout<<Form("MomP = (%f,%f,%f),%f, MomQ =(%f,%f,%f),%f,cos = %f,dif = %f",Pp.X(),Pp.Y(),Pp.Z(),Pp.Mag(),Qp.X(),Qp.Y(),Qp.Z(),Qp.Mag(),Pp*Qp/(Pp.Mag()*Qp.Mag()),(Pp-Qp).Mag())<<endl;
 //	TLorentzVector LVP(Pp, sqrt(Pp.Mag2()+m1*m1));	
-	auto LVP = Pp.GetLV();
+	auto LVP = P.GetLV();
 	TLorentzVector LVQ(Qp, sqrt(Qp.Mag2()+m2*m2));	
 	cout<<Form("EP = %f, EQ = %f, PPi0= %f GeV/c",LVP.T(),LVQ.T(),sqrt((LVP.T()-LVQ.T())*(LVP.T()-LVQ.T())-mpi0*mpi0))<<endl;
 	LV = LVP - LVQ;
