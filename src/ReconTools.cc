@@ -120,9 +120,6 @@ bool VertexLH::AddTrack(Track p){
 		auto pos = VertexPointHelixLinear(par1,par2,cd,t1,t2);
 		if(cd<cdcut){
 				auto prop = vv-pos;
-//				cout<<Form("Cd=%f, PropDist(%f,%f,%f)",cd,prop.X(),prop.Y(),prop.Z())<<endl;
-				//	cout<<Form("LdVert(%f,%f,%f)",vv.X(),vv.Y(),vv.Z())<<endl;
-		//	cout<<Form("HLVert(%f,%f,%f)",pos.X(),pos.Y(),pos.Z())<<endl;
 			Tracks.push_back(p);
 			verts.push_back(pos);Vert_id+=pow(2,nt);SetVert();
 			return true;
@@ -169,7 +166,6 @@ void VertexLH::SearchXiCombination(){
 			if(ldmomdir * lddir < 0) continue;
 			auto p2 = CalcHelixMom(pi.GetPar(),ldpivert.y());
 			std::bitset<8>ldb(ld.GetID());
-//			cout<<"cd = "<<cd_<<" PiID,LdId = ("<<pi.GetID()<<" , "<<ldb<<" )"<<endl;
 			auto ldLV = ld.GetLV();
 
 			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
@@ -239,9 +235,7 @@ XiStarRecon::Construct(vector<TVector3>KMX,vector<TVector3>KMP,vector<TVector3>K
 			auto xkp = KPX.at(ikp);
 			auto pkp = KPP.at(ikp);
 			auto kkvert = VertexPoint(xkm, xkp, pkm, pkp);
-//			cout<<Form("Xi0Vertex (%f,%f,%f)",kkvert.x(),kkvert.y(),kkvert.z())<<endl;
 			double cd = CloseDist(xkm,xkp,pkm,pkp); 
-//			cout<<cd<<endl;
 			if(!InTarget(kkvert,cd))continue;
 			TLorentzVector LVKM(pkm,sqrt(mk*mk+pkm*pkm));
 			TLorentzVector LVKP(pkp,sqrt(mk*mk+pkp*pkp));
@@ -266,7 +260,6 @@ XiStarRecon::Construct(vector<TVector3>KMX,vector<TVector3>KMP,vector<TVector3>K
 			mxistar = MMs.at(im);
 			kmid=kmids.at(im);
 			kpid=kpids.at(im);
-			cout<<"XiStar "<<mxistar<<"GeV"<<endl;
 		}
 	}
 	if(id>-1){
@@ -301,20 +294,12 @@ XiStarRecon::Construct(vector<TVector3>KMX,vector<TVector3>KMP,vector<TVector3>K
 			*/
 						Vert = VertexPointHelix(K18Track.GetPar(),KuramaTrack.GetPar(), cd,t1,t2);
 			
-//			cout<<Form("Vertex  = (%f,%f,%f)",Vert.X(),Vert.Y(),Vert.Z())<<endl;
-//			Vert.SetZ(ZTarget);	
-//			cout<<Form("Vertex  = (%f,%f,%f)",Vert.X(),Vert.Y(),Vert.Z())<<endl;
 			auto PK18 = KMP.at(kmid);//= CalcHelixMom(K18Track.GetPar(),Vert.y());
 			if(PK18.z()<0) PK18 = -PK18;
-//			auto PKurama = 1.*CalcHelixMom(KuramaTrack.GetPar(),Vert.y());
 			PK18 = PK18 *( 1./(PK18.Mag()) )* KMP.at(kmid).Mag();
 			auto PKurama = KPP.at(kpid);
-			//			PKurama = PKurama * (1./(PKurama.Mag()) )* KPP.at(kpid).Mag();
 
 	
-			//			cout<<"KPMom = "<<KPP.at(kpid).Mag()<<endl;
-//			if(PK18.z()<0) PK18 = -PK18;
-//			if(PKurama.z()<0) PKurama = -PKurama;
 			cout<<Form("KM Mom = (%f,%f,%f)",PK18.X(),PK18.Y(),PK18.Z())<<endl;
 			cout<<Form("KP Mom = (%f,%f,%f)",PKurama.X(),PKurama.Y(),PKurama.Z())<<endl;
 
@@ -385,12 +370,8 @@ Recon::Recon(Recon P,Recon Q,double m1,double m2){
 	double angle_raw = acos( Pp*Qp/PM/QM )*180./acos(-1);
 	double cos = (mpi0*mpi0-LV.T()*LV.T()+PM*PM+QM*QM)   / (2*PM*QM);
 	double angle = acos(cos)*180./acos(-1);
-	cout<<Form("Angle raw , real = (%f,%f),cos = %f",angle_raw,angle,cos)<<endl;
 
 	auto Mom = LV.Vect();
-	cout<<Form("Pi0Vert = (%f,%f,%f)",Vert.x(),Vert.y(),Vert.z())<<endl;
-	cout<<Form("Pi0Mom = (%f,%f,%f)",Mom.x(),Mom.y(),Mom.z())<<endl;
-	cout<<Form("Pi0Mass = %f",LV.Mag())<<endl;
 	exist = true;
 	auto V_t = GlobalToTarget(Vert);
 	auto mom = LV.Vect();

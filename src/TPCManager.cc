@@ -70,19 +70,8 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("qKurama",qKurama);
 	DataChain->SetBranchAddress("m2",m2);
 	DataChain->SetBranchAddress("pKurama",pKurama);
-	DataChain->SetBranchAddress("xtgtKurama",xtgtKurama);
-	DataChain->SetBranchAddress("ytgtKurama",ytgtKurama);
-	DataChain->SetBranchAddress("ztgtKurama",ztgtKurama);
-	DataChain->SetBranchAddress("utgtKurama",utgtKurama);
-	DataChain->SetBranchAddress("vtgtKurama",vtgtKurama);
 
-	DataChain->SetBranchAddress("ntK18",&ntK18);
-	DataChain->SetBranchAddress("pHS",pHS);
-	DataChain->SetBranchAddress("xtgtHS",xtgtHS);
-	DataChain->SetBranchAddress("ytgtHS",ytgtHS);
-	DataChain->SetBranchAddress("ztgtHS",ztgtHS);
-	DataChain->SetBranchAddress("utgtHS",utgtHS);
-	DataChain->SetBranchAddress("vtgtHS",vtgtHS);
+	DataChain->SetBranchAddress("nKK",&nKK);
 }
 void TPCManager::LoadTPCBcOut(TString filename){
 	LoadFile(filename);	

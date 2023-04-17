@@ -127,7 +127,9 @@ class TPCManager:public FileManager{
 		double xtgtKurama[MaxHits],ytgtKurama[MaxHits],ztgtKurama[MaxHits],utgtKurama[MaxHits],vtgtKurama[MaxHits];
 		double pHS[MaxHits];
 		double xtgtHS[MaxHits],ytgtHS[MaxHits],ztgtHS[MaxHits],utgtHS[MaxHits],vtgtHS[MaxHits];
-
+		int nKK;
+		double vtx[5],vty[5],vtz[5];
+		double MissMomx[5],MisMomy[5],MisMomz[5];
 
 
 		bool ldflg,xiflg,xistarflag,pi0flag;
