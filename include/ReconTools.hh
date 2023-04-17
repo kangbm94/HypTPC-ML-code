@@ -247,7 +247,7 @@ class VertexLH:public Vertex{
 				double x = LdP.X(),y=LdP.Y(),z=LdP.Z();
 				auto LdLVCor = TLorentzVector();
 				LdLVCor.SetXYZM(x,y,z,mL);
-//				p.SetLV(LdLVCor);
+				p.SetLV(LdLVCor);
 				p.SetLV(LdLV);
 			}
 			Recons.push_back(p);
