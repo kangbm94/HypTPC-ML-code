@@ -167,6 +167,7 @@ class Vertex{
 		vector<Track> Tracks;
 		TVector3 vert;
 		vector<TVector3> verts;
+		bool TrustCharge = true;
 		double cdcut = 10;
 		void SetVert(){
 			int n = verts.size();
@@ -186,6 +187,9 @@ class Vertex{
 			//			cout<<"Vertex"<<endl;
 		}
 		Vertex(){}
+		void TrustChargeInfo(bool flag){
+			TrustCharge = flag;
+		}
 		bool Counted(Track p){
 			int trid = p.GetID();
 			return (Vert_id%int(pow(2,trid+1)))/int(pow(2,trid));//true if Reconstructed with track.

@@ -82,7 +82,7 @@ void Vertex::SearchLdCombination(){
 	vector<Track>PiCand;PiCand.clear();
 	for(auto p:Tracks){
 		if(p.IsP())PCand.push_back(p);
-		if(p.IsPi() and p.IsNegative())PiCand.push_back(p);
+		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge))PiCand.push_back(p);
 	}
 	double mom_cut = 0.9;//1.2  
 	double mom_cutMin = 0.2;//0.3  
@@ -96,9 +96,9 @@ void Vertex::SearchLdCombination(){
 			auto p2 = CalcHelixMom(pi.GetPar(),ppivert.y());
 			auto pLV = TLorentzVector(p1,sqrt(mp*mp+p1.Mag2()));
 			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
-//			vector<TLorentzVector> lv1 = {pLV,piLV};
-//			auto ldlv1 = pLV+piLV;
-//			if(ldlv1.Vect().Mag()<mom_cut and ldlv1.Vect().Mag()>mom_cutMin)LdCand.push_back(Recon(lv1,ppivert,cd_,p.GetID(),pi.GetID()));
+			vector<TLorentzVector> lv1 = {pLV,piLV};
+			auto ldlv1 = pLV+piLV;
+			if(ldlv1.Vect().Mag()<mom_cut and ldlv1.Vect().Mag()>mom_cutMin and ! TrustCharge)LdCand.push_back(Recon(lv1,ppivert,cd_,p.GetID(),pi.GetID()));
 			auto piLVInv = TLorentzVector(-p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv2 = {pLV,piLVInv};
 			auto ldlv2 = pLV+piLVInv;
@@ -150,7 +150,7 @@ void VertexLH::SearchXiCombination(){
 	LdCand.clear();
 	vector<Track>PiCand;PiCand.clear();
 	for(auto p:Tracks){
-		if(p.IsPi() and p.IsNegative())PiCand.push_back(p);
+		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge ))PiCand.push_back(p);
 	}
 	double mom_cut = 0.9;//Xi->0.9 
 	double mom_cutMin = 0.4;//Xi-> 0.4 
@@ -169,9 +169,9 @@ void VertexLH::SearchXiCombination(){
 			auto ldLV = ld.GetLV();
 
 			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
-//			vector<TLorentzVector> lv1 = {ldLV,piLV};
-//			auto xilv1 = ldLV+piLV;
-//			if(xilv1.Vect().Mag()<mom_cut and xilv1.Vect().Mag()>mom_cutMin)XiCand.push_back(Recon(lv1,ldpivert,cd_,ld.GetID(),pi.GetID(),-1));
+			vector<TLorentzVector> lv1 = {ldLV,piLV};
+			auto xilv1 = ldLV+piLV;
+			if(xilv1.Vect().Mag()<mom_cut and xilv1.Vect().Mag()>mom_cutMin and !TrustCharge )XiCand.push_back(Recon(lv1,ldpivert,cd_,ld.GetID(),pi.GetID(),-1));
 			auto piLVInv = TLorentzVector(-p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv2 = {ldLV,piLVInv};
 			auto xilv2 = ldLV+piLVInv;
