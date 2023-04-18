@@ -10,6 +10,7 @@ double mk = 493.677/1000;
 double mp = 938.272/1000;
 double mL = 1115.677/1000;
 double mXi = 1321.71/1000;
+double mXi0 = 1314.86/1000;
 double mXiStar = 1535./1000;
 double mH = 2150./1000;
 
@@ -97,6 +98,7 @@ class Recon{
 		int trid1=-1,trid2=-1;
 		Track ReconTrack;
 		int charge;
+		bool propagate = false;
 	public:
 		Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2,int charge_=0);
 		Recon(Recon P,Recon Q,double m1,double m2);
@@ -137,6 +139,9 @@ class Recon{
 		TVector3 Momentum(){
 			return LV.Vect();
 		}
+		void CanPropagate(bool flag){
+			propagate = flag;
+		}
 		bool Counted(Track p){
 			int trid = p.GetID();
 			return (CombID%int(pow(2,trid+1)))/int(pow(2,trid));//true if Reconstructed with track.
@@ -167,6 +172,8 @@ class Vertex{
 		vector<Track> Tracks;
 		TVector3 vert;
 		vector<TVector3> verts;
+		vector<Track>PCand;
+		vector<Track>PiCand;
 		bool TrustCharge = true;
 		double cdcut = 10;
 		void SetVert(){
@@ -286,7 +293,7 @@ class XiStarRecon: public Recon{
 		vector<TVector3>KPmom;
 		vector<TVector3>KPPos;	
 		TVector3 TargetPos = TVector3(0,0,-143);
-		double mass = mXiStar;
+		double mass;
 		TVector3 IniMom;
 		int kpid = 0;
 		int kmid = 0;
@@ -346,6 +353,23 @@ class XiStarRecon: public Recon{
 
 
 */
+class VertexXiPi:public Vertex{
+	private:
+		Recon MissPart;
+		vector<Recon>Xi0Cand;
+		Recon Xi0;
+	public:
+		VertexXiPi(){};
+		VertexXiPi(Recon XiStar){
+			MissPart = XiStar;
+			vert = MissPart.Vertex();
+		};
+		bool AddTrack(Track p);
+		void SearchXi0Combination();
+		Recon GetXi0(){
+			return Xi0;
+		}
+};
 class Pi0Recon: public Recon{
 	public:
 		Pi0Recon(){};

@@ -78,8 +78,8 @@ bool Vertex::AddTrack(Track p){
 }
 void Vertex::SearchLdCombination(){
 	int np = NTrack();
-	vector<Track>PCand;PCand.clear();
-	vector<Track>PiCand;PiCand.clear();
+//	vector<Track>PCand;PCand.clear();
+//	vector<Track>PiCand;PiCand.clear();
 	for(auto p:Tracks){
 		if(p.IsP())PCand.push_back(p);
 		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge))PiCand.push_back(p);
@@ -148,7 +148,7 @@ bool VertexLH::AddTrack(Track p){
 void VertexLH::SearchXiCombination(){
 	int np = NTrack();
 	LdCand.clear();
-	vector<Track>PiCand;PiCand.clear();
+//	vector<Track>PiCand;PiCand.clear();
 	for(auto p:Tracks){
 		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge ))PiCand.push_back(p);
 	}
@@ -178,29 +178,6 @@ void VertexLH::SearchXiCombination(){
 			if(xilv2.Vect().Mag()<mom_cut and xilv2.Vect().Mag()>mom_cutMin)XiCand.push_back(Recon(lv2,ldpivert,cd_,ld.GetID(),pi.GetID(),-1));
 		
 			
-/*
-			auto ldPLV = ld.GetDaughter(0);
-			auto ldPP = ldPLV.Vect(); 
-			auto ldPPres = ldPP * (0.03);
-			
-			auto ldpiLV = ld.GetDaughter(1);
-			auto ldpiP = ldpiLV.Vect(); 
-			auto ldpiPres = ldpiP * (0.03);
-			Fitter.AssignLorentzVector(ldPLV,ldpiLV);
-			Fitter.SetResolution(ldPPres,ldpiPres);
-			
-			Fitter.DoKinematicFit();
-			auto ldPCor = Fitter.GetFittedLV().at(0);
-			auto ldpiCor = Fitter.GetFittedLV().at(1);
-			auto ldLVCor = ldPCor+ldpiCor;
-
-			auto xiCorlv1 = ldLVCor+piLV;
-			vector<TLorentzVector> lv1Cor = {ldLVCor,piLV};
-			if(xiCorlv1.Vect().Mag()<mom_cut and xiCorlv1.Vect().Mag()>mom_cutMin)XiCorCand.push_back(Recon(lv1Cor,ldpivert,cd_,ld.GetID(),pi.GetID()));
-			auto xiCorlv2 = ldLVCor+piLVInv;
-			vector<TLorentzVector> lv2Cor = {ldLVCor,piLVInv};
-			if(xiCorlv2.Vect().Mag()<mom_cut and xiCorlv2.Vect().Mag()>mom_cutMin)XiCorCand.push_back(Recon(lv2Cor,ldpivert,cd_,ld.GetID(),pi.GetID()));
-		*/
 		}
 	}
 }
@@ -348,12 +325,17 @@ Recon::Recon(Recon P,Recon Q,double m1,double m2){
 	auto pp = P.Momentum();//;= CalcHelixMom(PPar,vp.y());
 	auto vq = Q.Vertex();
 	auto pq = Q.Momentum();//;= CalcHelixMom(PPar,vp.y());
-//	auto pq = CalcHelixMom(QPar,vq.y());
 		
-//	cout<<Form("XiStarVertex (%f,%f,%f)",vp.x(),vp.y(),vp.z())<<endl;
-//	cout<<Form("MomRecal = (%f,%f,%f),%f",pp.X(),pp.Y(),pp.Z(),pp.Mag())<<endl;
-
-		Vert = vp;
+	if(!propagate) Vert = vp;
+	else{
+		double Px0 = vp.x() - pp.x()*vp.z()/pp.Mag();
+		double Py0 = vp.y() - pp.y()*vp.z()/pp.Mag();
+		double Qx0 = vq.x() - pq.x()*vq.z()/pq.Mag();
+		double Qy0 = vq.y() - pq.y()*vq.z()/pq.Mag();
+		TVector3 PV0(Px0,Py0,0.);
+		TVector3 QV0(Qx0,Qy0,0.);
+		Vert = VertexPoint(PV0,QV0,pp,pq); 
+	}
 //	cout<<"Pi0CD = "<<(Vert-P.Vertex()).Mag()<<endl;
 //	cout<<"Pi0CD = "<<cd<<endl;
 //	auto Pp = P.GetCharge()*CalcHelixMom(PPar,Vert.y());
@@ -381,6 +363,41 @@ Recon::Recon(Recon P,Recon Q,double m1,double m2){
 	par[0]=V_t.X()-V_t.Z()*u,par[1]=V_t.Z()-V_t.Y()*v,par[2]= u,par[3]=v;
 	if(charge){
 		GetHelixParameter(Vert,mom,charge,par);
+	}
+}
+bool VertexXiPi::AddTrack(Track p){
+	int np = NTrack();
+	int nt = p.GetID();
+	if(Counted(p)) return false;
+	if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge)){
+		double close_dist = MinHelixDistance(p.GetPar(),vert);
+		if(close_dist < cdcut){
+			PiCand.push_back(p);
+			return true;
+		}
+	}
+	return  false;
+}
+void VertexXiPi::SearchXi0Combination(){
+	for(auto p:PiCand){
+		auto PiMom = -CalcHelixMom(p.GetPar(),vert.y());
+		auto PiLV = TLorentzVector(PiMom,sqrt(mpi*mpi+PiMom.Mag2()));
+		auto MissLV = MissPart.GetLV();
+		auto Xi0LV = MissLV - PiLV;
+		Recon Xi0_;
+		Xi0_.SetVertex(vert);
+		Xi0_.SetLV(Xi0LV);
+		Xi0_.SetExistance(true);
+		Xi0Cand.push_back(Xi0_);
+	}
+	int id = 0;
+	for(auto xi0:Xi0Cand){
+		double im = 9999;
+		if(abs(xi0.Mass()-mXi0)<im){
+			im = abs(xi0.Mass()-mXi0);
+			Xi0 = xi0;
+//			cout<<"Xi0 = "<<Xi0.Mass()<<endl;
+		}
 	}
 }
 #endif

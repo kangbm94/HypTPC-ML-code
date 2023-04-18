@@ -45,6 +45,21 @@ TVector3 TargetToGlobalMom(TVector3 mom){
 TVector3 GlobalToTargetMom(TVector3 mom){
 	return TargetToGlobalMom(mom);
 }
+double GetTcal(double* par,TVector3 pos){
+	TVector3 pos_(-pos.X(),
+			pos.Z()-ZTarget,
+			pos.Y());
+	double fpar[8];
+	for(int ip=0; ip<5; ++ip){
+		fpar[ip] = par[ip];
+	}
+	fpar[5] = pos_.X();
+	fpar[6] = pos_.Y();
+	fpar[7] = pos_.Z();
+	fint.SetParameters(fpar);
+  double min_t = fint.GetMinimumX(-2.5*acos(-1),2.5*acos(-1)); 
+	return min_t;
+}
 void GetHelixParameter(TVector3 Pos, TVector3 Mom,double charge,double* par){
 	
 	const double Const = 0.299792458; // =c/10^9
@@ -223,6 +238,17 @@ TVector3 HelixPos(double* par, double t){
 	double z = z0+r*dz*t;
 	return TVector3(-x,z,y+ZTarget);
 }
+TVector3 HelixPos(double* par, TVector3 pos){
+	auto t = GetTcal(par,pos);
+	auto v = HelixPos(par,t);
+	return v;
+}
+double MinHelixDistance(double* par, TVector3 pos){
+	auto t = GetTcal(par,pos);
+	auto v = HelixPos(par,t);
+	return (pos-v).Mag();
+}
+
 TVector3 HelixPosInTarget(double* par, double t){
 	return GlobalToTarget(HelixPos(par,t));
 }
@@ -253,21 +279,6 @@ double GetTcalWdist(double* par,TVector3 pos){
 	return min_t;
 }
 
-double GetTcal(double* par,TVector3 pos){
-	TVector3 pos_(-pos.X(),
-			pos.Z()-ZTarget,
-			pos.Y());
-	double fpar[8];
-	for(int ip=0; ip<5; ++ip){
-		fpar[ip] = par[ip];
-	}
-	fpar[5] = pos_.X();
-	fpar[6] = pos_.Y();
-	fpar[7] = pos_.Z();
-	fint.SetParameters(fpar);
-  double min_t = fint.GetMinimumX(-2.5*acos(-1),2.5*acos(-1)); 
-	return min_t;
-}
 double GetTcalBeam(double* par,TVector3 pos){
 	TVector3 pos_(-pos.X(),
 			pos.Z()-ZTarget,
@@ -285,11 +296,6 @@ double GetTcalBeam(double* par,TVector3 pos){
 }
 
 
-double MinHelixDistance(double* par, TVector3 pos){
-	auto t = GetTcal(par,pos);
-	auto v = HelixPos(par,t);
-	return (pos-v).Mag();
-}
 
 vector<TVector3>gHitPos;
 vector<TVector3>gRes;
