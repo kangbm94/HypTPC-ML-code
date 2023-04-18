@@ -345,21 +345,20 @@ Recon::Recon(Recon P,Recon Q,double m1,double m2){
 	auto QPar =	Q.GetPar();
 	double cd,t1,t2;
 	auto vp = P.Vertex();
-	auto pp = CalcHelixMom(PPar,vp.y());
+	auto pp = P.Momentum();//;= CalcHelixMom(PPar,vp.y());
 	auto vq = Q.Vertex();
-	auto pq = CalcHelixMom(QPar,vq.y());
+	auto pq = Q.Momentum();//;= CalcHelixMom(PPar,vp.y());
+//	auto pq = CalcHelixMom(QPar,vq.y());
 		
 //	cout<<Form("XiStarVertex (%f,%f,%f)",vp.x(),vp.y(),vp.z())<<endl;
 //	cout<<Form("MomRecal = (%f,%f,%f),%f",pp.X(),pp.Y(),pp.Z(),pp.Mag())<<endl;
 
-//	Vert  = VertexPointHelix(PPar,QPar,cd,t1,t2);
-//	Vert = (vp+vq)*0.5;
 		Vert = vp;
-//	Vert = VertexPoint(vp,vq,vp,vq);
 //	cout<<"Pi0CD = "<<(Vert-P.Vertex()).Mag()<<endl;
 //	cout<<"Pi0CD = "<<cd<<endl;
-	auto Pp = P.GetCharge()*CalcHelixMom(PPar,Vert.y());
-	auto Qp = Q.GetCharge()*CalcHelixMom(QPar,Vert.y());
+//	auto Pp = P.GetCharge()*CalcHelixMom(PPar,Vert.y());
+//	auto Qp = Q.GetCharge()*CalcHelixMom(QPar,Vert.y());
+	auto Pp = pp,Qp = pq;
 //	cout<<Form("MomP = (%f,%f,%f),%f, MomQ =(%f,%f,%f),%f,cos = %f,dif = %f",Pp.X(),Pp.Y(),Pp.Z(),Pp.Mag(),Qp.X(),Qp.Y(),Qp.Z(),Qp.Mag(),Pp*Qp/(Pp.Mag()*Qp.Mag()),(Pp-Qp).Mag())<<endl;
 //	TLorentzVector LVP(Pp, sqrt(Pp.Mag2()+m1*m1));	
 	auto LVP = P.GetLV();
