@@ -30,8 +30,8 @@ void Sort(){
 		if(FlgLd and FlgXi and Acpt and runnum == 5643 ){
 			//and ntK18==1){
 			cout<<Form("Run, Ev = (%d,%d)",runnum,evnum)<<endl;
-			SortedTree->Fill();
 		}
+			SortedTree->Fill();
 //		SortedTree->Fill();
 	}
 	cout<<SortedTree->GetEntries()<<endl;

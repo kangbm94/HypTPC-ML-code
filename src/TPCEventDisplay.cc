@@ -36,7 +36,7 @@ vector<double> XIMM;
 TString tpcfile;
 void TPCEventDisplay(){
 	cout<<"TPCEventDisplayAccidental(int ievt)"<<endl;
-	tpcfile = dir + Form("run0%d_DstTPCKuramaSelectedHelixTracking.root",runnum);
+	tpcfile = dir + Form("run0%d_DstTPCHSKuramaSelectedHelixTracking.root",runnum);
 //	tpcfile = "test.root"; 
 	gTPCManager.LoadClusterFile(tpcfile,"tpc");
 

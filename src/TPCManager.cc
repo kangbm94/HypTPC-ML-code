@@ -248,7 +248,7 @@ void TPCManager::LoadTPC3D(){
 		TVector3 pos = GetPosition(i);
 		double x=pos.x(),y=pos.y(),z=pos.z();
 		if(z < -143 and abs(y)<50){
-			cout<<Form("(%f,%f,%f)",x,y,z)<<endl;
+//			cout<<Form("(%f,%f,%f)",x,y,z)<<endl;
 		}
 		tpcHit3d.at(i)->SetPoint(0,z,x,y);
 		tpcHit3d.at(i)->SetMarkerStyle(8);	
@@ -997,7 +997,7 @@ TPCManager::ReconEvent(){
 	bool ldflg = false,xiflg=false;
 	Ld.Clear();Xi.Clear();
 	double chi_cut = 150;
-	double cd_cut = 30;
+	double cd_cut = 15;
 	LdPiID = -1;LdProtonID = -1;XiPiID=-1;
 	Track K18Track,KuramaTrack;
 	for(int nt1 = 0; nt1<ntTpc;++nt1){
@@ -1091,6 +1091,12 @@ TPCManager::ReconEvent(){
 	for(auto vt: verts){
 		vt.SearchLdCombination();
 		auto Ldc = vt.GetLd();
+		bool flg = Ldc.Exist();
+		if(!flg){
+			cout<<"SearchWOPID"<<endl;
+			vt.SearchLdCombinationWOPID();
+		}
+		Ldc = vt.GetLd();
 		LdCand.push_back(Ldc);
 	}
 	int nld= LdCand.size();

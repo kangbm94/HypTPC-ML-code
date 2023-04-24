@@ -13,7 +13,13 @@ double mXi = 1321.71/1000;
 double mXi0 = 1314.86/1000;
 double mXiStar = 1535./1000;
 double mH = 2150./1000;
-
+bool InTarget(TVector3 Vect){
+	double x = Vect.X();
+	double y = Vect.Y();
+	double z = Vect.Z() - ZTarget;
+	if(abs(x)<15 and abs(y) < 25 and abs(z)<10) return true;
+	else return false;
+}
 class Track :public TLorentzVector{
 	private:
 		int Q_=0;
@@ -56,7 +62,13 @@ class Track :public TLorentzVector{
 		void SetQ(int charge){
 			Q_=charge;
 		}
-
+		int PID(){
+			int val = 0;
+			if(IsP())val+=100;
+			if(IsK())val+=10;
+			if(IsPi())val+=1;
+			return val;
+		}
 		int GetQ(){
 			return Q_;
 		}
@@ -77,13 +89,14 @@ class Track :public TLorentzVector{
 			return hpar;
 		}
 };
-bool InTarget(TVector3 Vect){
-	double x = Vect.X();
-	double y = Vect.Y();
-	double z = Vect.Z() - ZTarget;
-	if(abs(x)<15 and abs(y) < 25 and abs(z)<10) return true;
+
+bool SortByMomentum(Track A, Track B){
+	auto p1 = A.GetPar();
+	auto p2 = B.GetPar();
+	if(p1[3]>p2[3])return true;
 	else return false;
 }
+
 
 class Recon{
 	protected:
@@ -191,6 +204,8 @@ class Vertex{
 	public:
 		Vertex(Track p){
 			Tracks.push_back(p);Vert_id=pow(2,p.GetID());
+			auto P = CalcHelixMom(p.GetPar(),0);
+			cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
 			//			cout<<"Vertex"<<endl;
 		}
 		Vertex(){}
@@ -215,6 +230,7 @@ class Vertex{
 		void SetCdCut(double cd){
 			cdcut = cd;
 		}
+		void SearchLdCombinationWOPID();
 };
 class VertexLH:public Vertex{
 	private:

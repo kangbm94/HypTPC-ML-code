@@ -44,16 +44,19 @@ bool Vertex::AddTrack(Track p){
 	int np = NTrack();
 	int nt = p.GetID();
 	if(Counted(p)) return false;
-	if(np==1){
+	if(np!=0){
 		auto par1 = Tracks[0].GetPar();
 		auto par2 = p.GetPar();
 		double cd,t1,t2;
 		auto pos = VertexPointHelix(par1,par2,cd,t1,t2);
+		cout<<Form("(%d,%d)Close dist : %f",Tracks[0].GetID(),p.GetID(),cd)<<endl;
 		if(cd<cdcut){
 			Tracks.push_back(p);
 			verts.push_back(pos);
 			Vert_id+=pow(2,nt);
 			SetVert();
+			auto P = CalcHelixMom(p.GetPar(),pos.y());
+			cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
 			return true;
 		}
 	}
@@ -69,8 +72,13 @@ bool Vertex::AddTrack(Track p){
 			}
 			TVector3 vec(0,0,0);
 			for(auto v:cand){vec+=v*(1./cand.size());	
-				Tracks.push_back(p);Vert_id+=pow(2,nt);verts.push_back(vec); SetVert();
+				Tracks.push_back(p);
+				Vert_id+=pow(2,nt);
+				verts.push_back(vec); 
+				SetVert();
 			}
+			auto P = CalcHelixMom(p.GetPar(),vert.y());
+			cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
 			return true;
 		}
 	}
@@ -80,12 +88,13 @@ void Vertex::SearchLdCombination(){
 	int np = NTrack();
 //	vector<Track>PCand;PCand.clear();
 //	vector<Track>PiCand;PiCand.clear();
+	if(np < 2) return;
 	for(auto p:Tracks){
-		if(p.IsP())PCand.push_back(p);
+		if(!p.IsPi() or p.IsP())PCand.push_back(p);
 		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge))PiCand.push_back(p);
 	}
-	double mom_cut = 0.9;//1.2  
-	double mom_cutMin = 0.2;//0.3  
+	double mom_cut = 9.9;//1.2  
+	double mom_cutMin = 0.0;//0.3  
 	for(auto p:PCand){
 		for(auto pi:PiCand){
 			double cd_,t1_,t2_;
@@ -107,6 +116,40 @@ void Vertex::SearchLdCombination(){
 	}
 }
 
+void Vertex::SearchLdCombinationWOPID(){
+	int np = NTrack();
+	if(np < 2) return;
+	sort(Tracks.begin(),Tracks.end(),SortByMomentum);	
+	if(Tracks.size()>2){
+		Tracks.at(0).SetP();
+		if(Tracks.at(0).IsP())cout<<"P"<<endl;
+	}
+	for(auto p:Tracks){
+		PCand.push_back(p);
+		if((p.GetQ()==-1 or !TrustCharge))PiCand.push_back(p);
+	}
+	double mom_cut = 9.9;//1.2  
+	double mom_cutMin = 0.0;//0.3  
+	for(auto p:PCand){
+		for(auto pi:PiCand){
+			double cd_,t1_,t2_;
+			if(p.GetID() == pi.GetID()) continue;
+			auto ppivert = VertexPointHelix(p.GetPar(),pi.GetPar(),cd_,t1_,t2_); 
+			if(cd_>cdcut) continue;
+			auto p1 = CalcHelixMom(p.GetPar(),ppivert.y());
+			auto p2 = CalcHelixMom(pi.GetPar(),ppivert.y());
+			auto pLV = TLorentzVector(p1,sqrt(mp*mp+p1.Mag2()));
+			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
+			vector<TLorentzVector> lv1 = {pLV,piLV};
+			auto ldlv1 = pLV+piLV;
+			if(ldlv1.Vect().Mag()<mom_cut and ldlv1.Vect().Mag()>mom_cutMin and ! TrustCharge)LdCand.push_back(Recon(lv1,ppivert,cd_,p.GetID(),pi.GetID()));
+			auto piLVInv = TLorentzVector(-p2,sqrt(mpi*mpi+p2.Mag2()));
+			vector<TLorentzVector> lv2 = {pLV,piLVInv};
+			auto ldlv2 = pLV+piLVInv;
+			if(ldlv2.Vect().Mag()<mom_cut and ldlv2.Vect().Mag()>mom_cutMin)LdCand.push_back(Recon(lv2,ppivert,cd_,p.GetID(),pi.GetID()));
+		}
+	}
+}
 bool VertexLH::AddTrack(Track p){
 	int np = NTrack();
 	int nt = p.GetID();
