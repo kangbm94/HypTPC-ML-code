@@ -49,7 +49,7 @@ bool Vertex::AddTrack(Track p){
 		auto par2 = p.GetPar();
 		double cd,t1,t2;
 		auto pos = VertexPointHelix(par1,par2,cd,t1,t2);
-		cout<<Form("(%d,%d)Close dist : %f",Tracks[0].GetID(),p.GetID(),cd)<<endl;
+//		cout<<Form("(%d,%d)Close dist : %f",Tracks[0].GetID(),p.GetID(),cd)<<endl;
 		if(cd<cdcut){
 			Tracks.push_back(p);
 			verts.push_back(pos);
@@ -78,7 +78,7 @@ bool Vertex::AddTrack(Track p){
 				SetVert();
 			}
 			auto P = CalcHelixMom(p.GetPar(),vert.y());
-			cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
+	//		cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
 			return true;
 		}
 	}
@@ -165,7 +165,7 @@ bool VertexLH::AddTrack(Track p){
 	double cd,t1,t2;
 	auto vv = Recons[0].Vertex();
 	auto pos = VertexPointHelixLinear(par1,par2,cd,t1,t2);
-	cout<<Form("(%d,%d)XiClose dist : %f",Recons[0].GetID(),p.GetID(),cd)<<endl;
+//	cout<<Form("(%d,%d)XiClose dist : %f",Recons[0].GetID(),p.GetID(),cd)<<endl;
 	if(cd<cdcut){
 		auto prop = vv-pos;
 		Tracks.push_back(p);
