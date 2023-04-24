@@ -56,7 +56,7 @@ bool Vertex::AddTrack(Track p){
 			Vert_id+=pow(2,nt);
 			SetVert();
 			auto P = CalcHelixMom(p.GetPar(),pos.y());
-			cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
+//			cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
 			return true;
 		}
 	}
@@ -90,7 +90,7 @@ void Vertex::SearchLdCombination(){
 //	vector<Track>PiCand;PiCand.clear();
 	if(np < 2) return;
 	for(auto p:Tracks){
-		if(!p.IsPi() or p.IsP())PCand.push_back(p);
+		if( p.IsP())PCand.push_back(p);
 		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge))PiCand.push_back(p);
 	}
 	double mom_cut = 9.9;//1.2  
@@ -122,7 +122,7 @@ void Vertex::SearchLdCombinationWOPID(){
 	sort(Tracks.begin(),Tracks.end(),SortByMomentum);	
 	if(Tracks.size()>2){
 		Tracks.at(0).SetP();
-		if(Tracks.at(0).IsP())cout<<"P"<<endl;
+//		if(Tracks.at(0).IsP())cout<<"P"<<endl;
 	}
 	for(auto p:Tracks){
 		PCand.push_back(p);
@@ -137,6 +137,11 @@ void Vertex::SearchLdCombinationWOPID(){
 			auto ppivert = VertexPointHelix(p.GetPar(),pi.GetPar(),cd_,t1_,t2_); 
 			if(cd_>cdcut) continue;
 			auto p1 = CalcHelixMom(p.GetPar(),ppivert.y());
+			/*
+			if(p1.z()<0){
+				cout<<"Proton?Charge: "<<p.GetQ()<<endl;
+				p1=-p1;
+			}*/
 			auto p2 = CalcHelixMom(pi.GetPar(),ppivert.y());
 			auto pLV = TLorentzVector(p1,sqrt(mp*mp+p1.Mag2()));
 			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
@@ -155,36 +160,17 @@ bool VertexLH::AddTrack(Track p){
 	int nt = p.GetID();
 	if(Recons[0].Counted(p)) return false;
 	if(!(Recons[0].Exist())) return false;
-	if(np==1 or np!=1){
-		auto par1 = p.GetPar();
-		auto par2 = Recons[0].GetPar();
-		double cd,t1,t2;
-		auto vv = Recons[0].Vertex();
-		auto pos = VertexPointHelixLinear(par1,par2,cd,t1,t2);
-		if(cd<cdcut){
-				auto prop = vv-pos;
-			Tracks.push_back(p);
-			verts.push_back(pos);Vert_id+=pow(2,nt);SetVert();
-			return true;
-		}
-	}
-	else{
-		double t = GetTcal(p.GetPar(),vert);
-		auto point = HelixPos(p.GetPar(),t);
-		double cd = (vert-point).Mag();
-		double ct,t1,t2;
-		if(cd<cdcut){
-			vector<TVector3> cand;
-			for(auto pt:Tracks){
-				cand.push_back(VertexPointHelix(pt.GetPar(),p.GetPar(),ct,t1,t2));
-			}
-			TVector3 vec(0,0,0);
-			for(auto v:cand){
-				vec+=v*(1./cand.size());	
-				Tracks.push_back(p);Vert_id+=pow(2,nt);verts.push_back(vec); SetVert();
-			}
-			return true;
-		}
+	auto par1 = p.GetPar();
+	auto par2 = Recons[0].GetPar();
+	double cd,t1,t2;
+	auto vv = Recons[0].Vertex();
+	auto pos = VertexPointHelixLinear(par1,par2,cd,t1,t2);
+	cout<<Form("(%d,%d)XiClose dist : %f",Recons[0].GetID(),p.GetID(),cd)<<endl;
+	if(cd<cdcut){
+		auto prop = vv-pos;
+		Tracks.push_back(p);
+		verts.push_back(pos);Vert_id+=pow(2,nt);SetVert();
+		return true;
 	}
 	return false;
 }
@@ -206,7 +192,8 @@ void VertexLH::SearchXiCombination(){
 			TVector3 ldmomdir = ld.Momentum() * (1./ld.Momentum().Mag());
 			TVector3 lddir = ld.Vertex() - ldpivert;
 			lddir = lddir * (1./lddir.Mag());
-			if(ldmomdir * lddir < 0) continue;
+			double fl = (ld.Vertex() - ldpivert).Mag();
+			if(ldmomdir * lddir < 0 and fl>cdcut) continue;
 			auto p2 = CalcHelixMom(pi.GetPar(),ldpivert.y());
 			std::bitset<8>ldb(ld.GetID());
 			auto ldLV = ld.GetLV();
