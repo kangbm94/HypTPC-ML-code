@@ -205,7 +205,7 @@ class Vertex{
 		Vertex(Track p){
 			Tracks.push_back(p);Vert_id=pow(2,p.GetID());
 			auto P = CalcHelixMom(p.GetPar(),0);
-			cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
+//			cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
 			//			cout<<"Vertex"<<endl;
 		}
 		Vertex(){}
