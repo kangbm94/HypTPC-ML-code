@@ -1,5 +1,5 @@
 #include "TPCManager.cc"
-int runnum = 5642;
+int runnum = 5643;
 //TString dir = base_dir+"MayRun/rootfiles/CH2/TPC/";
 int SearchPeaks(TH1D* hist,vector<double> &peaks){
 	TSpectrum spec(30);
@@ -182,7 +182,7 @@ void TPCEventDisplayAccidental(int ievt){
 	c1->cd(1);
 	h->Draw("colz");
 	h->SetTitle("CircleFit");
-	gTPCManager.DrawHelix();
+//	gTPCManager.DrawHelix();
 	c1->cd(2);
 	h2->Draw("colz");
 	gTPCManager.DrawHelixZY();
@@ -226,7 +226,8 @@ void TPCEventDisplayAccidental(int ievt){
 	c4->Modified();
 	c4->Update();
 	cout<<Form("Drawing Event (%d,%d)",runnum,evnum)<<endl;
-
+	c1->cd(1);
+	gTPCManager.DrawHelix();
 	gSystem->ProcessEvents();
 }
 void TPCXiDisplay(int i){

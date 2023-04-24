@@ -14,7 +14,7 @@ const double& HS_field_Hall=  0.873800000;
 
 
 std::string s_tmp="pow([5]-([0]+([3]*cos(x))),2)+pow([6]-([1]+([3]*sin(x))),2)+pow([7]-([2]+([3]*[4]*x)),2)";
-TF1 fint("fint",s_tmp.c_str(),-4.,4.);
+TF1 fint("fint",s_tmp.c_str(),-4.,7.);
 
 TVector3 GlobalToTarget(TVector3 pos){
 	double x = pos.X();
@@ -166,7 +166,7 @@ TVector3 VertexPointHelixLinear(const Double_t par1[5], const Double_t par2[4],
 
 	TF2 fvert_helix_lin("fvert_helix_lin",
 			"pow(([0]+[3]*cos(x))-([5]+[7]*y),2)+pow(([1]+[3]*sin(x))-y,2)+pow(([2]+[3]*[4]*x)-([6]+[8]*y),2)",
-			-5.,5.,-250.,250.);
+			-4.,7.,-250.,250.);
 	fvert_helix_lin.SetParameter(0, par1[0]);
 	fvert_helix_lin.SetParameter(1, par1[1]);
 	fvert_helix_lin.SetParameter(2, par1[2]);
@@ -219,6 +219,29 @@ TVector3 CalcHelixMom(double par[5], double y)
 	const double dMagneticField = HS_field_0*(HS_field_Hall/HS_field_Hall_calc);
 
 	double t = (y-par[2])/(par[3]*par[4]);
+	double pt = fabs(par[3])*(Const*dMagneticField); // MeV/c
+
+	//From here!!!!
+	double tmp_px = pt*(-1.*sin(t));
+	double tmp_py = pt*(cos(t));
+	double tmp_pz = pt*(par[4]);
+	double px = -tmp_px*0.001;
+	double py = tmp_pz*0.001;
+	double pz = tmp_py*0.001;
+	return TVector3(px,py,pz);
+}
+TVector3 CalcCircleMom(double par[5],TVector3 Pos )
+{
+
+	const double Const = 0.299792458; // =c/10^9
+	const double dMagneticField = HS_field_0*(HS_field_Hall/HS_field_Hall_calc);
+
+	auto HPos = GlobalToTarget(Pos);
+	double x=HPos.x(),y=HPos.y();
+	double x_c = x-par[0],y_c=y-par[1];
+	double t = atan2(y_c,x_c);
+
+//	double t = (y-par[2])/(par[3]*par[4]);
 	double pt = fabs(par[3])*(Const*dMagneticField); // MeV/c
 
 	//From here!!!!

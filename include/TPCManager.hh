@@ -31,6 +31,7 @@ class TPCManager:public FileManager{
 		vector<TPolyLine3D*> AccidentalTrack3D ;
 		vector<TPolyLine3D*> HelixTrack3D ;
 		vector<int> HelixTrackID;
+		vector<int> PhysicsTrackID;
 		vector<double> HelixTrackMom;
 		vector<TPolyMarker3D *>Vertex3d;
 		vector<TPolyLine3D*> VertexTrack3D ;

@@ -174,11 +174,12 @@ void TPCManager::FillHist(int itr){
 	int bx,by;
 	int bin = ZYHist->FindBin(z,y);
 	int padId = tpc::findPadID(z,x);
-	PadHist->SetBinContent(padId,1);
+	if(hough_flag->at(itr)== 100 )PadHist->SetBinContent(padId,1);
 	//	ZYHist->SetBinContent(bin,x);
 	//	if(hough_flag->at(itr)<9999){
 //	PadHist->Fill(z,x);
-	if(hough_flag->at(itr) < 400 or hough_flag->at(itr)>499)ZYHist->Fill(z,y);
+//	if(hough_flag->at(itr) < 400 or hough_flag->at(itr)>499)ZYHist->Fill(z,y);
+	if(hough_flag->at(itr)== 100 )ZYHist->Fill(z,y);
 	//		YHist->Fill(y);
 	//	}
 };
@@ -430,9 +431,13 @@ void TPCManager::DrawHelix(int it){
 	HelixTrack[it]->Draw("psame");
 }
 void TPCManager::DrawHelix(){
+		for(int tid : PhysicsTrackID){
+			DrawHelix(tid);
+		}
 	for(int it = 0; it< HelixTrack.size();++it){
 		if(helix_flag->at(it)> 399 and helix_flag->at(it)<500){
-			DrawHelix(it);
+//			if(helix_flag->at(it)==100)
+	//			DrawHelix(it);
 //			cout<<it<<" , "<<helix_flag->at(it)<<endl;
 		}
 	}
@@ -873,10 +878,17 @@ void TPCManager::DrawVertex3D(){
 //				cout<<"LdProtonID = "<<LdProtonID<<endl;
 //				cout<<Form("LdProtonMom = (%f,%f,%f), mag = %f MeV/c",PP.X(),PP.Y(),PP.Z(),HelixTrackMom.at(LdProtonID))<<endl;
 //				cout<<"LdProtonTrackID = "<<HelixTrackID.at(LdProtonID)<<endl;
+				PhysicsTrackID.clear();
+				PhysicsTrackID.push_back(HelixTrackID.at(LdPiID));
 				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineColor(kMagenta);
+				HelixTrack.at(HelixTrackID.at(LdPiID))->SetLineColor(kMagenta);
+				HelixTrack.at(HelixTrackID.at(LdPiID))->SetLineWidth(3);
 				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineWidth(3);
 				HelixTrack3D.at(HelixTrackID.at(LdPiID))->SetLineStyle(2);
+				PhysicsTrackID.push_back(HelixTrackID.at(LdProtonID));
 				HelixTrack3D.at(HelixTrackID.at(LdProtonID))->SetLineColor(kMagenta);
+				HelixTrack.at(HelixTrackID.at(LdProtonID))->SetLineColor(kMagenta);
+				HelixTrack.at(HelixTrackID.at(LdProtonID))->SetLineWidth(3);
 				HelixTrack3D.at(HelixTrackID.at(LdProtonID))->SetLineWidth(3);
 				HelixTrack3D.at(HelixTrackID.at(LdProtonID))->SetLineStyle(6);
 			}
@@ -910,12 +922,15 @@ void TPCManager::DrawVertex3D(){
 				auto XiTrack = new TPolyLine3D(2);
 				XiTrack->SetPoint(0,z3,x3,y3);
 				XiTrack->SetPoint(1,z4,x4,y4);
+				PhysicsTrackID.push_back(HelixTrackID.at(XiPiID));
 				XiTrack->SetLineColor(kCyan);
 				XiTrack->SetLineWidth(2);
 //				VertexTrack3D.push_back(XiTrack);
 				HelixTrack3D.at(HelixTrackID.at(XiPiID))->SetLineColor(kCyan);
 				HelixTrack3D.at(HelixTrackID.at(XiPiID))->SetLineWidth(3);
 				HelixTrack3D.at(HelixTrackID.at(XiPiID))->SetLineStyle(2);
+				HelixTrack.at(HelixTrackID.at(XiPiID))->SetLineColor(kCyan);
+				HelixTrack.at(HelixTrackID.at(XiPiID))->SetLineWidth(3);
 				if(XiStarSearch and XiStar.Exist()){
 					auto XiStarVert = new TPolyMarker3D();
 					auto XSV = XiStar.Vertex();
