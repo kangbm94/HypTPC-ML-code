@@ -244,6 +244,7 @@ class VertexLH:public Vertex{
 		double laglambda = 0;
 		vector<Track> KuramaTracks  ;
 		bool KuramaFlag = false;
+		int VertCut = 8.;
 	public:
 		VertexLH(Recon p, bool KinematicFit = true){
 			if(KinematicFit and p.Exist()){

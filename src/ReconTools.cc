@@ -193,7 +193,8 @@ void VertexLH::SearchXiCombination(){
 			TVector3 lddir = ld.Vertex() - ldpivert;
 			lddir = lddir * (1./lddir.Mag());
 			double fl = (ld.Vertex() - ldpivert).Mag();
-			if(ldmomdir * lddir < 0 and fl>cdcut) continue;
+//			if(ldmomdir * lddir < 0 and fl>cdcut) continue;
+			if(ldmomdir * lddir < 0 and fl>VertCut) continue;
 			auto p2 = CalcHelixMom(pi.GetPar(),ldpivert.y());
 			std::bitset<8>ldb(ld.GetID());
 			auto ldLV = ld.GetLV();
