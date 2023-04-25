@@ -302,6 +302,9 @@ class VertexLH:public Vertex{
 			for(auto xic : XiCorCand){ if( abs(mXi-xic.Mass())<comp) {comp=abs(mXi-xic.Mass());val=xic;}}
 			return val;
 		}
+		void SetVertCut(double val){
+			VertCut = val;
+		}
 };
 class XiStarRecon: public Recon{
 	private:
