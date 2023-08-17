@@ -11,6 +11,7 @@ double MassSquare(double p, double l, double t){
 const double& HS_field_0 = 0.9860;
 const double& HS_field_Hall_calc = 0.90607;
 const double& HS_field_Hall=  0.873800000;
+//const double& HS_field_Hall=  0.90820000;
 
 
 std::string s_tmp="pow([5]-([0]+([3]*cos(x))),2)+pow([6]-([1]+([3]*sin(x))),2)+pow([7]-([2]+([3]*[4]*x)),2)";
@@ -21,7 +22,8 @@ TVector3 GlobalToTarget(TVector3 pos){
 	double y = pos.Y();
 	double z = pos.Z();
 	double x_=-x;
-	double y_=z-ZTarget; double z_=y;
+	double y_=z-ZTarget;
+	double z_=y;
 	return TVector3(x_,y_,z_);
 }
 TVector3 TargetToGlobal(TVector3 pos){
@@ -110,7 +112,7 @@ TVector3 VertexPointHelix(const Double_t par1[5], const Double_t par2[5],
 
 	TF2 fvert_helix("fvert_helix",
 			"pow(([0]+[3]*cos(x))-([5]+[8]*cos(y)),2)+pow(([1]+[3]*sin(x))-([6]+[8]*sin(y)),2)+pow(([2]+[3]*[4]*x)-([7]+[8]*[9]*y),2)",
-			-5.,5.,-5.,5.);
+			-4.,7.,-4.,7.);
 
 	fvert_helix.SetParameter(0, par1[0]);
 	fvert_helix.SetParameter(1, par1[1]);
@@ -166,7 +168,7 @@ TVector3 VertexPointHelixLinear(const Double_t par1[5], const Double_t par2[4],
 
 	TF2 fvert_helix_lin("fvert_helix_lin",
 			"pow(([0]+[3]*cos(x))-([5]+[7]*y),2)+pow(([1]+[3]*sin(x))-y,2)+pow(([2]+[3]*[4]*x)-([6]+[8]*y),2)",
-			-4.,7.,-250.,250.);
+			-4.,7.,-50.,50.);
 	fvert_helix_lin.SetParameter(0, par1[0]);
 	fvert_helix_lin.SetParameter(1, par1[1]);
 	fvert_helix_lin.SetParameter(2, par1[2]);
@@ -399,6 +401,50 @@ CloseDist(const TVector3& Xin, const TVector3& Xout,
   Double_t x2=xo+uo*z, y2=yo+vo*z;
 
   return TMath::Sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
+}
+double GetTrackHitAngle(double* par, TVector3 pos){
+	auto mom = CalcCircleMom(par,pos);
+	double px = mom.x(),pz=mom.z();
+	double norm_p = sqrt(px*px+pz*pz);
+	double x = pos.x(),z=pos.z()-ZTarget;
+	double norm_x = sqrt(x*x+z*z);
+	double prd= (px*x+pz*z)/norm_p/norm_x;	
+	if(prd<0)prd*=-1;
+	return acos(prd);
+}
+
+/*
+double VertexFunction(double* xyz,double* res, double* param){
+	TVector3 pos(xyz[0],xyz[1],xyz[2]);	
+	TVector3 h_pos = GlobalToTarget(pos);
+	double hz = h_pos.z();
+	h_pos.z()=0;
+	TVector3 cent = TVector3(param[0],param[1],0);
+	h_pos -= cent;
+	double dir = h_pos * (1./h_pos.Mag());
+	auto rad = param[2]*dir;
+	auto dw = rad - h_pos;
+	double t = atan2(h_pos.x(),-h_pos.y());
+	double dw = cos(t)*dw.x() + sin(t)*dw.y();
+	double dl = cos(t)*dw.y() - sin(t)*dw.x();
+
+}
+
+*/
+static double MomToRad(double p, double v){
+	const double Const = 0.299792458; // =c/10^9
+	const double dMagneticField = HS_field_0*(HS_field_Hall/HS_field_Hall_calc);
+	double pt  = p * 1./sqrt(1+v*v); 
+	double rad = p * 1000. / (Const*dMagneticField); 	
+	return rad;
+}
+static double RadToMom(double rad, double v){
+	const double Const = 0.299792458; // =c/10^9
+	const double dMagneticField = HS_field_0*(HS_field_Hall/HS_field_Hall_calc);
+	double pt  = rad  * (Const * dMagneticField);
+	double p = pt * hypot(1,v);
+	return p/1000.; 
+
 }
 
 

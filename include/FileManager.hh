@@ -21,7 +21,9 @@ class FileManager{
 	public:
 		FileManager(){}
 		void WriteTag(TString title, TString comment);
-		void LoadFile(TString FileName){DataFile = new TFile(FileName,"READ");}
+		void LoadFile(TString FileName){
+			if(DataFile) delete DataFile;
+			DataFile = new TFile(FileName,"READ");}
 		void LoadChain(TString ChainName){DataChain = (TChain*)DataFile->Get(ChainName);}
 		int GetEntries(){
 			return DataChain->GetEntries();

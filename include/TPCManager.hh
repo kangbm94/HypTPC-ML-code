@@ -1,6 +1,7 @@
 #include "Utils.hh"
 #include "FileManager.hh"
 #include "TPCPadHelper.hh"
+#include "HelixTrack.hh"
 #include "PhysicalConstants.hh"
 #include "TPCGlobalFunctions.hh"
 //#include "Track.hh"
@@ -22,12 +23,16 @@ class TPCManager:public FileManager{
 		TH2I* FlatHist=nullptr;
 		TH2D* PosHist=nullptr;
 		TH1D* YHist=nullptr;
+		vector<TH2D*> ResHists;
 		TH3D* hist_Ci;
 		TH2D* hist_YTheta;
 		TH2D* hist_ZY;
 		vector<TLine*>ZYLine;
 		TGeoVolume *TPC3D;
 		vector<TPolyMarker3D *>tpcHit3d;
+		vector<TMarker *>tpcHit2d;
+		vector<TMarker *>HSHit2d;
+		vector<TMarker *>KuramaHit2d;
 		vector<TPolyLine3D*> AccidentalTrack3D ;
 		vector<TPolyLine3D*> HelixTrack3D ;
 		vector<int> HelixTrackID;
@@ -37,11 +42,31 @@ class TPCManager:public FileManager{
 		vector<TPolyLine3D*> VertexTrack3D ;
 		vector<TPCHit> m_Hits;
 		vector<TPCCluster> m_Clusters;
-		vector<TEllipse*> HelixTrack;
+		vector<TEllipse*> HelixTracks;
+		vector<TEllipse*> HSTracks;
+		vector<TEllipse*> KuramaTracks;
+		vector<vector<TVector3>> HelixTrackHit;
+		vector<vector<TVector3>> HelixTrackIDVec;
+		vector<vector<TVector3>> HelixTrackCalHit;
+		vector<vector<TVector3>> HelixTrackDir;
+		vector<vector<double>> HelixTrackAng;
+		vector<vector<double>> HelixTrackHitx;
+		vector<vector<double>> HelixTrackHity;
+		vector<vector<double>> HelixTrackHitz;
+		vector<vector<double>> HelixTrackCalx;
+		vector<vector<double>> HelixTrackCaly;
+		vector<vector<double>> HelixTrackCalz;
+		vector<vector<double>> HelixTrackPadAng;
 		vector<TEllipse*> AccidentalTrack;
 		vector<int> *trigflag = new vector<int>;
 		vector<vector<TLine*>> HelixTrackZY ;
 		vector<vector<TLine*>> AccidentalTrackZY ;
+		double priopar[5];
+		vector<vector<double>> prioparKurama;
+		vector<HelixTrack> HSTrack;
+		vector<HelixTrack> KuramaTrack;
+
+		
 
 
 		int ZYtheta_ndiv = 120;
@@ -50,7 +75,7 @@ class TPCManager:public FileManager{
 		int rho_ndiv = 500;
 		double rho_min = -500;
 		double rho_max = 500;
-
+		double hough_pars[5];
 
 		vector<int> *padTpc = new vector<int>;
 		int iPadtpc[nhtpcmax];
@@ -69,9 +94,16 @@ class TPCManager:public FileManager{
 		vector<double>* dlTpc = new vector<double>;
 		vector<double>* deTpc = new vector<double>;
 		vector<double>* cldeTpc = new vector<double>;
+		vector<double>* raw_hitpos_x = new vector<double>;
+		vector<double>* raw_hitpos_y = new vector<double>;
+		vector<double>* raw_hitpos_z = new vector<double>;
+		vector<int>* raw_layer = new vector<int>;
+		vector<int>* raw_row = new vector<int>;
 		vector<double>* cluster_x = new vector<double>;
 		vector<double>* cluster_y = new vector<double>;
 		vector<double>* cluster_z = new vector<double>;
+		vector<int>* cluster_layer = new vector<int>;
+		vector<int>* cluster_row_center = new vector<int>;
 		vector<double>* resolution_x = new vector<double>;
 		vector<double>* resolution_y = new vector<double>;
 		vector<double>* resolution_z = new vector<double>;
@@ -82,12 +114,18 @@ class TPCManager:public FileManager{
 		vector<double>* accidental_z0 = new vector<double>;
 		vector<double>* accidental_r = new vector<double>;
 		vector<double>* accidental_dz = new vector<double>;
+		vector<double>* x0Tpc = new vector<double>;
+		vector<double>* y0Tpc = new vector<double>;
+		vector<double>* u0Tpc = new vector<double>;
+		vector<double>* v0Tpc = new vector<double>;
+		
+
 		vector<double>* helix_cx = new vector<double>;
 		vector<double>* helix_cy = new vector<double>;
 		vector<double>* helix_z0 = new vector<double>;
 		vector<double>* helix_r = new vector<double>;
 		vector<double>* helix_dz = new vector<double>;
-		vector<double>* helix_flag = new vector<double>;
+		vector<int>* helix_flag = new vector<int>;
 		vector<double>* hough_cx = new vector<double>;
 		vector<double>* hough_cy = new vector<double>;
 		vector<double>* hough_z0 = new vector<double>;
@@ -102,14 +140,26 @@ class TPCManager:public FileManager{
 		vector<int>* pid = new vector<int>;
 		vector<int>* charge = new vector<int>;
 		vector<vector<double>>* helix_t = new vector<vector<double>>;
+		vector<vector<double>>* hitpos_x = new vector<vector<double>>;
+		vector<vector<double>>* hitpos_y = new vector<vector<double>>;
+		vector<vector<double>>* hitpos_z = new vector<vector<double>>;
+		vector<vector<double>>* calpos_x = new vector<vector<double>>;
+		vector<vector<double>>* calpos_y = new vector<vector<double>>;
+		vector<vector<double>>* calpos_z = new vector<vector<double>>;
+		vector<vector<double>>* residual_x = new vector<vector<double>>;
+		vector<vector<double>>* residual_y = new vector<vector<double>>;
+		vector<vector<double>>* residual_z = new vector<vector<double>>;
 		vector<vector<double>>* track_cluster_layer = new vector<vector<double>>;
 		vector<vector<double>>* track_cluster_x_center = new vector<vector<double>>;
 		vector<vector<double>>* track_cluster_y_center = new vector<vector<double>>;
 		vector<vector<double>>* track_cluster_z_center = new vector<vector<double>>;
+		vector<vector<double>>* track_cluster_row_center = new vector<vector<double>>;
 		int evnum,runnum;
 		int htofnhits;
 		int htofhitpat[34];
-		int nhittpc; double htofua[34];
+		int nhittpc;
+		int inside[5];
+		double htofua[34];
 		int gp = 0;
 		int gpb = 0;
 		bool cluster = false;
@@ -123,9 +173,13 @@ class TPCManager:public FileManager{
 		int ntKurama,ntK18;
 		double pKurama[MaxHits],qKurama[MaxHits],m2[MaxHits];
 		double xtgtKurama[MaxHits],ytgtKurama[MaxHits],ztgtKurama[MaxHits],utgtKurama[MaxHits],vtgtKurama[MaxHits];
-		double pHS[MaxHits];
+		double pHS[MaxHits],qHS[MaxHits];
 		double xtgtHS[MaxHits],ytgtHS[MaxHits],ztgtHS[MaxHits],utgtHS[MaxHits],vtgtHS[MaxHits];
 		int nKK;
+		double tpcHSvpx[MaxHits][4],tpcHSvpy[MaxHits][4],tpcHSvpz[MaxHits][4];
+		double tpcvpx[MaxHits][4],tpcvpy[MaxHits][4],tpcvpz[MaxHits][4];
+		double KMPX[5],KMPY[5],KMPZ[5];
+		double KPPX[5],KPPY[5],KPPZ[5];
 		double vtx[5],vty[5],vtz[5];
 		double MissMomx[5],MisMomy[5],MisMomz[5];
 
@@ -134,6 +188,9 @@ class TPCManager:public FileManager{
 		bool XiStarSearch;
 		double npts=100;
 		double anpts=5;
+		vector<Vertex> verts;
+		vector<Track> parts;
+		vector<Track> kuramas;
 		Recon Ld,Xi,XiCor,Pi0;
 		XiStarRecon XiStar;
 		int LdProtonID=-1,LdPiID=-1;
@@ -184,6 +241,13 @@ class TPCManager:public FileManager{
 		int GetNTracksAcc(){
 			return ntAcc;
 		}
+		bool CheckMom(){
+			for(auto p : *mom0){
+				if (p>0.9)return false;
+				else return true;
+			}
+			return false;
+		}
 		bool TagTrig(int i ){
 			if(trigflag->at(i)>0){
 				return true;
@@ -193,12 +257,38 @@ class TPCManager:public FileManager{
 			}
 		}
 		void InitializeHelix();
+		void InitializeLinear();
 		void InitializeAccidental();
 		void ReconEvent();
+		void DoCircleHough();
+		void DoYThetaHough();
+
+
+
+
+		void DrawTPCHit3D();
 		void DrawHelix();
 		void DrawHelix(int it);
+		void DrawHelixHit(int it);
+		void DrawHelixDir(int it);
 		void DrawHelixZY(); 
 		void DrawHelixZY(int it); 
+		
+		void MakeHSTrack();
+		void DrawHS();
+		void DrawHSZY();
+
+		void MakeKuramaTrack();
+		void DrawKurama();
+		void DrawKuramaZY();
+
+		void DrawLinear();
+		void DrawLinear(int it);
+		void DrawLinear3D();
+		void DrawLinear3D(int it);
+		void DrawLinearZY();
+		void DrawLinearZY(int it);
+
 
 		void DrawZYHough(); 
 
@@ -296,12 +386,14 @@ class TPCManager:public FileManager{
 		}
 
 		void FillAccHists();
-
+	
 		void FillHist(double z, double x);
 		void LoadTPC3D();
 		void LoadAccidental3D();
 		void LoadHelix3D();
+		void LoadLinear3D();
 		void FillHist(int itr);
+		void FillHistHits(int itr);
 		void FillAntiProtonHist();
 		void FillFlatHist(int padID);
 		void SetPadContent(int padID,double cont);
@@ -341,6 +433,12 @@ class TPCManager:public FileManager{
 		TH1D* GetYHistogram(){
 			return YHist;
 		}
+		vector<TH2D*>GetResHists(){
+			return ResHists;
+		}
+		vector<HelixTrack> GetHSTracks(){
+			return HSTrack;
+		}
 
 		void AssignHits();
 		bool MakeUpClusters(double Vth);
@@ -352,6 +450,21 @@ class TPCManager:public FileManager{
 		}
 		TPCHit GetMHit(int i){return m_Hits[i];}
 		TPCCluster GetMCl(int i){return m_Clusters[i];}
+		vector<double> TrackHitAngle(int it);
+		vector<double> TrackHitAngle2(int it);
+		vector<double> PadAngle(int it);
+		vector<double> HitLayer(int it);
+		vector<double> HitRow(int it);
+		vector<double> Residual(int it);
+		vector<double> ResidualX(int it);
+		vector<double> ResidualY(int it);
+		vector<double> ResidualZ(int it);
+		vector<double> HitX(int it);
+		vector<double> HitY(int it);
+		vector<double> HitZ(int it);
+		vector<double> CalX(int it);
+		vector<double> CalY(int it);
+		vector<double> CalZ(int it);
 
 		vector<double>* GetAccidentalDist();
 		vector<double>* GetHoughDist(){
@@ -370,7 +483,7 @@ class TPCManager:public FileManager{
 			TPC3D->Draw("");
 		}
 		int GetNhits(int clusters){
-			if(!clusters)	return Min(padTpc->size(),max_nh);//Min(nhittpc,max_nh);
+			if(clusters==0)	return Min(raw_hitpos_x->size(),max_nh);//Min(nhittpc,max_nh);
 			else 					return Min(cluster_x->size(),max_nh);
 		};
 		int GetNhits(){
@@ -406,6 +519,9 @@ class TPCManager:public FileManager{
 		int GetTrackNum(){
 			return ntrk[nhittpc-1];
 		}
+		int GetNHelixTrack(){
+			return HelixTracks.size();
+		}
 		double GetDL(int i){
 			return dlTpc->at(i);
 		}
@@ -426,6 +542,9 @@ class TPCManager:public FileManager{
 			}
 			return pos;
 		}
+		TVector3 GetPadPosition(int padID){
+			return tpc::getPosition(padID);
+		}
 		TVector3 GetG4Position(int i){
 			return TVector3(xtpc[i],ytpc[i],ztpc[i]);
 		}
@@ -437,6 +556,7 @@ class TPCManager:public FileManager{
 				hp[i]=htofhitpat[i];
 			}
 		}
+		double GetHitAngle(TVector3 pos);
 		void FillgHitPos(double peak, double width){
 			int nh = GetNhits(1);
 			for(int i=0;i<nh;++i){
@@ -448,7 +568,7 @@ class TPCManager:public FileManager{
 				if(abs(y-peak)<width) {gHitPos.push_back(hitv);gRes.push_back(res);}
 			}
 		}
-		TVector3 GetRTheta(int padID);
+//		TVector3 GetRTheta(int padID);
 		TVector2 GetLayerRow(int padID);
 		int GetBCnt(){
 			return ntBcOut;
@@ -470,10 +590,11 @@ class TPCManager:public FileManager{
 
 		TH2D* GetZYHistAcc(int i);
 		TH2D* GetCirHistAcc(int i);
-
+		bool Acpt();
+		bool NearTarget(int it ,double dist);
 
 		void DoZYHough();
-
+		double Getmom0(int it){ return mom0->at(it);}
 		int WhichEvent();
 		void AssignG4Event(short * x,short* y,short* z,double* dedx);
 		void AssignG4EventD(int* trkid,int* pid, double * x,double* y,double* z,double* dedx);
@@ -492,6 +613,7 @@ class TPCManager:public FileManager{
 			}
 			else return false;
 		}
+		bool SelectBeamthrough();
 };
 
 

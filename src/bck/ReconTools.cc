@@ -54,7 +54,7 @@ bool Vertex::AddTrack(Track p){
 			Tracks.push_back(p);
 			verts.push_back(pos);
 			Vert_id+=pow(2,nt);
-//			SetVert();
+			SetVert();
 			auto P = CalcHelixMom(p.GetPar(),pos.y());
 //			cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
 			return true;
@@ -65,7 +65,7 @@ bool Vertex::AddTrack(Track p){
 		auto point = HelixPos(p.GetPar(),t);
 		double cd = (vert-point).Mag();
 		double ct,t1,t2;
-		if(cd<cdcut){
+		if(cd<cdcut*1.){
 			vector<TVector3> cand;
 			for(auto pt:Tracks){
 				cand.push_back(VertexPointHelix(pt.GetPar(),p.GetPar(),ct,t1,t2));
@@ -93,8 +93,8 @@ void Vertex::SearchLdCombination(){
 		if( p.IsP())PCand.push_back(p);
 		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge))PiCand.push_back(p);
 	}
-	double mom_cut = 1.2;//1.2  
-	double mom_cutMin = 0.3;//0.3  
+	double mom_cut = 9.9;//1.2  
+	double mom_cutMin = 0.0;//0.3  
 	for(auto p:PCand){
 		for(auto pi:PiCand){
 			double cd_,t1_,t2_;
@@ -182,8 +182,8 @@ void VertexLH::SearchXiCombination(){
 	for(auto p:Tracks){
 		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge ))PiCand.push_back(p);
 	}
-	double mom_cut = 1.9;//Xi->0.9 
-	double mom_cutMin = 0.1;//Xi-> 0.4 
+	double mom_cut = 0.9;//Xi->0.9 
+	double mom_cutMin = 0.4;//Xi-> 0.4 
 	for(auto ld:Recons) LdCand.push_back(ld);
 	for(auto ld:LdCand){
 		for(auto pi:PiCand){

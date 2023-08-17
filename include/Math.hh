@@ -185,9 +185,7 @@ void CircleFit(std::vector<TVector3> posarr,double* param){
 	param[2] = rad;
 	//	std::cout<<Form("(cx,cy,rad) = (%f,%f,%f)",cx,cy,rad)<<std::endl;
 }
-
-void
-LinearFit(std::vector<TVector3> posarr,double* param){
+void LinearFit(std::vector<TVector3> posarr,double* param){
 	// y = ax + b;
 	int n =posarr.size();
 	double Sumx=0,Sumy=0;
@@ -201,13 +199,117 @@ LinearFit(std::vector<TVector3> posarr,double* param){
 	double b = (Sumx*Sumxy-Sumx2*Sumy)/( Sumx*Sumx-n*Sumx2);	
 	double a = (Sumx*Sumy-n*Sumxy)/( Sumx*Sumx-n*Sumx2);	
 	param[0]=b;//b = z0;
-	param[1]=a;//a = dz;
-						 //	std::cout<<Form("(z0,dz) = (%f,%f)",b,a)<<std::endl;
+	param[1]=a;//a = r*dz;
 }
+
+
+
+
+
+
 bool SortY(TVector3 a, TVector3 b){
 	return a.Y()<b.Y();
 }
 
+static bool CircleFitWithRadius(std::vector<TVector3> posarr,double r,double* param, double charge = 0){
+	/*
+		 Minimize the variance, Sum[((x-a)^2+(y-b)^2-r^2)^2].
+		 For numetical stabability, move the frame to CoM.
+		 Then, Sum[x] = Sum[y] = 0, some terms cancel out.
+		 Sum[
+		 a^4  + 2a^2b^2 +b^4
+
+		 -4a^3x -> 0  
+		 -4b^3y -> 0
+
+		 -4b^2ax -> 0
+		 + 8abxy
+		 -4a^2by -> 0
+
+		 +a^2(-2r^2+6x^2+2*y^2) +b^2(-2r^2+2x^2+6y^2)
+
+		 +4a(r^2x-x^3-xy^2)
+		 +4b(r^2y-x^2y-y^3)
+	//
+	constant to a and b. ->neglected
+	+r^4
+	-2r^2x^2
+	-2r^2y^2
+	+x^4+2x^2y^2+y^4
+	//
+	]
+	*/
+	double gx,gy=0;
+	double n = posarr.size();
+	//cout<<"CircleFit::n = "<<n<<endl;
+	if(n<3) return false;
+	for(auto pos:posarr){
+		gx+= pos.X()/n;
+		gy+= pos.Y()/n;
+	}
+	double x,y,xx,xy,yy,xxx,xxy,xyy,yyy,xxxx,xxyy,yyyy = 0;
+	for(auto pos:posarr){
+		double X = pos.X() - gx;
+		double Y = pos.Y() - gy;
+		xx+=X*X/n;xy+=X*Y/n;yy+=Y*Y/n;
+		xxx+=X*X*X/n;xxy+=X*X*Y/n;xyy+=X*Y*Y/n;yyy+=Y*Y*Y/n;
+		xxxx+=X*X*X*X/n;xxyy+=X*X*Y*Y/n;yyyy+=Y*Y*Y*Y/n;
+	}
+//	TString form = Form("pow(x,4)+2*pow(x*y,2)+pow(y,4) +8*x*y*%f+pow(x,2)*%f+pow(y,2)*%f+4*x*%f+4*y*%f" ,
+	TString form = Form("x*x*x*x+2*x*x*y*y+y*y*y*y +8*x*y*%f+x*x*%f+y*y*%f+4*x*%f+4*y*%f" ,
+			xy,
+			-2*r*r+6*xx+2*yy,
+			-2*r*r+6*yy+2*xx,
+			-xxx-xyy,
+			-yyy-xxy
+			);
+	TF2 fcirc("fcirc",form,-r-200,-r-200,r+200,r+200);
+	if(charge == -1){
+		fcirc.SetRange(-200,-r-200,r+200,r+200);
+	}
+	else if (charge == 1){
+		fcirc.SetRange(-r-200,-r-200,200,r+200);
+	}
+//	cout<<Form("Charge = %g",charge)<<endl;
+	double cx,cy;
+	fcirc.GetMinimumXY(cx,cy);
+	cx+=gx;
+	cy+=gy;
+	param[0]=cx;
+	param[1]=cy;
+	param[2]=r;
+	return true;
+}
+static bool LinearFitWithSlope(std::vector<TVector3> posarr,double dz,double* param){
+		bool crossing=0,positive=0,negative=0;
+		double cx = param[0];
+		double cy = param[1];
+		double rad = param[3];
+		for(auto pos : posarr){
+			double dx = pos.X()-cx;
+			double dy = pos.Y()-cy;
+			double t = atan2(dy,dx);
+			if( t > acos(-1)*3/4) positive = true;
+			if( t < -acos(-1)*3/4) negative = true;
+		}
+		if(positive and negative) crossing = true;
+		double t_sum,z_sum;
+		for(auto pos : posarr){
+			double dx = pos.X()-cx;
+			double dy = pos.Y()-cy;
+			double t = atan2(dy,dx);
+			if(crossing) t+=2*acos(-1);
+			
+//			cout<<"( "<<pos.Y()-143<<" ,  "<<-pos.X()<<") angle : "<<t<<endl;
+			t_sum+= t;
+			z_sum+=pos.Z();	
+		}
+		double n = posarr.size();
+		double z0= - (rad *dz* t_sum - z_sum)/n;
+		param[2] = z0;
+		param[4] = dz;
+		return true;
+}
 
 
 #endif
