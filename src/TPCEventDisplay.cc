@@ -2,8 +2,8 @@
 //int runnum = 5641;
 //int runnum = 58**;//0.4G pi/P:44/47, 0.5 Pi/P:64/66, 0.6 Pi/P:58,60,0.8 Pi/P:55/56
 //int runnum = 58**;//-0.3G Pi 21, -0.4G 24, -0.5G: 28, -0.8G: 18
-int runnum = 5721;
-//int runnum = 5641;
+//int runnum = 5721;
+int runnum = 5641;
 //TString dir = base_dir+"MayRun/rootfiles/CH2/TPC/";
 int SearchPeaks(TH1D* hist,vector<double> &peaks){
 	TSpectrum spec(30);
@@ -22,12 +22,15 @@ int SearchPeaks(TH1D* hist,vector<double> &peaks){
 TString dir = base_dir;//+"before_mod/";
 vector<int> Xievnum;
 vector<double> XIMM;
+vector<TVector3> VtxPos;
+vector<TVector3> VtxCorPos;
 static int gevnum = 0;
-TString tpcfile;
+TString tpcfile,summaryfile;
 void TPCEventDisplay(){
 //	cout<<"TPCEventDisplayAccidental(int ievt)"<<endl;
-//	tpcfile = dir + Form("./dstfiles/run0%d_DstTPCHSKuramaSelectedHelixTracking.root",runnum);
-		tpcfile = dir + Form("NoCor/HSp400.root");
+	tpcfile = dir + Form("./dstfiles/run0%d_DstTPCHSKuramaSelectedHelixTracking.root",runnum);
+	summaryfile = dir + Form("TPCInvM_cd15.root");
+//		tpcfile = dir + Form("Cor2nd/HSpm500.root");
 //	tpcfile = dir + Form("NoCor/run0%d_DstTPCHelixTrackingHToF.root",runnum);
 //	tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
 	//tpcfile = dir +"NoCorL29/"+ Form("run0%d_DstTPCHelixTracking.root",runnum);
@@ -42,18 +45,22 @@ void TPCEventDisplay(){
 //	gStyle->SetOptStat(0);
 	gTPCManager.InitializeHistograms();
 	gTPCManager.InitializeTPC();
-	TFile* fileXi = new TFile("Sorted.root");
+//	TFile* fileXi = new TFile("Sorted.root");
+	TFile* fileXi = new TFile(summaryfile);
 	TTree* treeXi = (TTree*)fileXi->Get("tree");
 	int XiRunnum,XiEvnum;
 	double XiMM;
+	double Vtx,Vty,Vtz,VtxCor,VtyCor,VtzCor;
 	treeXi->SetBranchAddress("runnum",&XiRunnum);
 	treeXi->SetBranchAddress("evnum",&XiEvnum);
-	treeXi->SetBranchAddress("MM",&XiMM);
+	treeXi->SetBranchAddress("MissingMCor",&XiMM);
 	for(int i = 0; i< treeXi->GetEntries();++i){
 		treeXi->GetEntry(i);
 		if(XiRunnum == runnum){
 			Xievnum.push_back(XiEvnum);
 			XIMM.push_back(XiMM);
+			VtxPos.push_back(TVector3(Vtx,Vty,Vtz-143));	
+			VtxCorPos.push_back(TVector3(VtxCor,VtyCor,VtzCor));	
 		}
 	}
 	cout<<"TPCEventDisplayHelix()"<<endl;
@@ -108,16 +115,16 @@ void TPCEventDisplayHelix(int iev){
 	h->Draw("col");
 	h->SetTitle("CircleFit");
 	gTPCManager.DrawHelix();
-//	gTPCManager.MakeHSTrack();
+	gTPCManager.MakeHSTrack();
 
-//	auto HS = gTPCManager.GetHSTracks();
-/*
+	auto HS = gTPCManager.GetHSTracks();
+
 	if(HS.size()==1){
 		auto HSt = HS.at(0);
 		cout<<Form("pHS,mom0,mom0fit = (%g,%g,%g)",HSt.GetMom0(),gTPCManager.Getmom0(0),HSt.GetMom0Fit())<<endl;
 	}
 	gTPCManager.DrawHS();
-	*/
+	
 	c1->cd(2);
 	h2->Draw("col");
 	gTPCManager.DrawHelixZY();
@@ -199,7 +206,7 @@ void TPCEventDisplayLinear(){
 
 
 
-void TPCEventDisplayAccidental(int ievt){
+void TPCEventDisplayAccidental(int ievt,int ixi=-1){
 //	tpcfile = dir + Form("run0%d_DstTPCHelixTrackingWTarget.root",runnum);
 //	tpcfile = dir + Form("test.root");
 	auto h = gTPCManager.GetPadHistogram();
@@ -298,7 +305,7 @@ void TPCXiDisplay(int i){
 	int ievt = Xievnum.at(i);
 	double mxi =  XIMM.at(i);
 	cout<<"MassXi = "<<mxi<<endl; 
-	TPCEventDisplayAccidental(ievt);
+	TPCEventDisplayAccidental(ievt,i);
 }
 
 

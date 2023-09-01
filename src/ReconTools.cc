@@ -33,7 +33,8 @@ Recon::Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,i
 	dir_t = dir_t* (1/dir_t.Y());
 	auto u = dir_t.X();
 	auto v = dir_t.Z();
-	par[0]=V_t.X()-V_t.Z()*u,par[1]=V_t.Z()-V_t.Y()*v,par[2]= u,par[3]=v;
+	par[0]=V_t.X()-V_t.Y()*u,par[1]=V_t.Z()-V_t.Y()*v,par[2]= u,par[3]=v;
+//	par[0]=Vert.X()-(Vert.Z()-ZTarget)*u,par[1]=Vert.Y()-(Vert.Z()-ZTarget)*v,par[2]= u,par[3]=v;
 	if(charge){
 		GetHelixParameter(Vert,mom,charge,par);
 	}
