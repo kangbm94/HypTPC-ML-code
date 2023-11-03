@@ -58,6 +58,7 @@ void TPCManager::LoadClusterChain(TString ChainName="tpc" ){
 	DataChain->SetBranchAddress("helix_z0",&helix_z0);	
 	DataChain->SetBranchAddress("helix_r",&helix_r);	
 	DataChain->SetBranchAddress("helix_dz",&helix_dz);	
+	DataChain->SetBranchAddress("nhtrack",&nhtrack);	
 	DataChain->SetBranchAddress("helix_flag",&helix_flag);	
 	DataChain->SetBranchAddress("chisqr",&chisqr);	
 	DataChain->SetBranchAddress("isBeam",&isBeam);
@@ -227,11 +228,17 @@ void TPCManager::FillHist(int itr){
 	int padId = tpc::GetPadId(lay,row);
 //	if(hough_flag->at(itr)== 100 )PadHist->SetBinContent(padId,1);
 	PadHist->SetBinContent(padId,3);
+	int hf = hough_flag->at(itr);
+	if(hf > 0 and hf < 400)
+	{
 	TMarker*  pt= new TMarker(z,x,29);
 	pt->SetMarkerColor(kYellow);
-//	if(hough_flag->at(itr)== 100 )pt->SetMarkerColor(kRed);
-	pt->SetMarkerSize(1.);
+	if(hough_flag->at(itr)== 100 )pt->SetMarkerColor(kRed);
+	if(hough_flag->at(itr)== 200 )pt->SetMarkerColor(46);
+	if(hough_flag->at(itr)== 300 )pt->SetMarkerColor(40);
+	pt->SetMarkerSize(3.);
 	tpcHit2d.push_back(pt);
+	}
 	//	ZYHist->SetBinContent(bin,x);
 	//	if(hough_flag->at(itr)<9999){
 //	PadHist->Fill(z,x);
@@ -702,10 +709,11 @@ void TPCManager::MakeHSTrack(){
 	priopar[0]=cx;
 	priopar[1]=cy;
 	priopar[3]=r;
-	LinearFitWithSlope(posarrTarget,v,priopar);
+
+	LinearFitWithSlope(posarrTarget,q*v,priopar);
 	double z0 = priopar[2];
 	double dz = priopar[4];
-	//cout<<Form("Circ cx,cy,r,z0,dz, mom0  = (%g,%g,%g,%g,%g,%g GeV/c)",cx,cy,r,z0,dz,p)<<endl;
+	cout<<Form("Circ cx,cy,r,z0,dz, mom0  = (%g,%g,%g,%g,%g,%g GeV/c)",cx,cy,r,z0,dz,p)<<endl;
 	HelixTrack HT(priopar,q);
 //	cout<<Form("MakeHSTrack:: mom0,fit = (%g,%g)",HT.GetMom0(),HT.GetMom0Fit())<<endl;
 	auto Track= new TEllipse(cy+ZTarget,-cx,r,r,0,360);
@@ -825,7 +833,7 @@ void TPCManager::DrawHSZY(){
 		TLine* L = new TLine(pos.z(),pos.y(),pos2.z(),pos2.y());
 		L->SetLineColor(kBlack);
 		L->SetLineWidth(1);
-//		L->Draw("same");
+		L->Draw("same");
 	}
 
 }
@@ -908,7 +916,7 @@ void TPCManager::MakeKuramaTrack(){
 			auto z = zcl->at(ih);
 			auto pos = TVector3(x,y,z);
 			if(z>-143)
-			cout<<Form("(%g,%g,%g), Cdist = %g, Hdist = %g)",x,y,z,HT.CircDist(pos),HT.HelixDist(pos))<<endl;
+//			cout<<Form("(%g,%g,%g), Cdist = %g, Hdist = %g)",x,y,z,HT.CircDist(pos),HT.HelixDist(pos))<<endl;
 			if(HT.HelixDist(pos)<15 and z > -143){
 				HT.AddHit(pos,l);
 			};
@@ -1256,7 +1264,6 @@ void TPCManager::InitializeHelix(){
 		double tt_max = t_max-0.5*acos(-1);
 		double ttmp;
 		auto Track= new TEllipse(cy+ZTarget,-cx,r,r,tt_max*180./acos(-1),tt_min*180./acos(-1));
-//		cout<<Form("theta = %f,%f",tt_min*180./acos(-1),tt_max*180./acos(-1))<<endl;
 		Track->SetNoEdges();
 		Track-> SetLineColor(kBlack);
 		Track-> SetFillStyle(0);
@@ -1584,10 +1591,10 @@ void TPCManager::LoadHelix3D(){
 		for(int ip=0;ip<nt-1;ip++){
 			double t1 = tvec.at(ip);
 			if(ip == 0 and (track_flag == 200 or track_flag == 300) ){
-				t1 -= 0.05;
+				t1 -= 0.01;
 			}
 			if(ip == nt-2 and (track_flag == 200 or track_flag == 300) ){
-				t1 += 0.05;
+//				t1 += 0.05;
 			}
 			double x1 = -(r*cos(t1)+cx); 
 			double y1 = r*dz*t1+z0;
@@ -1832,7 +1839,7 @@ TPCManager::ReconEvent(){
 	bool ldflg = false,xiflg=false;
 	Ld.Clear();Xi.Clear();
 	double chi_cut = 50;
-	double cd_cut = 15;
+	double cd_cut = 7;
 	LdPiID = -1;LdProtonID = -1;XiPiID=-1;
 	Track K18Track,KuramaTrack;
 	for(int nt1 = 0; nt1<ntTpc;++nt1){
@@ -1844,6 +1851,9 @@ TPCManager::ReconEvent(){
 		double hcy = helix_cy->at(nt1);
 		double hz0 = helix_z0->at(nt1);
 		double hr = helix_r->at(nt1);
+		int nhits = nhtrack->at(nt1);
+		double ht2 = helix_t->at(nt1).at(nhits-1);
+		double ht = helix_t->at(nt1).at(0);
 		double hdz = helix_dz->at(nt1);
 		double par1[5] = {hcx,hcy,hz0,hr,hdz};
 		int id1 = pid->at(nt1);
@@ -1868,7 +1878,11 @@ TPCManager::ReconEvent(){
 			kuramas.push_back(Track(id1,q1,par1,nt1));
 		}
 		else{
-			parts.push_back(Track(id1,q1,par1,nt1));
+			cout<<"Charge : "<<q1<<", Helix_t : "<<ht<<" , "<<ht2<<endl;
+			parts.push_back(Track(id1,q1,par1,nt1,ht));
+			for(auto t : helix_t->at(nt1)){
+				cout<<"t = "<<t<<endl;
+			}
 		}
 	}
 	int nkurama = kuramas.size();

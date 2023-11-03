@@ -25,6 +25,8 @@ Recon::Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,i
 	Vert=vertex;
 	close_dist=clos_dist;
 	for(auto lv:D) LV+=lv;
+	TVector3 P1 = D.at(0).Vect();
+	TVector3 P2 = D.at(1).Vect();
 	CombID = pow(2,id1)+pow(2,id2);
 	exist = true;
 	auto V_t = GlobalToTarget(Vert);
@@ -34,7 +36,9 @@ Recon::Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,i
 	auto u = dir_t.X();
 	auto v = dir_t.Z();
 	par[0]=V_t.X()-V_t.Y()*u,par[1]=V_t.Z()-V_t.Y()*v,par[2]= u,par[3]=v;
-//	par[0]=Vert.X()-(Vert.Z()-ZTarget)*u,par[1]=Vert.Y()-(Vert.Z()-ZTarget)*v,par[2]= u,par[3]=v;
+	opening_angle = acos(P1*P2 / (P1.Mag()*P2.Mag()));
+	plane = P1.Cross(P2);
+	plane = plane * (1./plane.Mag());
 	if(charge){
 		GetHelixParameter(Vert,mom,charge,par);
 	}
@@ -49,14 +53,20 @@ bool Vertex::AddTrack(Track p){
 		auto par1 = Tracks[0].GetPar();
 		auto par2 = p.GetPar();
 		double cd,t1,t2;
-		auto pos = VertexPointHelix(par1,par2,cd,t1,t2);
-//		cout<<Form("(%d,%d)Close dist : %f",Tracks[0].GetID(),p.GetID(),cd)<<endl;
+		double p1_t = Tracks[0].GetFirstHitT();
+		double p2_t = p.GetFirstHitT();
+		TVector3 pos;
+		int p1_q = Tracks[0].GetQ(); 
+		int p2_q = p.GetQ();
+		double m_t1,M_t1,m_t2,M_t2;
+		pos = VertexPointHelix(par1,par2,cd,t1,t2); 
+	//	cout<<Form("(%d,%d)Close dist : %f, t1,t2 = (%f,%f)",Tracks[0].GetQ()*Tracks[0].GetID(),p.GetQ()*p.GetID(),cd,t1,t2)<<endl;
 		if(cd<cdcut){
 			Tracks.push_back(p);
 			verts.push_back(pos);
 			Vert_id+=pow(2,nt);
 //			SetVert();
-			auto P = CalcHelixMom(p.GetPar(),pos.y());
+//			auto P = CalcHelixMom(p.GetPar(),pos.y());
 //			cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
 			return true;
 		}
@@ -78,7 +88,7 @@ bool Vertex::AddTrack(Track p){
 				verts.push_back(vec); 
 				SetVert();
 			}
-			auto P = CalcHelixMom(p.GetPar(),vert.y());
+//			auto P = CalcHelixMom(p.GetPar(),vert.y());
 	//		cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
 			return true;
 		}
@@ -94,16 +104,38 @@ void Vertex::SearchLdCombination(){
 		if( p.IsP())PCand.push_back(p);
 		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge))PiCand.push_back(p);
 	}
-	double mom_cut = 1.2;//1.2  
-	double mom_cutMin = 0.3;//0.3  
+	double mom_cut = 2.2;//1.2  
+	double mom_cutMin = 0.0;//0.3  
 	for(auto p:PCand){
 		for(auto pi:PiCand){
 			double cd_,t1_,t2_;
+			double m_t1=-4,m_t2=-4,M_t1=7,M_t2 = 7;
 			if(p.GetID() == pi.GetID()) continue;
-			auto ppivert = VertexPointHelix(p.GetPar(),pi.GetPar(),cd_,t1_,t2_); 
+			double p_dt =100./ p.GetPar()[3];//100 / radius;
+			double pi_dt =100./ pi.GetPar()[3];//100 / radius;
+			if(p.GetFirstHitT()!= - 9999){
+				M_t1 = p.GetFirstHitT();
+				m_t1 = m_t1 - p_dt;
+			}
+			if(pi.GetFirstHitT()!= - 9999){
+				m_t2 = pi.GetFirstHitT();
+				M_t2 = m_t2 + pi_dt; 
+			}
+			auto ppivert = VertexPointHelix(p.GetPar(),pi.GetPar(),cd_,t1_,t2_,m_t1,M_t1,m_t2,M_t2); 
+			//cout<<Form("(%d,%d)Close dist : %f, t1,t2 = (%f,%f)",p.GetID(),pi.GetID(),cd_,t1_,t2_)<<endl;
 			if(cd_>cdcut) continue;
 			auto p1 = CalcHelixMom(p.GetPar(),ppivert.y());
+			double p1_0=p.GetMom0();
 			auto p2 = CalcHelixMom(pi.GetPar(),ppivert.y());
+			double p2_0=pi.GetMom0();
+			if(p1_0>0){
+				p1 = p1*p1_0 * (1./p1.Mag());
+			}
+			if(p2_0>0){
+				p2 = p2*p2_0 * (1./p2.Mag());
+			}
+//			auto p1 = CalcCircleMom(p.GetPar(),ppivert);
+//			auto p2 = CalcCircleMom(pi.GetPar(),ppivert);
 			auto pLV = TLorentzVector(p1,sqrt(mp*mp+p1.Mag2()));
 			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv1 = {pLV,piLV};
@@ -171,7 +203,7 @@ bool VertexLH::AddTrack(Track p){
 		auto prop = vv-pos;
 		Tracks.push_back(p);
 		verts.push_back(pos);Vert_id+=pow(2,nt);
-		SetVert();
+//		SetVert();
 		return true;
 	}
 	return false;
@@ -196,8 +228,13 @@ void VertexLH::SearchXiCombination(){
 			lddir = lddir * (1./lddir.Mag());
 			double fl = (ld.Vertex() - ldpivert).Mag();
 //			if(ldmomdir * lddir < 0 and fl>cdcut) continue;
-			if(ldmomdir * lddir < 0 and fl>VertCut) continue;
+			if(ldmomdir * lddir < 0 and fl>VertCut and DirectionCut) continue;
 			auto p2 = CalcHelixMom(pi.GetPar(),ldpivert.y());
+			double p2_0 = pi.GetMom0();
+			if(p2_0>0){
+				p2 = p2*p2_0 * (1./p2.Mag());
+			}
+//			auto p2 = CalcCircleMom(pi.GetPar(),ldpivert);
 			std::bitset<8>ldb(ld.GetID());
 			auto ldLV = ld.GetLV();
 

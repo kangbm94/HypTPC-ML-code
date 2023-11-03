@@ -98,7 +98,7 @@ void GetHelixParameter(TVector3 Pos, TVector3 Mom,double charge,double* par){
 }
 
 TVector3 VertexPointHelix(const Double_t par1[5], const Double_t par2[5],
-		Double_t& dist, Double_t& t1, Double_t& t2)
+		Double_t& dist, Double_t& t1, Double_t& t2,double min_t1 = -4,double max_t1 = 7,double min_t2 = -4,double max_t2 = 7)
 {
 	//helix function 1
 	//x = [0] + [3]*cos(t);
@@ -112,7 +112,7 @@ TVector3 VertexPointHelix(const Double_t par1[5], const Double_t par2[5],
 
 	TF2 fvert_helix("fvert_helix",
 			"pow(([0]+[3]*cos(x))-([5]+[8]*cos(y)),2)+pow(([1]+[3]*sin(x))-([6]+[8]*sin(y)),2)+pow(([2]+[3]*[4]*x)-([7]+[8]*[9]*y),2)",
-			-4.,7.,-4.,7.);
+			min_t1,max_t1,min_t2,max_t2);
 
 	fvert_helix.SetParameter(0, par1[0]);
 	fvert_helix.SetParameter(1, par1[1]);
@@ -129,26 +129,22 @@ TVector3 VertexPointHelix(const Double_t par1[5], const Double_t par2[5],
 	fvert_helix.GetMinimumXY(close_zin, close_zout);
 	t1 = close_zin;
 	t2 = close_zout;
-	dist = TMath::Sqrt(fvert_helix.GetMinimum());
 
-	Double_t xin = par1[0]+par1[3]*cos(close_zin);
-	Double_t xout = par2[0]+par2[3]*cos(close_zout);
-	Double_t yin =  par1[1]+par1[3]*sin(close_zin);
-	Double_t yout = par2[1]+par2[3]*sin(close_zout);
-	Double_t zin = par1[2]+par1[3]*par1[4]*close_zin;
-	Double_t zout =  par2[2]+par2[3]*par2[4]*close_zout;
+	Double_t xin = par1[0]+par1[3]*cos(t1);
+	Double_t xout = par2[0]+par2[3]*cos(t2);
+	Double_t yin =  par1[1]+par1[3]*sin(t1);
+	Double_t yout = par2[1]+par2[3]*sin(t2);
+	Double_t zin = par1[2]+par1[3]*par1[4]*t1;
+	Double_t zout =  par2[2]+par2[3]*par2[4]*t2;
 
-	// Double_t vx = (par1[0]+par1[3]*cos(close_zin) + par2[0]+par2[3]*cos(close_zout))/2.;
-	// Double_t vy = (par1[1]+par1[3]*sin(close_zin) + par2[1]+par2[3]*sin(close_zout))/2.;
-	// Double_t vz = (par1[2]+par1[3]*par1[4]*close_zin + par2[2]+par2[3]*par2[4]*close_zout)/2.;
 	Double_t vx = (xin+xout)/2.;
 	Double_t vy = (yin+yout)/2.;
 	Double_t vz = (zin+zout)/2.;
 
-	Double_t dist2 = sqrt(pow(xin-xout,2)
+	Double_t distance = sqrt(pow(xin-xout,2)
 			+pow(yin-yout,2)
 			+pow(zin-zout,2));
-	dist = dist2;
+	dist = distance;
 
 	return   TargetToGlobal(TVector3(vx,vy,vz));
 
@@ -156,19 +152,21 @@ TVector3 VertexPointHelix(const Double_t par1[5], const Double_t par2[5],
 TVector3 VertexPointHelixLinear(const Double_t par1[5], const Double_t par2[4],
 		Double_t& dist, Double_t& t1, Double_t& t2)
 {
-	//helix function 1
-	//x = [0] + [3]*cos(t);
-	//y = [1] + [3]*sin(t);
+	//helix function
+	//{cx,cy,z0,r,dz}
+	//x = [0] + [3]*cos(t); 
+	//y = [1] + [3]*sin(t);  
 	//z = [2] + [3]*[4]*t;
 
-	//helix function 2
+	//Linear function
+	//{x0,z0,dxdy,dzdy} -> {-x0,y0,-u,v} in Global coordinate
 	//x = [5] + [7]*t;
 	//y = t;
 	//z = [6]+[8]*t;
 
 	TF2 fvert_helix_lin("fvert_helix_lin",
 			"pow(([0]+[3]*cos(x))-([5]+[7]*y),2)+pow(([1]+[3]*sin(x))-y,2)+pow(([2]+[3]*[4]*x)-([6]+[8]*y),2)",
-			-4.,7.,-50.,50.);
+			-4.,7.,-100.,150.);
 	fvert_helix_lin.SetParameter(0, par1[0]);
 	fvert_helix_lin.SetParameter(1, par1[1]);
 	fvert_helix_lin.SetParameter(2, par1[2]);

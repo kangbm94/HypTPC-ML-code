@@ -298,9 +298,9 @@ static bool LinearFitWithSlope(std::vector<TVector3> posarr,double dz,double* pa
 			double dx = pos.X()-cx;
 			double dy = pos.Y()-cy;
 			double t = atan2(dy,dx);
-			if(crossing) t+=2*acos(-1);
+			if(crossing and t < 0) t+=2*acos(-1);
 			
-//			cout<<"( "<<pos.Y()-143<<" ,  "<<-pos.X()<<") angle : "<<t<<endl;
+			cout<<"( "<<pos.Y()-143<<" ,  "<<-pos.X()<<") angle : "<<t<<endl;
 			t_sum+= t;
 			z_sum+=pos.Z();	
 		}

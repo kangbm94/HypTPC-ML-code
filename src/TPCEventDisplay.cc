@@ -21,6 +21,8 @@ int SearchPeaks(TH1D* hist,vector<double> &peaks){
 //TString dir = base_dir+"/NoCorL29/";
 TString dir = base_dir;//+"before_mod/";
 vector<int> Xievnum;
+vector<int> nK18;
+vector<int> nKurama;
 vector<double> XIMM;
 vector<TVector3> VtxPos;
 vector<TVector3> VtxCorPos;
@@ -29,7 +31,7 @@ TString tpcfile,summaryfile;
 void TPCEventDisplay(){
 //	cout<<"TPCEventDisplayAccidental(int ievt)"<<endl;
 	tpcfile = dir + Form("./dstfiles/run0%d_DstTPCHSKuramaSelectedHelixTracking.root",runnum);
-	summaryfile = dir + Form("TPCInvM_cd15.root");
+	summaryfile = dir + Form("TPCInvM_cd25.root");
 //		tpcfile = dir + Form("Cor2nd/HSpm500.root");
 //	tpcfile = dir + Form("NoCor/run0%d_DstTPCHelixTrackingHToF.root",runnum);
 //	tpcfile = dir + Form("run0%d_DstTPCHelixTracking.root",runnum);
@@ -48,12 +50,14 @@ void TPCEventDisplay(){
 //	TFile* fileXi = new TFile("Sorted.root");
 	TFile* fileXi = new TFile(summaryfile);
 	TTree* treeXi = (TTree*)fileXi->Get("tree");
-	int XiRunnum,XiEvnum;
+	int XiRunnum,XiEvnum,ntK18TPC,ntKuramaTPC;
 	double XiMM;
 	double Vtx,Vty,Vtz,VtxCor,VtyCor,VtzCor;
 	treeXi->SetBranchAddress("runnum",&XiRunnum);
 	treeXi->SetBranchAddress("evnum",&XiEvnum);
 	treeXi->SetBranchAddress("MissingMCor",&XiMM);
+	treeXi->SetBranchAddress("ntK18",&ntK18TPC);
+	treeXi->SetBranchAddress("ntKurama",&ntKuramaTPC);
 	for(int i = 0; i< treeXi->GetEntries();++i){
 		treeXi->GetEntry(i);
 		if(XiRunnum == runnum){
@@ -61,6 +65,8 @@ void TPCEventDisplay(){
 			XIMM.push_back(XiMM);
 			VtxPos.push_back(TVector3(Vtx,Vty,Vtz-143));	
 			VtxCorPos.push_back(TVector3(VtxCor,VtyCor,VtzCor));	
+			nK18.push_back(ntK18TPC);
+			nKurama.push_back(ntKuramaTPC);
 		}
 	}
 	cout<<"TPCEventDisplayHelix()"<<endl;
@@ -216,7 +222,7 @@ void TPCEventDisplayAccidental(int ievt,int ixi=-1){
 //	gTPCManager.SetBetheProton();	
 	TCanvas* c1 = new TCanvas("c1","c1",1600,1200);
 	c1->Divide(2,1);
-	TCanvas* c3 = new TCanvas("c3","c3",50,50,900,900);
+	TCanvas* c3 = new TCanvas("c3","c3",500,50,900,900);
 	TCanvas* c4 = new TCanvas("c4","c4",650,650,300,300);
 //	TCanvas* c5 = new TCanvas("c5","c5",350,350,600,600);
 	gTPCManager.SetEvent(ievt);
@@ -250,13 +256,18 @@ void TPCEventDisplayAccidental(int ievt,int ixi=-1){
 		if(-0 < x and x < 0 and -0 < y and y < 0)continue;
 			Yhist->Fill(y);
 	}
+	gTPCManager.MakeHSTrack();
+	gTPCManager.MakeKuramaTrack();
 	c1->cd(1);
 	h->Draw("colz");
 	h->SetTitle("CircleFit");
 //	gTPCManager.DrawHelix();
+	gTPCManager.DrawHS();
+	gTPCManager.DrawKurama();
 	c1->cd(2);
 	h2->Draw("colz");
 	gTPCManager.DrawHelixZY();
+	gTPCManager.DrawHSZY();
 	c1->Modified();
 	c1->Update();
 	c3->cd();
@@ -302,9 +313,19 @@ void TPCEventDisplayAccidental(int ievt,int ixi=-1){
 	gSystem->ProcessEvents();
 }
 void TPCXiDisplay(int i){
+	int ntK18 = nK18.at(i);
+	int ntKurama = nKurama.at(i);
+	cout<<Form("K18,Kurama = (%d,%d)",ntK18,ntKurama)<<endl;
+/*
+	while(ntKurama == 1 and i < Xievnum.size()-1){
+		i++;
+		ntKurama = nKurama.at(i);
+	}
+*/	
 	int ievt = Xievnum.at(i);
 	double mxi =  XIMM.at(i);
-	cout<<"MassXi = "<<mxi<<endl; 
+	cout<<"MassXi = "<<mxi<<endl;
+	
 	TPCEventDisplayAccidental(ievt,i);
 }
 

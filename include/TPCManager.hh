@@ -124,6 +124,7 @@ class TPCManager:public FileManager{
 		vector<double>* helix_cy = new vector<double>;
 		vector<double>* helix_z0 = new vector<double>;
 		vector<double>* helix_r = new vector<double>;
+		vector<int>* nhtrack = new vector<int>;
 		vector<double>* helix_dz = new vector<double>;
 		vector<int>* helix_flag = new vector<int>;
 		vector<double>* hough_cx = new vector<double>;

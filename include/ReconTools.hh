@@ -13,6 +13,8 @@ double mXi = 1321.71/1000;
 double mXi0 = 1314.86/1000;
 double mXiStar = 1535./1000;
 double mH = 2150./1000;
+int PDGPi= 211,PDGK=321;
+int PDGP = 2212, PDGN = 2112,PDGXi=3312,PDGXi0=3322,PDGXiStar=3314,PDGLd=3122;
 bool InTarget(TVector3 Vect){
 	double x = Vect.X();
 	double y = Vect.Y();
@@ -28,14 +30,20 @@ class Track :public TLorentzVector{
 		double hpar[5]={0};
 		int tid_ = -1;
 		bool isHelix = true;
+		double FirstHitT = -9999;
+		double mom0=-1;
 	public: 
 		Track(){
 		}
-		Track(int pid, int Q, double* par,int tid){
+		Track(int pid, int Q, double* par,int tid,double mom0_ = -1.,double firstHitT = - 9999){
 			Q_  = Q;
 			pid_= pid;
 			tid_= tid;
 			for(int i=0;i<5;++i) hpar[i] = par[i];
+			FirstHitT = firstHitT;
+			if(mom0_>0){
+				mom0=mom0_;
+			}
 		}
 
 		bool IsP(){
@@ -61,6 +69,9 @@ class Track :public TLorentzVector{
 		}
 		void SetQ(int charge){
 			Q_=charge;
+		}
+		void SetFirstHitT(double t){
+			FirstHitT = t;
 		}
 		int PID(){
 			int val = 0;
@@ -88,6 +99,12 @@ class Track :public TLorentzVector{
 		double* GetPar(){
 			return hpar;
 		}
+		double GetFirstHitT(){
+			return FirstHitT;
+		}
+		double GetMom0(){
+			return mom0;
+		}
 };
 
 bool SortByMomentum(Track A, Track B){
@@ -108,8 +125,10 @@ class Recon{
 		int CombID=-1;
 		double par[5];
 		double close_dist=-1;
+		double opening_angle = -1;
 		int trid1=-1,trid2=-1;
 		Track ReconTrack;
+		TVector3 plane;
 		int charge;
 		bool propagate = false;
 	public:
@@ -149,6 +168,9 @@ class Recon{
 		double GetCD(){
 			return close_dist;
 		}
+		double GetOpeningAngle(){
+			return opening_angle;
+		}
 		TVector3 Momentum(){
 			return LV.Vect();
 		}
@@ -176,6 +198,9 @@ class Recon{
 		}
 		Track GetTrack(){
 			return ReconTrack;
+		}
+		TVector3 GetPlane(){
+			return plane;
 		}
 };
 
@@ -245,6 +270,7 @@ class VertexLH:public Vertex{
 		vector<Track> KuramaTracks  ;
 		bool KuramaFlag = false;
 		int VertCut = 8.;
+		bool DirectionCut = true;
 	public:
 		VertexLH(Recon p, bool KinematicFit = true){
 			if(KinematicFit and p.Exist()){
@@ -302,8 +328,11 @@ class VertexLH:public Vertex{
 			for(auto xic : XiCorCand){ if( abs(mXi-xic.Mass())<comp) {comp=abs(mXi-xic.Mass());val=xic;}}
 			return val;
 		}
-		void SetVertCut(double val){
+		void SetDirectionCutDist(double val){
 			VertCut = val;
+		}
+		void DisableDirectionCut(){
+			DirectionCut = false;
 		}
 };
 class XiStarRecon: public Recon{
