@@ -6,12 +6,14 @@ class KinematicFitter{
 	private:
 		// R -> P + Q;
 		int step = 0;
+		int best_step = 0;
 		int nConst;
 		int nMeas;
 		int nUnkn;
 		double Chi2_cut = 0.1;
+		double Best_Chi2 = 1e9;
 		int MaxStep = 100;
-
+		bool MeasDir = false;
 
 
 		TLorentzVector P;
@@ -65,8 +67,9 @@ class KinematicFitter{
 			vector<TLorentzVector> ret = {PCor,QCor,RCor};
 			return ret;
 		}
+		void UseVertex(bool status,TVector3 Vert1,TVector3 Vert2);
 		void Clear();
-		void DoKinematicFit();
+		double DoKinematicFit();
 	private:
 		//User Part: Set variables and constraints as you want.
 		void Initialize();
