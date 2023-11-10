@@ -7,7 +7,7 @@ void KinematicFitter::UseVertex(bool status,TVector3 Vert1,TVector3 Vert2){
 	MeasDir = status;
 	Measurements.clear();
 	Unknowns.clear();
-	if(MeasDir){
+	if(MeasDir){//Production and Decay vertex of R is known, hence the direction is known. However, the momentum magnitude is not directly measured. I used the sum of P and Q as an initial value.
 		auto dir = Vert1 - Vert2;	
 		auto th = dir.Theta();
 		auto ph = dir.Phi();
@@ -21,7 +21,7 @@ void KinematicFitter::Initialize(){
 		nMeas = 8;nUnkn = 1; nConst = 4; 
 	}
 	else{
-		nMeas = 6;nUnkn = 3; nConst = 4; 
+		nMeas = 6;nUnkn = 3; nConst = 4; //For 1-C fit, when Vertex information is useless.
 	}
 	mP = P.Mag();
 	TVector3 TV_P = P.Vect(); 
@@ -61,20 +61,26 @@ void KinematicFitter::Initialize(){
 }
 
 void KinematicFitter::Finalize(){
-	for(int is=0;is<step+1;++is){
+	for(int is=0;is<step;++is){
 		double chi2 = Chi2s.at(is);
+		double massDiff = MassDiffs.at(is);
 #if ShowChi2
-		cout<<Form("Step %d, chisqr %g",is,Chi2s.at(is))<<endl;
+		cout<<Form("Step %d, chisqr %g, massdiff = %g",is,chi2,massDiff)<<endl;
 #endif
+		if(abs(massDiff)<Best_MassDiff){
+			Best_MassDiff = abs(massDiff);	
+//			best_step = is;
+		}
 		if(chi2<Best_Chi2){
 			Best_Chi2 = chi2;
 			best_step = is;
 		}
+
 	}
 	auto Meas = Measurements.at(best_step); 
 	auto Unkn = Unknowns.at(best_step); 
 	double Chi2 = Chi2s.at(best_step);
-		
+	//Restore LVs from fitted parameters//	
 	double p_R,th_R,ph_R,p_P,th_P,ph_P,p_Q,th_Q,ph_Q;
 	if(MeasDir){
 		p_R= Unkn(0,0); 
@@ -144,39 +150,39 @@ void KinematicFitter::SetConstraints(){
 	double f1 = 
 		-p_R*sin(th_R)*cos(ph_R) 
 		+p_P*sin(th_P)*cos(ph_P) 
-		+p_Q*sin(th_Q)*cos(ph_Q) ;//px
+		+p_Q*sin(th_Q)*cos(ph_Q) ;//Constraint on x momentum
 	double f2 = 
 		-p_R*sin(th_R)*sin(ph_R) 
 		+p_P*sin(th_P)*sin(ph_P) 
-		+p_Q*sin(th_Q)*sin(ph_Q) ;// py
+		+p_Q*sin(th_Q)*sin(ph_Q) ;//Constraint on y momentum
 	double f3 =  
 		-p_R*cos(th_R) 
 		+p_P*cos(th_P)
-		+p_Q*cos(th_Q);// pz
+		+p_Q*cos(th_Q);//Constraint on z momentum 
 	double f4	=
 		- sqrt(p_R*p_R+mR*mR)
 		+ sqrt(p_P*p_P+mP*mP)
-		+ sqrt(p_Q*p_Q+mQ*mQ);//E0
-	
-	double df1du1 = -sin(th_R)*cos(th_R);
-	double df1du2 = -p_R*cos(th_R)*cos(ph_R);// d/ dth_R
-	double df1du3 = p_R*sin(th_R)*sin(ph_R);
-	double df1dm1 = sin(th_P)*cos(th_P);
+		+ sqrt(p_Q*p_Q+mQ*mQ);//Constraint on Energy
+
+	double df1du1 = -sin(th_R)*cos(ph_R);//df1 / d(P_R)
+	double df1du2 = -p_R*cos(th_R)*cos(ph_R);//It could be df1/dm1, in case of 3-C fit.However, I didnt want to change the token name... Mathematically it should be df1 / d (Th_R)
+	double df1du3 = p_R*sin(th_R)*sin(ph_R);//df1 / d(Ph_R)
+	double df1dm1 = sin(th_P)*cos(ph_P);//...
 	double df1dm2 = p_P*cos(th_P)*cos(ph_P);// d/ dth_P
 	double df1dm3 = -p_P*sin(th_P)*sin(ph_P);
-	double df1dm4 = sin(th_Q)*cos(th_Q);
+	double df1dm4 = sin(th_Q)*cos(ph_Q);
 	double df1dm5 = p_Q*cos(th_Q)*cos(ph_Q);// d/ dth_Q
 	double df1dm6 = -p_Q*sin(th_Q)*sin(ph_Q);
 	
-	double df2du1 = -sin(th_R)*sin(th_R);
+	double df2du1 = -sin(th_R)*sin(ph_R);
 	double df2du2 = -p_R*cos(th_R)*sin(ph_R);// d/ dth_R
 	double df2du3 = -p_R*sin(th_R)*cos(ph_R);
-	double df2dm1 = sin(th_P)*sin(th_P);
+	double df2dm1 = sin(th_P)*sin(ph_P);
 	double df2dm2 = p_P*cos(th_P)*sin(ph_P);// d/ dth_P
 	double df2dm3 = p_P*sin(th_P)*cos(ph_P);
-	double df2dm4 = sin(th_Q)*sin(th_Q);
+	double df2dm4 = sin(th_Q)*sin(ph_Q);
 	double df2dm5 = p_Q*cos(th_Q)*sin(ph_Q);// d/ dth_Q
-	double df2dm6 = -p_Q*sin(th_Q)*cos(ph_Q);
+	double df2dm6 = p_Q*sin(th_Q)*cos(ph_Q);
 
 	double df3du1 = -cos(th_R);
 	double df3du2 = p_R*sin(th_R);
@@ -244,14 +250,15 @@ void KinematicFitter::SetConstraints(){
 	TMatrixD FMat(nConst,1,fs);
 	TMatrixD dFdM(nConst,nMeas,dfdms);
 	TMatrixD dFdU(nConst,nUnkn,dfdus);
-	FMats.push_back(FMat);
-	dFdMs.push_back(dFdM);
-	dFdUs.push_back(dFdU);
+	FMats.push_back(FMat);//Constraint Matrices for Each step
+	dFdMs.push_back(dFdM);//Constraint matrix differentiated by measurement params.
+	dFdUs.push_back(dFdU);// same, but for unmeasured params.
 }
 
 
 
 KinematicFitter::KinematicFitter(TLorentzVector P_,TLorentzVector Q_, TLorentzVector R_){
+	//Does Kinematic fitting for R -> P+Q decay.
 	P=P_;
 	Q=Q_;
 	R=R_;
@@ -275,13 +282,15 @@ void KinematicFitter::ProcessStep(){
 	auto Meas0 = Measurements.at(0);
 	auto Unkn0 = Unknowns.at(0);
 	auto VMat = Variancies.at(0);
+	auto VInv = VMat;
+	VInv.Invert();
 #if Debug
 	cout<<"Step: "<<step<<endl;
-	cout<<"Meas Mat"<<endl;
+	cout<<"Meas Mat";
 	Meas.Print();
-	cout<<"Unkn Mat"<<endl;
+	cout<<"Unkn Mat";
 	Unkn.Print();
-	cout<<"V Mat"<<endl;
+	cout<<"V Mat";
 	VMat.Print();
 #endif
 	SetConstraints();
@@ -294,62 +303,90 @@ void KinematicFitter::ProcessStep(){
 	auto dFdUT = TransposeMatrix(dFdU);
 	auto rMat = FMat + dFdM*(Meas0-Meas);
 	auto sMat = dFdM*VMat*dFdMT;
+	auto sInv = sMat;
+	sInv.Invert();
 #if Debug
-	cout<<"F Mat"<<endl;
+	cout<<"F Mat";
 	FMat.Print();
-	cout<<"dFdM Mat"<<endl;
+	cout<<"dFdM Mat";
 	dFdM.Print();
-	cout<<"dFdM Transpose"<<endl;
-	dFdMT.Print();
-	cout<<"dFdU Mat"<<endl;
+	cout<<"dFdU Mat";
 	dFdU.Print();
-	cout<<"dFdU Transpose"<<endl;
-	dFdUT.Print();
-	cout<<"r Mat"<<endl;
+	cout<<"r Mat";
 	rMat.Print();
-	cout<<"s Mat"<<endl;
+	cout<<"s Mat";
 	sMat.Print();
+	cout<<"s Inv";
+	sInv.Print();
 #endif
-	
-	auto Unkn_next = Unkn - (dFdUT*(sMat.Invert())*dFdU).Invert() *dFdUT* sMat.Invert() * rMat;
+	auto FuSIFu = dFdUT*sInv*dFdU;
+	FuSIFu.Invert();
+	auto dU = (FuSIFu) * (dFdUT* (sInv) * rMat) ;
+	dU = dU -dU - dU;
+	auto Unkn_next = Unkn + dU;
 
 #if Debug
-	cout<<"Unkn Mat"<<endl;
-	Unkn.Print();
-	cout<<"UnknNext Mat"<<endl;
-	Unkn_next.Print();
 #endif
-	auto Lambda = (sMat.Invert()* (rMat+ dFdU*(Unkn_next - Unkn)));
+	auto Lambda = (sInv* (rMat+ dFdU*dU));
 	auto LambdaT = TransposeMatrix(Lambda);
 	
 	auto VFL =  VMat*dFdMT*Lambda;
 	auto Meas_next = Meas0 - VFL; 
 	
 #if Debug
-	cout<<"Meas0 Mat"<<endl;
-	Meas0.Print();
-	cout<<"Lambda Mat"<<endl;
-	Lambda.Print();
-	cout<<"VFL Mat"<<endl;
+	cout<<"VFL Mat";
 	VFL.Print();
-	cout<<"MeasNext Mat"<<endl;
+	cout<<"dU Mat";
+	dU.Print();
+	cout<<"UnknNext Mat";
+	Unkn_next.Print();
+	cout<<"MeasNext Mat";
 	Meas_next.Print();
 #endif
 	TMatrixD dM = Meas0-Meas;
 	auto dMT = TransposeMatrix(dM);
-	double Chi2 = (dMT* (VMat.Invert())*dM)(0,0) + 2 * (LambdaT * FMat )(0,0);
+	double Chi2 = (dMT* (VInv)*dM)(0,0) + 2 * (LambdaT * FMat )(0,0);
+	
 	Unknowns.push_back(Unkn_next);	
 	Measurements.push_back(Meas_next);	
 #if Debug
-	cout<<"dM "<<endl;
+	cout<<"dM ";
 	dM.Print();
-	cout<<"dM Transpose "<<endl;
-	dMT.Print();
+	cout<<"Lambda Mat";
+	Lambda.Print();
 #endif
 	rMats.push_back(rMat);
 	sMats.push_back(sMat);
 //	Lambdas.push_back(Lambda);
 	Chi2s.push_back(Chi2);
+	double p_P_Next,th_P_Next,ph_P_Next,p_Q_Next,th_Q_Next,ph_Q_Next;
+	if(MeasDir){
+		p_P_Next= Meas(2,0); 
+		th_P_Next= Meas(3,0); 
+		ph_P_Next= Meas(4,0);
+		p_Q_Next= Meas(5,0); 
+		th_Q_Next= Meas(6,0); 
+		ph_Q_Next= Meas(7,0); 
+	}
+	else{
+		p_P_Next= Meas(0,0); 
+		th_P_Next= Meas(1,0); 
+		ph_P_Next= Meas(2,0);
+		p_Q_Next= Meas(3,0); 
+		th_Q_Next= Meas(4,0); 
+		ph_Q_Next= Meas(5,0); 
+	}
+	double Ppx = p_P_Next*sin(th_P_Next)*cos(ph_P_Next);
+	double Ppy = p_P_Next*sin(th_P_Next)*sin(ph_P_Next);
+	double Ppz = p_P_Next*cos(th_P_Next);
+	double Qpx = p_Q_Next*sin(th_Q_Next)*cos(ph_Q_Next);
+	double Qpy = p_Q_Next*sin(th_Q_Next)*sin(ph_Q_Next);
+	double Qpz = p_Q_Next*cos(th_Q_Next);
+	TLorentzVector P_Next(Ppx,Ppy,Ppz,hypot(mP,p_P_Next));
+	TLorentzVector Q_Next(Qpx,Qpy,Qpz,hypot(mQ,p_Q_Next));
+	auto V = P_Next + Q_Next;
+	double MassDiff = V.Mag()-mR;
+	MassDiffs.push_back(MassDiff);
 }
 
 
@@ -357,24 +394,29 @@ double KinematicFitter::DoKinematicFit(){
 	int Cnt = 0;
 	while(1){
 		ProcessStep();
+		double MassDiff = MassDiffs.at(step);	
 		double Chi2 = Chi2s.at(step);
 		double Chi2_prev = -1;
 		if(step > 0 )Chi2_prev = Chi2s.at(step-1);
-		if(Cnt > 3) break;
-		if(abs(Chi2_prev - Chi2) < 0.1){
+		if(Cnt > 3){
+			step++;
+			break;
+		}
+		if(abs(Chi2_prev - Chi2 )< 0.1 and step > 0){
 			Cnt++;
 		}
 		else{
 			Cnt= 0;
 		}
 		if(step > MaxStep-1){
+			step++;
 			break;
 		}
 		step++;
 	}
 	Finalize();
-//	return Best_Chi2;
-	return Chi2s.at(0);
+	return Best_Chi2;
+//	return Chi2s.at(0);
 }
 void
 KinematicFitter::Clear(){

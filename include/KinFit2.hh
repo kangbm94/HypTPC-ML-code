@@ -12,6 +12,7 @@ class KinematicFitter{
 		int nUnkn;
 		double Chi2_cut = 0.1;
 		double Best_Chi2 = 1e9;
+		double Best_MassDiff = 1e9;
 		int MaxStep = 100;
 		bool MeasDir = false;
 
@@ -34,6 +35,7 @@ class KinematicFitter{
 
 		vector<double> Lambdas;
 		vector<double> Chi2s;
+		vector<double> MassDiffs;
 		vector<TMatrixD> Measurements;
 		vector<TMatrixD> Unknowns;
 		vector<TMatrixD> Variancies;//Actually, the inverse of the variance
@@ -70,6 +72,21 @@ class KinematicFitter{
 		void UseVertex(bool status,TVector3 Vert1,TVector3 Vert2);
 		void Clear();
 		double DoKinematicFit();
+		int GetNStep(){
+			return step;
+		}
+		int GetBestStep(){
+			return best_step;
+		}
+		vector<double>GetStepChi2(){
+			return Chi2s;
+		}
+		vector<double>GetStepMassDiff(){
+			return MassDiffs;
+		}
+		int GetNDF(){
+			return nConst - nUnkn;	
+		}
 	private:
 		//User Part: Set variables and constraints as you want.
 		void Initialize();

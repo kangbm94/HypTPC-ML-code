@@ -1,8 +1,38 @@
 #include "Kinematics.hh"
-#include "KinFit.hh"
+#include "KinFit2.hh"
 #ifndef ReconTools_h
 #define ReconTools_h
-
+TVector3 TgtV(0,0,-143);
+double MomSpread(TVector3 V){
+	double PT = hypot(V.X(),V.Z());
+	double offset = 0.025;
+	double p_best = 0.5;
+	if(PT<p_best){
+		return PT*((p_best-PT)*0.075+offset);
+	}
+	else{
+		return PT*((PT-p_best)*0.1+offset);
+	}
+}
+double ThetaSpread(TVector3 V){
+	double PT = hypot(V.X(),V.Z());
+	double rad = 3000.* PT;
+	double res_vt = 10;
+	return res_vt/rad/sqrt(12);
+}
+double PhiSpread(TVector3 V){
+	double PT = hypot(V.X(),V.Z());
+	double rad = 3000.* PT;
+	double res_vt = 10;
+	return res_vt/rad/sqrt(12);
+}
+double VertexSpread(TVector3 V){
+	double res_vt = 10;
+	auto Fl = V - TgtV;
+	double res = atan2(res_vt,Fl.Mag())/sqrt(12);
+	if(res > 0.1) res = 0.1;
+	return res;
+}
 double PI = acos(-1);
 double mpi = 139.570/1000;//GeV
 double mpi0 = 134.976/1000;//GeV
@@ -128,6 +158,7 @@ class Recon{
 		double opening_angle = -1;
 		int trid1=-1,trid2=-1;
 		Track ReconTrack;
+		KinematicFitter Fitter;
 		TVector3 plane;
 		int charge;
 		bool propagate = false;
@@ -202,6 +233,7 @@ class Recon{
 		TVector3 GetPlane(){
 			return plane;
 		}
+		double DoKinematicFit(double Mass);
 };
 
 
@@ -265,33 +297,14 @@ class VertexLH:public Vertex{
 		vector<TVector3>Ldmom;
 		vector<Recon>Recons;
 		vector<Track>Tracks;
-		KinematicFitter Fitter;
 		double laglambda = 0;
 		vector<Track> KuramaTracks  ;
 		bool KuramaFlag = false;
 		int VertCut = 8.;
 		bool DirectionCut = true;
 	public:
-		VertexLH(Recon p, bool KinematicFit = true){
-			if(KinematicFit and p.Exist()){
-				
-				Fitter = KinematicFitter(mL);
-				auto PLV = p.GetDaughter(0);
-				auto PP = PLV.Vect();
-				auto PPres = PP * (0.03);
-				auto PiLV = p.GetDaughter(1);
-				auto PiP = PiLV.Vect();
-				auto PiPres = PiP * (0.03);
-				Fitter.AssignLorentzVector(PLV,PiLV);
-				Fitter.SetResolution(PPres,PiPres);
-				Fitter.DoKinematicFit();
-				auto PLVCor = Fitter.GetFittedLV().at(0);
-				auto PiLVCor = Fitter.GetFittedLV().at(1);
-				auto LVCor = PLVCor + PiLVCor;
-				p.SetLV(LVCor);
-				laglambda = Fitter.GetLambda();
-			}
-			else if (p.Exist()){
+		VertexLH(Recon p, bool KinematicFit = false){
+			if (p.Exist()){
 				auto LdLV = p.GetLV();
 				auto LdP = LdLV.Vect();
 				double x = LdP.X(),y=LdP.Y(),z=LdP.Z();

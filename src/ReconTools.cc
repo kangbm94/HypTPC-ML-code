@@ -1,7 +1,7 @@
 #include "../include/ReconTools.hh"
 #ifndef ReconTools_C
 #define ReconTools_C
-#include "KinFit.cc"
+#include "KinFit2.cc"
 namespace{
 	TVector3 Mom(double x,double y,double u,double v,double p){
 		double pt = p/sqrt(1+u*u+v*v);
@@ -448,6 +448,38 @@ bool VertexXiPi::AddTrack(Track p){
 	}
 	return  false;
 }
+double Recon::DoKinematicFit(double Mass = mL){
+	auto PLV = GetDaughter(0);
+	auto PP = PLV.Vect();
+	auto PiLV = GetDaughter(1);
+	auto PiP = PiLV.Vect();
+	Fitter = KinematicFitter(PLV,PiLV,PLV+PiLV);	
+	Fitter.SetInvMass(Mass);
+	double ResPP =MomSpread(PP); 
+	double ResPTh =ThetaSpread(PP); 
+	double ResPPh =PhiSpread(PP); 
+	double ResPiP =MomSpread(PiP); 
+	double ResPiTh =ThetaSpread(PiP); 
+	double ResPiPh =PhiSpread(PiP);
+	double ResLdTh = VertexSpread(Vert);
+	double ResLdPh = VertexSpread(Vert);
+	Fitter.UseVertex(true,Vert,TgtV);
+	double variance[8] = { ResLdTh,ResLdPh,ResPP,ResPTh,ResPPh,ResPiP,ResPiTh,ResPiPh};
+	for(int i=0;i<8;++i){
+		variance[i]=variance[i]*variance[i];
+	}
+	Fitter.SetVariance(variance);
+	double chi2 = Fitter.DoKinematicFit();
+	auto PLVCor = Fitter.GetFittedLV().at(0);
+	auto PiLVCor = Fitter.GetFittedLV().at(1);
+	Daughters.at(0)= PLVCor;
+	Daughters.at(1)= PiLVCor;
+	auto LVCor = Fitter.GetFittedLV().at(2); 
+	LV=LVCor;
+	return chi2;
+}
+
+
 void VertexXiPi::SearchXi0Combination(){
 	for(auto p:PiCand){
 		auto PiMom = -CalcHelixMom(p.GetPar(),vert.y());
