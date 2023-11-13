@@ -71,7 +71,7 @@ class KinematicFitter{
 		}
 		void UseVertex(bool status,TVector3 Vert1,TVector3 Vert2);
 		void Clear();
-		double DoKinematicFit();
+		double DoKinematicFit(bool Do);
 		int GetNStep(){
 			return step;
 		}

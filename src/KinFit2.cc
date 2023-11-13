@@ -58,6 +58,8 @@ void KinematicFitter::Initialize(){
 	TMatrixD Unkn0(nUnkn,1,unkn);	
 	Measurements.push_back(Meas0);
 	Unknowns.push_back(Unkn0);
+	Chi2s.push_back(-1);
+	MassDiffs.push_back(1e9);
 }
 
 void KinematicFitter::Finalize(){
@@ -71,11 +73,10 @@ void KinematicFitter::Finalize(){
 			Best_MassDiff = abs(massDiff);	
 //			best_step = is;
 		}
-		if(chi2<Best_Chi2){
+		if(chi2<Best_Chi2 and chi2>0){
 			Best_Chi2 = chi2;
 			best_step = is;
 		}
-
 	}
 	auto Meas = Measurements.at(best_step); 
 	auto Unkn = Unknowns.at(best_step); 
@@ -387,36 +388,36 @@ void KinematicFitter::ProcessStep(){
 	auto V = P_Next + Q_Next;
 	double MassDiff = V.Mag()-mR;
 	MassDiffs.push_back(MassDiff);
+	step++;
 }
 
 
-double KinematicFitter::DoKinematicFit(){
+double KinematicFitter::DoKinematicFit(bool Do = true){
 	int Cnt = 0;
+	if(!Do){
+		Finalize();
+		return -1;
+	}
 	while(1){
 		ProcessStep();
 		double MassDiff = MassDiffs.at(step);	
 		double Chi2 = Chi2s.at(step);
-		double Chi2_prev = -1;
-		if(step > 0 )Chi2_prev = Chi2s.at(step-1);
+		double Chi2_prev = Chi2s.at(step-1);
 		if(Cnt > 3){
-			step++;
 			break;
 		}
-		if(abs(Chi2_prev - Chi2 )< 0.1 and step > 0){
+		if(abs(Chi2_prev - Chi2 )< 0.1 and step > 1){
 			Cnt++;
 		}
 		else{
 			Cnt= 0;
 		}
-		if(step > MaxStep-1){
-			step++;
+		if(step > MaxStep){
 			break;
 		}
-		step++;
 	}
 	Finalize();
 	return Best_Chi2;
-//	return Chi2s.at(0);
 }
 void
 KinematicFitter::Clear(){
