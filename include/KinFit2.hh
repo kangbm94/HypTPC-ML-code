@@ -3,7 +3,7 @@
 namespace{
 }
 class KinematicFitter{
-	private:
+	protected:
 		// R -> P + Q;
 		int step = 0;
 		int best_step = 0;
@@ -14,25 +14,10 @@ class KinematicFitter{
 		double Best_Chi2 = 1e9;
 		double Best_MassDiff = 1e9;
 		int MaxStep = 100;
-		bool MeasDir = false;
 
 
-		TLorentzVector P;
-		TVector3 Pres;
-		TLorentzVector PCor;
-		double mP;
-
-		TLorentzVector Q;
-		TVector3 Qres;
-		TLorentzVector QCor;
-		double mQ;
 		
-		TLorentzVector R;
-		TVector3 Rres;
-		TLorentzVector RCor;
-		double mR;
-		
-
+		vector<double*> Pulls;
 		vector<double> Lambdas;
 		vector<double> Chi2s;
 		vector<double> MassDiffs;
@@ -48,7 +33,6 @@ class KinematicFitter{
 		vector<TMatrixD> sMats;
 	public:
 		KinematicFitter(){};
-		KinematicFitter(TLorentzVector P_,TLorentzVector Q_,TLorentzVector R_);
 		//Setters
 		void SetVariance(double* var);
 		void SetChi2DifCut(double cut){
@@ -57,21 +41,13 @@ class KinematicFitter{
 		void SetMaximumStep(int max){
 			MaxStep = max;
 		}
-		void SetInvMass(double IM){
-			mR = IM;
-		}
 		//Getters
 		double GetLambda(int ent = -1){
 			if(ent == -1) ent = step;
 			return Lambdas.at(ent);
 		}
-		vector<TLorentzVector> GetFittedLV(){
-			vector<TLorentzVector> ret = {PCor,QCor,RCor};
-			return ret;
-		}
-		void UseVertex(bool status,TVector3 Vert1,TVector3 Vert2);
 		void Clear();
-		double DoKinematicFit(bool Do);
+		virtual double DoKinematicFit(bool Do);
 		int GetNStep(){
 			return step;
 		}
@@ -87,11 +63,12 @@ class KinematicFitter{
 		int GetNDF(){
 			return nConst - nUnkn;	
 		}
-	private:
+	protected:
 		//User Part: Set variables and constraints as you want.
-		void Initialize();
-		void SetConstraints();
-		void Finalize();	
+		virtual void Initialize(){};
+		virtual void SampleStepPoint(){};
+		virtual void SetConstraints(){};
+		virtual void Finalize(){};	
 		TMatrixD TransposeMatrix(TMatrixD M);		
 
 		//Core. Do not modify unless necessary

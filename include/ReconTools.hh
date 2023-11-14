@@ -149,6 +149,8 @@ class Recon{
 	protected:
 		vector<TLorentzVector>Daughters;
 		TLorentzVector LV;
+		vector<TLorentzVector>DaughtersOrg;
+		TLorentzVector LVOrg;
 		TVector3 Vert;
 		bool exist = false;
 		bool proper = false;
@@ -162,6 +164,7 @@ class Recon{
 		TVector3 plane;
 		int charge;
 		bool propagate = false;
+		void Initialize();
 	public:
 		Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2,int charge_=0);
 		Recon(Recon P,Recon Q,double m1,double m2);
@@ -189,6 +192,9 @@ class Recon{
 		}
 		TLorentzVector GetLV(){
 			return LV;
+		}
+		TLorentzVector GetLVOrg(){
+			return LVOrg;
 		}
 		void SetLV(TLorentzVector LV_){
 			LV = LV_;
@@ -224,6 +230,9 @@ class Recon{
 		TLorentzVector GetDaughter(int i){
 			return Daughters.at(i);
 		}
+		TLorentzVector GetDaughterOrg(int i){
+			return DaughtersOrg.at(i);
+		}
 		void SetTrack(Track T){
 			ReconTrack = T;
 		}
@@ -233,7 +242,10 @@ class Recon{
 		TVector3 GetPlane(){
 			return plane;
 		}
-		double DoKinematicFit(double Mass);
+		double DoKinematicFit(double Mass,bool UseDirection);
+		int GetKFNDF(){
+			return Fitter.GetNDF();
+		}
 };
 
 

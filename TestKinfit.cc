@@ -1,4 +1,4 @@
-#include "src/KinFit2.cc"
+#include "src/FourVectorFitter.cc"
 #include "TestKinfit.hh"
 double mXi = 1.321;
 double mL = 1.115;
@@ -79,8 +79,12 @@ void GenerateKinFit(){
 
 	TH1D* HistChi2 = new TH1D("Chi2","Chi2",500,0,50);
 	TH2D* HistChi22D = new TH2D("Chi2:InvM","Chi2:InvM",100,0,20,100,1.1,1.14);
+	TH1D* HistChi2Xi = new TH1D("Chi2Xi","Chi2Xi",500,0,50);
+	TH2D* HistChi2Xi2D = new TH2D("Chi2Xi:InvM","Chi2Xi:InvM",100,0,20,100,1.25,1.40);
 	TH1D* HistProb = new TH1D("Prob","Prob",100,0,1.1);
 	TH2D* HistProb2D = new TH2D("Prob:InvM","Prob:InvM",100,0,1.1,100,1.1,1.14);
+	TH1D* HistProbXi = new TH1D("ProbXi","ProbXi",100,0,1.1);
+	TH2D* HistProbXi2D = new TH2D("ProbXi:InvM","ProbXi:InvM",100,0,1.1,100,1.25,1.40);
 	TH1D* HistMM = new TH1D("MM","MM",100,-0.3,0.3);
 	TH1D* HistMMCor = new TH1D("MMCor","MMCor",100,-0.3,0.3);
 	for(int i=0;i<nev;++i){
@@ -155,7 +159,7 @@ void GenerateKinFit(){
 
 		auto XiRecon = LdRecon + Pi2Meas;
 		InvMLd = LdRecon.Mag();
-		InvMXi = XiRecon.Mag();
+		InvMXi = (LdRecon+Pi2).Mag();
 		auto TVXiMeas = XiRecon.Vect();
 		auto TVXi = Xi.Vect();
 		PXiMeas = TVXiMeas.Mag();
@@ -167,7 +171,7 @@ void GenerateKinFit(){
 		HistLd->Fill(InvMLd);
 		HistXi->Fill(InvMXi);
 	
-		KinematicFitter KFLd(PMeas,Pi1Meas,LdReconMeas);
+		FourVectorFitter KFLd(PMeas,Pi1Meas,LdReconMeas);
 		KFLd.UseVertex(true,V1,V2);
 		double Variance[8] = {ResThV*ResThV,ResPhV*ResPhV,rp*rp,ResTh*ResTh,ResPh*ResPh,rpi1*rpi1,ResTh*ResTh,ResPh*ResPh};
 /*
@@ -207,6 +211,9 @@ void GenerateKinFit(){
 		auto TVLdMeas = TVPMeas + TVPi1Meas;
 		PLdMeas = TVLdMeas.Mag();
 		InvMLdCor = LdFit.Mag();	
+		PLdFit = TVLdFit.Mag();
+		ThLdFit = TVLdFit.Theta();
+		PhLdFit = TVLdFit.Phi();
 		auto TVPCor = PCor.Vect();
 		PPCor = TVPCor.Mag();
 		ThPCor = TVPCor.Theta();
@@ -217,17 +224,22 @@ void GenerateKinFit(){
 		ThPi1Cor = TVPi1Cor.Theta();
 		PhPi1Cor = TVPi1Cor.Phi();
 		auto XiFit = LdCor + Pi2Meas;
-		KinematicFitter KFXi(LdCor,Pi2Meas,XiFit);
+		FourVectorFitter KFXi(LdCor,Pi2Meas,XiFit);
 		double rL = ResPLd*PLdCor;
 		double VarianceXi[8] = {rp*rp,ResThLd*ResThLd,ResPhLd*ResPhLd,rpi2*rpi2,ResTh*ResTh,ResPh*ResPh,0,0};
 		KFXi.SetVariance(VarianceXi);
 		KFXi.SetInvMass(mXi);	
 		KFXi.SetMaximumStep(300);
-		Chi2Xi=		KFXi.DoKinematicFit(false);
+		Chi2Xi=		KFXi.DoKinematicFit();
 		auto contXi = KFXi.GetFittedLV();
 		auto LdCorCor = contXi.at(0);
 		auto Pi2Cor = contXi.at(1);
 		auto XiCor = LdCorCor + Pi2Cor;
+		double probXi = ROOT::Math::chisquared_cdf(Chi2Xi,KFXi.GetNDF());
+		HistChi2Xi->Fill(Chi2Xi);
+		HistProbXi->Fill(probXi);
+		HistChi2Xi2D->Fill(Chi2Xi,XiCor.Mag());
+		HistProbXi2D->Fill(probXi,XiCor.Mag());
 		auto TVPi2Cor = Pi2Cor.Vect();
 		PPi2Cor = TVPi2Cor.Mag();
 		ThPi2Cor = TVPi2Cor.Theta();
@@ -242,7 +254,7 @@ void GenerateKinFit(){
 		PhXiCor = TVXiCor.Phi();
 		//		auto XiFit = LdFit + Pi2Meas;
 //		auto XiFit = LdCor + Pi2Meas;
-		InvMXiCor = XiFit.Mag();	
+		InvMXiCor = (LdCor + Pi2).Mag();	
 		HistDLdP->Fill(PLd-PLdMeas);
 		HistDLdTh->Fill(ThLd-ThLdMeas);
 		HistDLdPh->Fill(PhLd - PhLdMeas);
@@ -266,6 +278,9 @@ void GenerateKinFit(){
 		
 		
 		
+		HistDifLdP->Fill(PLdCor-PLdFit);
+		HistDifLdTh->Fill(ThLdCor-ThLdFit);
+		HistDifLdPh->Fill(PhLdCor - PhLdFit);
 		HistDifPP->Fill(PPCor-PPMeas);
 		HistDifPTh->Fill(ThPCor-ThPMeas);
 		HistDifPPh->Fill(PhPCor - PhPMeas);
@@ -392,21 +407,30 @@ void GenerateKinFit(){
 	TCanvas* c4 = new TCanvas("c4","c4",1200,600);
 	c4->Divide(3,3);
 	c4->cd(1);
+	HistDifLdP->Draw();
+	HistDifLdP->Fit("gaus","Q");
+	c4->cd(2);
+	HistDifLdTh->Draw();
+	HistDifLdTh->Fit("gaus","Q");
+	c4->cd(3);
+	HistDifLdPh->Draw();
+	HistDifLdPh->Fit("gaus","Q");
+	c4->cd(4);
 	HistDifPP->Draw();
 	HistDifPP->Fit("gaus","Q");
-	c4->cd(2);
+	c4->cd(5);
 	HistDifPTh->Draw();
 	HistDifPTh->Fit("gaus","Q");
-	c4->cd(3);
+	c4->cd(6);
 	HistDifPPh->Draw();
 	HistDifPPh->Fit("gaus","Q");
-	c4->cd(4);
+	c4->cd(7);
 	HistDifPi1P->Draw();
 	HistDifPi1P->Fit("gaus","Q");
-	c4->cd(5);
+	c4->cd(8);
 	HistDifPi1Th->Draw();
 	HistDifPi1Th->Fit("gaus","Q");
-	c4->cd(6);
+	c4->cd(9);
 	HistDifPi1Ph->Draw();
 	HistDifPi1Ph->Fit("gaus","Q");
 	
@@ -496,137 +520,16 @@ void GenerateKinFit(){
 	HistMM->Draw();
 	HistMMCor->SetLineColor(kGreen);
 	HistMMCor->Draw("same");
-}
-void TestKinFit(){
-	gStyle->SetOptFit(11);
-	double pK18 = 1.8;
-	TLorentzVector KM(0,0,pK18,hypot(mK,pK18));
-	TLorentzVector PT(0,0,0,mP);
-	TLorentzVector Vertex = KM + PT;
-	double VertMass[2] = {mXi,mK};
-	double XiDecayMass[2] = {mL,mPi};
-	double LdDecayMass[2] = {mP,mPi};
-	TGenPhaseSpace EvVert;
-	TGenPhaseSpace EvXi;
-	TGenPhaseSpace EvLd;
-	
-	for(int i=0;i<nev;++i){
-		cout<<Form("Event %d",i)<<endl;
-		EvVert.SetDecay(Vertex,2,VertMass);
-		EvVert.Generate();
-		iev = i;
-		auto Xi = *EvVert.GetDecay(0);
-		auto KP = *EvVert.GetDecay(1);
-		EvXi.SetDecay(Xi,2,XiDecayMass);
-		EvXi.Generate();
-		auto Ld = *EvXi.GetDecay(0);
-		auto Pi2 = *EvXi.GetDecay(1);
-		EvLd.SetDecay(Ld,2,LdDecayMass);
-		EvLd.Generate();
-		auto P = *EvLd.GetDecay(0);
-		auto Pi1 = *EvLd.GetDecay(1);
-		
-		auto TVLd = Ld.Vect();
-		double ThLd = Ld.Theta();
-		double PhLd = Ld.Phi();
-
-		auto TVP = P.Vect();
-		auto TVPi1 = Pi1.Vect();
-		auto TVPi2 = Pi2.Vect();
-		PP = TVP.Mag();
-		ThP = TVP.Theta();
-		PhP = TVP.Phi();
-		PPi1 = TVPi1.Mag();
-		ThPi1 = TVPi1.Theta();
-		PhPi1 = TVPi1.Phi();
-		PPi2 = TVPi2.Mag();
-		ThPi2 = TVPi2.Theta();
-		PhPi2 = TVPi2.Phi();
-
-		ThLdMeas = gRandom->Gaus(ThLd,ResThV);
-		PhLdMeas = gRandom->Gaus(PhLd,ResPhV);
-		TVector3 V1 = TVLd;
-		V1.SetTheta(ThLdMeas);
-		V1.SetPhi(PhLdMeas);
-		TVector3 V2(0,0,0);
-		PPMeas = gRandom->Gaus(PP,PP*ResP);
-		ThPMeas = gRandom->Gaus(ThP,ResTh);
-		PhPMeas = gRandom->Gaus(PhP,ResPh);
-		PPi1Meas = gRandom->Gaus(PPi1,PPi1*ResPi1);
-		ThPi1Meas = gRandom->Gaus(ThPi1,ResTh);
-		PhPi1Meas = gRandom->Gaus(PhPi1,ResPh);
-		PPi2Meas = gRandom->Gaus(PPi2,PPi2*ResPi2);
-		ThPi2Meas = gRandom->Gaus(ThPi2,ResTh);
-		PhPi2Meas = gRandom->Gaus(PhPi2,ResPh);
-		
-		TVector3 TVPMeas(0,0,PPMeas);
-		TVPMeas.SetTheta(ThPMeas);
-		TVPMeas.SetPhi(PhPMeas);
-		TVector3 TVPi1Meas(0,0,PPi1Meas);
-		TVPi1Meas.SetTheta(ThPi1Meas);
-		TVPi1Meas.SetPhi(PhPi1Meas);
-		TVector3 TVPi2Meas(0,0,PPi2Meas);
-		TVPi2Meas.SetTheta(ThPi2Meas);
-		TVPi2Meas.SetPhi(PhPi2Meas);
-		TLorentzVector PMeas(TVPMeas,hypot(PPMeas,mP));
-		TLorentzVector Pi1Meas(TVPi1Meas,hypot(PPi1Meas,mPi));
-		TLorentzVector Pi2Meas(TVPi2Meas,hypot(PPi2Meas,mPi));
-		double rp = PPMeas*ResP;
-		double rpi1 = PPi1Meas*ResPi1;
-		double rpi2 = PPi2Meas*ResPi2;
-
-		auto LdRecon = PMeas + Pi1Meas;
-		auto LdReconMeas = LdRecon;
-		LdReconMeas.SetTheta(ThLdMeas);
-		LdReconMeas.SetPhi(PhLdMeas);
-
-		auto XiRecon = LdRecon + Pi2Meas;
-		InvMLd = LdRecon.Mag();
-		InvMXi = XiRecon.Mag();
-		
-
-		KinematicFitter KFLd(PMeas,Pi1Meas,LdReconMeas);
-		KFLd.UseVertex(true,V1,V2);
-		double Variance[8] = {ResThV*ResThV,ResPhV*ResPhV,rp*rp,ResTh*ResTh,ResPh*ResPh,rpi1*rpi1,ResTh*ResTh,ResPh*ResPh};
-
-/*
-		KinematicFitter KFLd(PMeas,Pi1Meas,LdRecon);
-		double Variance[8] = {rp*rp,ResTh*ResTh,ResPh*ResPh,rpi1*rpi1,ResTh*ResTh,ResPh*ResPh,0,0};
-*/		
-		KFLd.SetVariance(Variance);
-		KFLd.SetInvMass(mL);
-		KFLd.SetMaximumStep(300);
-		Chi2=		KFLd.DoKinematicFit();
-		NStep = KFLd.GetNStep();
-		BestStep = KFLd.GetBestStep();
-		auto stepChi2 = KFLd.GetStepChi2();
-		auto stepMassDiff = KFLd.GetStepMassDiff();
-		for(int i=0;i<200;++i){
-			StepChi2[i]=0;
-			StepMassDiff[i]=0;
-			Step[i]=-1;
-		}
-		for(int i=0;i<NStep;i++){
-			Step[i]=i;
-			StepChi2[i]=stepChi2.at(i);
-			StepMassDiff[i]=stepMassDiff.at(i);
-		}
-		auto cont = KFLd.GetFittedLV();
-		auto PCor = cont.at(0);
-		auto Pi1Cor = cont.at(1);
-		auto LdFit = PCor+Pi1Cor;
-		InvMLdCor = LdFit.Mag();	
-		auto TVPCor = PCor.Vect();
-		PPCor = TVPCor.Mag(); ThPCor = TVPCor.Theta();
-		PhPCor = TVPCor.Phi();
-		
-		auto TVPi1Cor = Pi1Cor.Vect();
-		PPi1Cor = TVPi1Cor.Mag();
-		ThPi1Cor = TVPi1Cor.Theta();
-		PhPi1Cor = TVPi1Cor.Phi();
-		auto XiFit = LdFit + Pi2Meas;
-		InvMXiCor = XiFit.Mag();	
-		cout<<Form("MassLd = %g,MassXi=%g",InvMLdCor,InvMXiCor)<<endl;
-		cin.ignore();
-	}
+	TCanvas* c10 = new TCanvas("c10","c10",600,600);
+	c10->Divide(2,1);
+	c10->cd(1);
+	HistChi2Xi->Draw();
+	c10->cd(2);
+	HistChi2Xi2D->Draw("colz");
+	TCanvas* c11 = new TCanvas("c11","c11",600,600);
+	c11->Divide(2,1);
+	c11->cd(1);
+	HistProbXi->Draw();
+	c11->cd(2);
+	HistProbXi2D->Draw("colz");
 }

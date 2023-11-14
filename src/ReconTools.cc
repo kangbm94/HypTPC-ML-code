@@ -18,17 +18,10 @@ namespace{
 		else return false;
 	}
 }
-Recon::Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2, int charge_){
-	charge = charge_;
-	LV.SetXYZM(0,0,0,0);
-	Daughters = D;
-	Vert=vertex;
-	close_dist=clos_dist;
-	for(auto lv:D) LV+=lv;
-	TVector3 P1 = D.at(0).Vect();
-	TVector3 P2 = D.at(1).Vect();
-	CombID = pow(2,id1)+pow(2,id2);
-	exist = true;
+void
+Recon::Initialize(){
+	TVector3 P1 = Daughters.at(0).Vect();
+	TVector3 P2 = Daughters.at(1).Vect();
 	auto V_t = GlobalToTarget(Vert);
 	auto mom = LV.Vect();
 	auto dir_t = GlobalToTargetMom(mom);
@@ -42,7 +35,18 @@ Recon::Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,i
 	if(charge){
 		GetHelixParameter(Vert,mom,charge,par);
 	}
+}
+Recon::Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2, int charge_){
+	charge = charge_;
+	LV.SetXYZM(0,0,0,0);
+	Daughters = D;
+	Vert=vertex;
+	close_dist=clos_dist;
+	for(auto lv:D) LV+=lv;
+	CombID = pow(2,id1)+pow(2,id2);
+	exist = true;
 	trid1=id1;trid2=id2;
+	Initialize();	
 }
 
 bool Vertex::AddTrack(Track p){
@@ -448,7 +452,7 @@ bool VertexXiPi::AddTrack(Track p){
 	}
 	return  false;
 }
-double Recon::DoKinematicFit(double Mass = mL){
+double Recon::DoKinematicFit(double Mass = mL,bool UseDirection = true){
 	auto PLV = GetDaughter(0);
 	auto PP = PLV.Vect();
 	auto PiLV = GetDaughter(1);
@@ -463,8 +467,24 @@ double Recon::DoKinematicFit(double Mass = mL){
 	double ResPiPh =PhiSpread(PiP);
 	double ResLdTh = VertexSpread(Vert);
 	double ResLdPh = VertexSpread(Vert);
-	Fitter.UseVertex(true,Vert,TgtV);
-	double variance[8] = { ResLdTh,ResLdPh,ResPP,ResPTh,ResPPh,ResPiP,ResPiTh,ResPiPh};
+	ResPP = PP.Mag()* 0.18;
+	ResPiP = PiP.Mag()* 0.11;
+	ResPPh = 0.02;
+	ResPTh = 0.04;
+	ResPiPh = 0.04;
+	ResPiTh = 0.04;
+	ResLdTh = 0.1;
+	ResLdPh = 0.13;
+	double variance[8];
+	if(UseDirection){
+		Fitter.UseVertex(true,Vert,TgtV);
+		double temp[8]={ ResLdTh,ResLdPh,ResPP,ResPTh,ResPPh,ResPiP,ResPiTh,ResPiPh};
+		for(int i=0;i<8;++i)variance[i] = temp[i];
+	}
+	else{
+		double temp[8]={ResPP,ResPTh,ResPPh,ResPiP,ResPiTh,ResPiPh,0,0};
+		for(int i=0;i<8;++i)variance[i] = temp[i];
+	}
 	for(int i=0;i<8;++i){
 		variance[i]=variance[i]*variance[i];
 	}
@@ -472,10 +492,11 @@ double Recon::DoKinematicFit(double Mass = mL){
 	double chi2 = Fitter.DoKinematicFit();
 	auto PLVCor = Fitter.GetFittedLV().at(0);
 	auto PiLVCor = Fitter.GetFittedLV().at(1);
-	Daughters.at(0)= PLVCor;
-	Daughters.at(1)= PiLVCor;
 	auto LVCor = Fitter.GetFittedLV().at(2); 
-	LV=LVCor;
+	Daughters.at(0)=PLVCor;
+	Daughters.at(1)=PiLVCor;
+	LV=PLVCor+PiLVCor;
+	Initialize();
 	return chi2;
 }
 

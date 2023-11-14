@@ -23,6 +23,7 @@ double PPMeas,ThPMeas,PhPMeas;
 double PPi1Meas,ThPi1Meas,PhPi1Meas; 
 double PPi2Meas,ThPi2Meas,PhPi2Meas; 
 double PLdCor,ThLdCor,PhLdCor; 
+double PLdFit,ThLdFit,PhLdFit; 
 double PLdCorCor,ThLdCorCor,PhLdCorCor; 
 double PXiCor,ThXiCor,PhXiCor; 
 double PPCor,ThPCor,PhPCor; 
