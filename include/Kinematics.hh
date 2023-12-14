@@ -26,6 +26,7 @@ TVector3 GlobalToTarget(TVector3 pos){
 	double z_=y;
 	return TVector3(x_,y_,z_);
 }
+
 TVector3 TargetToGlobal(TVector3 pos){
 	double x = pos.X();
 	double y = pos.Y();
@@ -46,6 +47,19 @@ TVector3 TargetToGlobalMom(TVector3 mom){
 }
 TVector3 GlobalToTargetMom(TVector3 mom){
 	return TargetToGlobalMom(mom);
+}
+TLorentzVector ToTarget(TLorentzVector LV){
+	double t = LV.T();
+	double x = LV.X();
+	double y = LV.Y();
+	double z = LV.Z();
+	double x_=-x;
+	double y_=z;
+	double z_=y;
+	return TLorentzVector(x_,y_,z_,t);
+}
+TLorentzVector ToGlobal(TLorentzVector LV){
+	return ToTarget(LV);
 }
 double GetTcal(double* par,TVector3 pos){
 	TVector3 pos_(-pos.X(),

@@ -1,7 +1,7 @@
 #include "../include/ReconTools.hh"
 #ifndef ReconTools_C
 #define ReconTools_C
-#include "KinFit2.cc"
+#include "FourVectorFitter.cc"
 namespace{
 	TVector3 Mom(double x,double y,double u,double v,double p){
 		double pt = p/sqrt(1+u*u+v*v);
@@ -30,11 +30,19 @@ Recon::Initialize(){
 	auto v = dir_t.Z();
 	par[0]=V_t.X()-V_t.Y()*u,par[1]=V_t.Z()-V_t.Y()*v,par[2]= u,par[3]=v;
 	opening_angle = acos(P1*P2 / (P1.Mag()*P2.Mag()));
+	TVector3 P1V(0, P1.Y(),0);
+	TVector3 P1T = P1-P1V;
+	TVector3 P2V(0,P2.Y(),0);
+	TVector3 P2T = P2-P2V;
+	opening_angle = acos(P1*P2 / (P1.Mag()*P2.Mag()));
+	opening_angle_T = acos(P1T*P2T / (P1T.Mag()*P2T.Mag()));
+	opening_angle_V = acos(P1V*P2V / (P1.Mag()*P2.Mag()));
 	plane = P1.Cross(P2);
 	plane = plane * (1./plane.Mag());
 	if(charge){
 		GetHelixParameter(Vert,mom,charge,par);
 	}
+	
 }
 Recon::Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2, int charge_){
 	charge = charge_;
@@ -452,50 +460,27 @@ bool VertexXiPi::AddTrack(Track p){
 	}
 	return  false;
 }
-double Recon::DoKinematicFit(double Mass = mL,bool UseDirection = true){
-	auto PLV = GetDaughter(0);
+double Recon::DoKinematicFit(double Mass  ,bool UseDirection ,double* variance,TMatrixD Covariance){
+	auto PLV = ToTarget(GetDaughter(0));
 	auto PP = PLV.Vect();
-	auto PiLV = GetDaughter(1);
+	auto PiLV = ToTarget(GetDaughter(1));
 	auto PiP = PiLV.Vect();
-	Fitter = KinematicFitter(PLV,PiLV,PLV+PiLV);	
+	Fitter = FourVectorFitter(PLV,PiLV,PLV+PiLV);	
 	Fitter.SetInvMass(Mass);
-	double ResPP =MomSpread(PP); 
-	double ResPTh =ThetaSpread(PP); 
-	double ResPPh =PhiSpread(PP); 
-	double ResPiP =MomSpread(PiP); 
-	double ResPiTh =ThetaSpread(PiP); 
-	double ResPiPh =PhiSpread(PiP);
-	double ResLdTh = VertexSpread(Vert);
-	double ResLdPh = VertexSpread(Vert);
-	ResPP = PP.Mag()* 0.18;
-	ResPiP = PiP.Mag()* 0.11;
-	ResPPh = 0.02;
-	ResPTh = 0.04;
-	ResPiPh = 0.04;
-	ResPiTh = 0.04;
-	ResLdTh = 0.1;
-	ResLdPh = 0.13;
-	double variance[8];
+	Fitter.SetMaximumStep(20);
 	if(UseDirection){
 		Fitter.UseVertex(true,Vert,TgtV);
-		double temp[8]={ ResLdTh,ResLdPh,ResPP,ResPTh,ResPPh,ResPiP,ResPiTh,ResPiPh};
-		for(int i=0;i<8;++i)variance[i] = temp[i];
-	}
-	else{
-		double temp[8]={ResPP,ResPTh,ResPPh,ResPiP,ResPiTh,ResPiPh,0,0};
-		for(int i=0;i<8;++i)variance[i] = temp[i];
-	}
-	for(int i=0;i<8;++i){
-		variance[i]=variance[i]*variance[i];
 	}
 	Fitter.SetVariance(variance);
+	Fitter.AddDiagonals(Covariance);
 	double chi2 = Fitter.DoKinematicFit();
 	auto PLVCor = Fitter.GetFittedLV().at(0);
 	auto PiLVCor = Fitter.GetFittedLV().at(1);
 	auto LVCor = Fitter.GetFittedLV().at(2); 
-	Daughters.at(0)=PLVCor;
-	Daughters.at(1)=PiLVCor;
-	LV=PLVCor+PiLVCor;
+	KFPull = Fitter.GetPull();
+	Daughters.at(0)=ToGlobal(PLVCor);
+	Daughters.at(1)=ToGlobal(PiLVCor);
+	LV=ToGlobal(PLVCor+PiLVCor);
 	Initialize();
 	return chi2;
 }

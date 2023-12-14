@@ -1,7 +1,16 @@
-
-void TestKinFit(){
+#include "src/FourVectorFitter.cc"
+#include "TestKinfit.hh"
+int nev = 10000;
+void StepKinFit(){
 	gStyle->SetOptFit(11);
-	double pK18 = 1.8;
+	double MomScale = 1.;	
+	
+	double pK18 = 1.8*MomScale;
+	mK*=MomScale;
+	mXi*=MomScale;
+	mL*=MomScale;
+	mP*=MomScale;
+	mPi*=MomScale;
 	TLorentzVector KM(0,0,pK18,hypot(mK,pK18));
 	TLorentzVector PT(0,0,0,mP);
 	TLorentzVector Vertex = KM + PT;
@@ -11,7 +20,6 @@ void TestKinFit(){
 	TGenPhaseSpace EvVert;
 	TGenPhaseSpace EvXi;
 	TGenPhaseSpace EvLd;
-	
 	for(int i=0;i<nev;++i){
 		cout<<Form("Event %d",i)<<endl;
 		EvVert.SetDecay(Vertex,2,VertMass);
@@ -87,7 +95,7 @@ void TestKinFit(){
 		InvMXi = XiRecon.Mag();
 		
 
-		KinematicFitter KFLd(PMeas,Pi1Meas,LdReconMeas);
+		FourVectorFitter KFLd(PMeas,Pi1Meas,LdReconMeas);
 		KFLd.UseVertex(true,V1,V2);
 		double Variance[8] = {ResThV*ResThV,ResPhV*ResPhV,rp*rp,ResTh*ResTh,ResPh*ResPh,rpi1*rpi1,ResTh*ResTh,ResPh*ResPh};
 
@@ -98,7 +106,11 @@ void TestKinFit(){
 		KFLd.SetVariance(Variance);
 		KFLd.SetInvMass(mL);
 		KFLd.SetMaximumStep(300);
-		Chi2=		KFLd.DoKinematicFit();
+		Chi2 = KFLd.DoKinematicFit();
+		for(int k=0;k<100;++k){
+			cout<<"..."<<endl;
+		}
+		Chi2 = KFLd.DoSecondaryFit();
 		NStep = KFLd.GetNStep();
 		BestStep = KFLd.GetBestStep();
 		auto stepChi2 = KFLd.GetStepChi2();

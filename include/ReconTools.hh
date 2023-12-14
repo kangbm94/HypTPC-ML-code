@@ -1,10 +1,11 @@
 #include "Kinematics.hh"
-#include "KinFit2.hh"
+#include "FourVectorFitter.hh"
 #ifndef ReconTools_h
 #define ReconTools_h
 TVector3 TgtV(0,0,-143);
-double MomSpread(TVector3 V){
+double MomSpread(TVector3 V,double l=100,int n = 10){
 	double PT = hypot(V.X(),V.Z());
+	
 	double offset = 0.025;
 	double p_best = 0.5;
 	if(PT<p_best){
@@ -13,6 +14,9 @@ double MomSpread(TVector3 V){
 	else{
 		return PT*((PT-p_best)*0.1+offset);
 	}
+	
+//	double val = 720./(n+4)*PT*PT/(0.09*l*l*l*l);
+//	return sqrt(val);
 }
 double ThetaSpread(TVector3 V){
 	double PT = hypot(V.X(),V.Z());
@@ -62,6 +66,7 @@ class Track :public TLorentzVector{
 		bool isHelix = true;
 		double FirstHitT = -9999;
 		double mom0=-1;
+		int nh;
 	public: 
 		Track(){
 		}
@@ -158,19 +163,24 @@ class Recon{
 		double par[5];
 		double close_dist=-1;
 		double opening_angle = -1;
+		double opening_angle_T = -1;
+		double opening_angle_V = -1;
 		int trid1=-1,trid2=-1;
 		Track ReconTrack;
-		KinematicFitter Fitter;
+		FourVectorFitter Fitter;
+		vector<double> KFPull;
 		TVector3 plane;
 		int charge;
 		bool propagate = false;
+		double ReconTheta;
+		double ReconPhi;
 		void Initialize();
+		vector<TMatrixD> Rotations;
 	public:
 		Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2,int charge_=0);
 		Recon(Recon P,Recon Q,double m1,double m2);
 		Recon(){}
-		void Clear(){
-			exist = false;LV.SetXYZM(0,0,0,0);Daughters.clear();Vert.SetXYZ(0,0,0);
+		void Clear(){ exist = false;LV.SetXYZM(0,0,0,0);Daughters.clear();Vert.SetXYZ(0,0,0);
 		}
 		TVector3 Vertex(){
 			return Vert;
@@ -208,6 +218,12 @@ class Recon{
 		double GetOpeningAngle(){
 			return opening_angle;
 		}
+		double GetTransverseOpeningAngle(){
+			return opening_angle_T;
+		}
+		double GetVerticalOpeningAngle(){
+			return opening_angle_V;
+		}
 		TVector3 Momentum(){
 			return LV.Vect();
 		}
@@ -242,9 +258,12 @@ class Recon{
 		TVector3 GetPlane(){
 			return plane;
 		}
-		double DoKinematicFit(double Mass,bool UseDirection);
+		double DoKinematicFit(double Mass,bool UseDirection,double* variance, TMatrixD Covariance);
 		int GetKFNDF(){
 			return Fitter.GetNDF();
+		}
+		vector<double>GetKFPull(){
+			return KFPull;
 		}
 };
 

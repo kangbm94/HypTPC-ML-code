@@ -1,12 +1,7 @@
 #include "src/FourVectorFitter.cc"
 #include "TestKinfit.hh"
-double mXi = 1.321;
-double mL = 1.115;
-double mP = 0.938;
-double mK = 0.493;
-double mPi = 0.139;
 int nev = 10000;
-void GenerateKinFit(){
+void TestKinfit(){
 	gStyle->SetOptFit(11);
 	double pK18 = 1.8;
 	TLorentzVector KM(0,0,pK18,hypot(mK,pK18));
@@ -87,10 +82,48 @@ void GenerateKinFit(){
 	TH2D* HistProbXi2D = new TH2D("ProbXi:InvM","ProbXi:InvM",100,0,1.1,100,1.25,1.40);
 	TH1D* HistMM = new TH1D("MM","MM",100,-0.3,0.3);
 	TH1D* HistMMCor = new TH1D("MMCor","MMCor",100,-0.3,0.3);
+
+	TH1D* HistPullThLd = new TH1D("HistPullThLd","HistPullThLd",100,-5,5);
+	TH1D* HistPullPhLd = new TH1D("HistPullPhLd","HistPullPhLd",100,-5,5);
+	TH1D* HistPullPP = new TH1D("HistPullPP","HistPullPP",100,-5,5);
+	TH1D* HistPullThP = new TH1D("HistPullThP","HistPullThP",100,-5,5);
+	TH1D* HistPullPhP = new TH1D("HistPullPhP","HistPullPhP",100,-5,5);
+	TH1D* HistPullPPi1 = new TH1D("HistPullPPi1","HistPullPPi1",100,-5,5);
+	TH1D* HistPullThPi1 = new TH1D("HistPullThPi1","HistPullThPi1",100,-5,5);
+	TH1D* HistPullPhPi1 = new TH1D("HistPullPhPi1","HistPullPhPi1",100,-5,5);
+	
+
+	TH1D* HistPullPLdCor = new TH1D("HistPullPLdCor","HistPullPLdCor",100,-5,5);
+	TH1D* HistPullThLdCor = new TH1D("HistPullThLdCor","HistPullThLdCor",100,-5,5);
+	TH1D* HistPullPhLdCor = new TH1D("HistPullPhLdCor","HistPullPhLdCor",100,-5,5);
+	TH1D* HistPullPPi2 = new TH1D("HistPullPPi2","HistPullPPi2",100,-5,5);
+	TH1D* HistPullThPi2 = new TH1D("HistPullThPi2","HistPullThPi2",100,-5,5);
+	TH1D* HistPullPhPi2 = new TH1D("HistPullPhPi2","HistPullPhPi2",100,-5,5);
+
+	TH1D* HistPx = new TH1D("HistPx","HistPx",1000,-0.2,0.2);
+	TH1D* HistPy = new TH1D("HistPy","HistPy",1000,-0.2,0.2);
+	TH1D* HistPz = new TH1D("HistPz","HistPz",1000,-0.1,0.1);
+	TH1D* HistE = new TH1D("HistE","HistE",1000,-0.01,0.01);
+	
+	TH1D* HistDPx = new TH1D("HistDPx","HistDPx",1000,-0.2,0.2);
+	TH1D* HistDPy = new TH1D("HistDPy","HistDPy",1000,-0.2,0.2);
+	TH1D* HistDPz = new TH1D("HistDPz","HistDPz",1000,-0.1,0.1);
+	TH1D* HistDE = new TH1D("HistDE","HistDE",1000,-0.01,0.01);
+
+
+	TH2D* HistCor[64];
+	for(int i=0;i<64 ;++i){
+		TString title = Form("Hist%d",i);
+		HistCor[i] = new TH2D(title,title,300,-10,10,300,-10,10);
+	}
+
 	for(int i=0;i<nev;++i){
 		EvVert.SetDecay(Vertex,2,VertMass);
 		EvVert.Generate();
 		iev = i;
+		if(iev%1000==0){
+			cout<<Form("Event %d",iev)<<endl;
+		}
 		auto Xi = *EvVert.GetDecay(0);
 		auto KP = *EvVert.GetDecay(1);
 		EvXi.SetDecay(Xi,2,XiDecayMass);
@@ -127,8 +160,8 @@ void GenerateKinFit(){
 		V1.SetPhi(PhLdMeas);
 		TVector3 V2(0,0,0);
 		PPMeas = gRandom->Gaus(PP,PP*ResP);
-		ThPMeas = gRandom->Gaus(ThP,ResTh);
-		PhPMeas = gRandom->Gaus(PhP,ResPh);
+		ThPMeas = gRandom->Gaus(ThP,ResThP);
+		PhPMeas = gRandom->Gaus(PhP,ResPhP);
 		PPi1Meas = gRandom->Gaus(PPi1,PPi1*ResPi1);
 		ThPi1Meas = gRandom->Gaus(ThPi1,ResTh);
 		PhPi1Meas = gRandom->Gaus(PhPi1,ResPh);
@@ -156,6 +189,8 @@ void GenerateKinFit(){
 		auto LdReconMeas = LdRecon;
 		LdReconMeas.SetTheta(ThLdMeas);
 		LdReconMeas.SetPhi(PhLdMeas);
+		
+
 
 		auto XiRecon = LdRecon + Pi2Meas;
 		InvMLd = LdRecon.Mag();
@@ -171,31 +206,58 @@ void GenerateKinFit(){
 		HistLd->Fill(InvMLd);
 		HistXi->Fill(InvMXi);
 	
-		FourVectorFitter KFLd(PMeas,Pi1Meas,LdReconMeas);
-		KFLd.UseVertex(true,V1,V2);
-		double Variance[8] = {ResThV*ResThV,ResPhV*ResPhV,rp*rp,ResTh*ResTh,ResPh*ResPh,rpi1*rpi1,ResTh*ResTh,ResPh*ResPh};
-/*
+//		FourVectorFitter KFLd(PMeas,Pi1Meas,LdReconMeas);
+//		KFLd.UseVertex(true,V1,V2);
+//		double Variance[8] = {ResThV*ResThV,ResPhV*ResPhV,rp*rp,ResThP*ResThP,ResPhP*ResPhP,rpi1*rpi1,ResTh*ResTh,ResPh*ResPh};
 
-		KinematicFitter KFLd(PMeas,Pi1Meas,LdRecon);
+
+		FourVectorFitter KFLd(PMeas,Pi1Meas,LdRecon);
 		double Variance[8] = {rp*rp,ResTh*ResTh,ResPh*ResPh,rpi1*rpi1,ResTh*ResTh,ResPh*ResPh,0,0};
-*/	
-		KFLd.SetVariance(Variance);
+	
 		KFLd.SetInvMass(mL);
-		KFLd.SetMaximumStep(300);
+		KFLd.SetMaximumStep(100);
+//		KFLd.UpdateVariance();
+//		KFLd.ScaleParameters(true);
+		KFLd.SetVariance(Variance);
 		Chi2=		KFLd.DoKinematicFit();
 		NStep = KFLd.GetNStep();
 		BestStep = KFLd.GetBestStep();
 		auto stepChi2 = KFLd.GetStepChi2();
-		auto stepMassDiff = KFLd.GetStepMassDiff();
+		auto PullLd = KFLd.GetPull();
+		vector<double>tempPull(2);
+		for(auto p:PullLd){
+			tempPull.push_back(p);
+		}
+		PullLd = tempPull;
+		for(int col=0;col<8;++col){
+			for(int row=0;row<col;++row){
+				if(row == col) continue;
+				HistCor[8*col + row] ->Fill(PullLd.at(col),PullLd.at(row));
+			}
+		}
+		PullThLd=PullLd.at(0);	
+		PullPhLd=PullLd.at(1);	
+		PullPP=PullLd.at(2);	
+		PullThP=PullLd.at(3);	
+		PullPhP=PullLd.at(4);	
+		PullPPi1=PullLd.at(5);	
+		PullThPi1=PullLd.at(6);	
+		PullPhPi1=PullLd.at(7);	
+		HistPullThLd->Fill(PullThLd);
+		HistPullPhLd->Fill(PullPhLd);
+		HistPullPP->Fill(PullPP);
+		HistPullThP->Fill(PullThP);
+		HistPullPhP->Fill(PullPhP);
+		HistPullPPi1->Fill(PullPPi1);
+		HistPullThPi1->Fill(PullThPi1);
+		HistPullPhPi1->Fill(PullPhPi1);
 		for(int i=0;i<200;++i){
 			StepChi2[i]=0;
-			StepMassDiff[i]=0;
 			Step[i]=-1;
 		}
 		for(int i=0;i<NStep;i++){
 			Step[i]=i;
 			StepChi2[i]=stepChi2.at(i);
-			StepMassDiff[i]=stepMassDiff.at(i);
 		}
 		HistChi2->Fill(Chi2);
 		auto cont = KFLd.GetFittedLV();
@@ -229,8 +291,23 @@ void GenerateKinFit(){
 		double VarianceXi[8] = {rp*rp,ResThLd*ResThLd,ResPhLd*ResPhLd,rpi2*rpi2,ResTh*ResTh,ResPh*ResPh,0,0};
 		KFXi.SetVariance(VarianceXi);
 		KFXi.SetInvMass(mXi);	
-		KFXi.SetMaximumStep(300);
+		KFXi.SetMaximumStep(800);
 		Chi2Xi=		KFXi.DoKinematicFit();
+		
+		auto PullXi = KFXi.GetPull();
+		PullPLdCor = PullXi.at(0);
+		PullThLdCor = PullXi.at(1);
+		PullPhLdCor = PullXi.at(2);
+		PullPPi2 = PullXi.at(3);
+		PullThPi2 = PullXi.at(4);
+		PullPhPi2 = PullXi.at(5);
+		HistPullPLdCor->Fill(PullPLdCor);
+		HistPullThLdCor->Fill(PullThLdCor);
+		HistPullPhLdCor->Fill(PullPhLdCor);
+		HistPullPPi2->Fill(PullPPi2);
+		HistPullThPi2->Fill(PullThPi2);
+		HistPullPhPi2->Fill(PullPhPi2);
+
 		auto contXi = KFXi.GetFittedLV();
 		auto LdCorCor = contXi.at(0);
 		auto Pi2Cor = contXi.at(1);
@@ -322,117 +399,135 @@ void GenerateKinFit(){
 		HistMM->Fill(MM.Mag());
 		HistMMCor->Fill(MMCor.Mag());
 		tree->Fill();	
+		auto FIni = KFLd.GetInitialConstraints();
+		auto FAfter = KFLd.GetKinematicConstraints();
+		double Ipx=FIni.at(0);
+		double Ipy=FIni.at(1);
+		double Ipz=FIni.at(2);
+		double IE=FIni.at(3);
+		double Apx=FAfter.at(0);
+		double Apy=FAfter.at(1);
+		double Apz=FAfter.at(2);
+		double AE=FAfter.at(3);
+		HistPx->Fill(Ipx);
+		HistPy->Fill(Ipy);
+		HistPz->Fill(Ipz);
+		HistE->Fill(IE);
+		HistDPx->Fill(Apx);
+		HistDPy->Fill(Apy);
+		HistDPz->Fill(Apz);
+		HistDE->Fill(AE);
 	}
 	TCanvas* c1 = new TCanvas("c1","c1",1200,600);
 	c1->Divide(2,2);
 	c1->cd(1);
 	HistLd->Draw();
-	HistLd->Fit("gaus","Q");
+	HistLd->Fit("gaus","Q0");
 	c1->cd(2);
 	HistXi->Draw();
-	HistXi->Fit("gaus","Q");
+	HistXi->Fit("gaus","Q0");
 	c1->cd(3);
 	HistLdFit->Draw();
-	HistLdFit->Fit("gaus","Q");
+	HistLdFit->Fit("gaus","Q0");
 	c1->cd(4);
 	HistXiFit->Draw();
-	HistXiFit->Fit("gaus","Q");
+	HistXiFit->Fit("gaus","Q0");
 	TCanvas* c2 = new TCanvas("c2","c2",1200,600);
 	c2->Divide(3,3);
 	c2->cd(1);
 	HistLdP->Draw();
 	HistLdP->SetLineColor(kGreen);
-	HistLdP->Fit("gaus","Q");
+	HistLdP->Fit("gaus","Q0");
 	c2->cd(2);
 	HistLdTh->Draw();
 	HistLdTh->SetLineColor(kGreen);
-	HistLdTh->Fit("gaus","Q");
+	HistLdTh->Fit("gaus","Q0");
 	c2->cd(3);
 	HistLdPh->Draw();
 	HistLdPh->SetLineColor(kGreen);
-	HistLdPh->Fit("gaus","Q");
+	HistLdPh->Fit("gaus","Q0");
 	c2->cd(4);
 	HistPP->Draw();
 	HistPP->SetLineColor(kGreen);
-	HistPP->Fit("gaus","Q");
+	HistPP->Fit("gaus","Q0");
 	c2->cd(5);
 	HistPTh->Draw();
 	HistPTh->SetLineColor(kGreen);
-	HistPTh->Fit("gaus","Q");
+	HistPTh->Fit("gaus","Q0");
 	c2->cd(6);
 	HistPPh->Draw();
 	HistPPh->SetLineColor(kGreen);
-	HistPPh->Fit("gaus","Q");
+	HistPPh->Fit("gaus","Q0");
 	c2->cd(7);
 	HistPi1P->Draw();
 	HistPi1P->SetLineColor(kGreen);
-	HistPi1P->Fit("gaus","Q");
+	HistPi1P->Fit("gaus","Q0");
 	c2->cd(8);
 	HistPi1Th->Draw();
 	HistPi1Th->SetLineColor(kGreen);
-	HistPi1Th->Fit("gaus","Q");
+	HistPi1Th->Fit("gaus","Q0");
 	c2->cd(9);
 	HistPi1Ph->Draw();
 	HistPi1Ph->SetLineColor(kGreen);
-	HistPi1Ph->Fit("gaus","Q");
+	HistPi1Ph->Fit("gaus","Q0");
 	TCanvas* c3 = new TCanvas("c3","c3",1200,600);
 	c3->Divide(3,3);
 	c3->cd(1);
 	HistDLdP->Draw();
-	HistDLdP->Fit("gaus","Q");
+	HistDLdP->Fit("gaus","Q0");
 	c3->cd(2);
 	HistDLdTh->Draw();
-	HistDLdTh->Fit("gaus","Q");
+	HistDLdTh->Fit("gaus","Q0");
 	c3->cd(3);
 	HistDLdPh->Draw();
-	HistDLdPh->Fit("gaus","Q");
+	HistDLdPh->Fit("gaus","Q0");
 	c3->cd(4);
 	HistDPP->Draw();
-	HistDPP->Fit("gaus","Q");
+	HistDPP->Fit("gaus","Q0");
 	c3->cd(5);
 	HistDPTh->Draw();
-	HistDPTh->Fit("gaus","Q");
+	HistDPTh->Fit("gaus","Q0");
 	c3->cd(6);
 	HistDPPh->Draw();
-	HistDPPh->Fit("gaus","Q");
+	HistDPPh->Fit("gaus","Q0");
 	c3->cd(7);
 	HistDPi1P->Draw();
-	HistDPi1P->Fit("gaus","Q");
+	HistDPi1P->Fit("gaus","Q0");
 	c3->cd(8);
 	HistDPi1Th->Draw();
-	HistDPi1Th->Fit("gaus","Q");
+	HistDPi1Th->Fit("gaus","Q0");
 	c3->cd(9);
 	HistDPi1Ph->Draw();
-	HistDPi1Ph->Fit("gaus","Q");
+	HistDPi1Ph->Fit("gaus","Q0");
 	TCanvas* c4 = new TCanvas("c4","c4",1200,600);
 	c4->Divide(3,3);
 	c4->cd(1);
 	HistDifLdP->Draw();
-	HistDifLdP->Fit("gaus","Q");
+	HistDifLdP->Fit("gaus","Q0");
 	c4->cd(2);
 	HistDifLdTh->Draw();
-	HistDifLdTh->Fit("gaus","Q");
+	HistDifLdTh->Fit("gaus","Q0");
 	c4->cd(3);
 	HistDifLdPh->Draw();
-	HistDifLdPh->Fit("gaus","Q");
+	HistDifLdPh->Fit("gaus","Q0");
 	c4->cd(4);
 	HistDifPP->Draw();
-	HistDifPP->Fit("gaus","Q");
+	HistDifPP->Fit("gaus","Q0");
 	c4->cd(5);
 	HistDifPTh->Draw();
-	HistDifPTh->Fit("gaus","Q");
+	HistDifPTh->Fit("gaus","Q0");
 	c4->cd(6);
 	HistDifPPh->Draw();
-	HistDifPPh->Fit("gaus","Q");
+	HistDifPPh->Fit("gaus","Q0");
 	c4->cd(7);
 	HistDifPi1P->Draw();
-	HistDifPi1P->Fit("gaus","Q");
+	HistDifPi1P->Fit("gaus","Q0");
 	c4->cd(8);
 	HistDifPi1Th->Draw();
-	HistDifPi1Th->Fit("gaus","Q");
+	HistDifPi1Th->Fit("gaus","Q0");
 	c4->cd(9);
 	HistDifPi1Ph->Draw();
-	HistDifPi1Ph->Fit("gaus","Q");
+	HistDifPi1Ph->Fit("gaus","Q0");
 	
 
 	TCanvas* c5 = new TCanvas("c5","c5",600,600);
@@ -532,4 +627,77 @@ void GenerateKinFit(){
 	HistProbXi->Draw();
 	c11->cd(2);
 	HistProbXi2D->Draw("colz");
+	TCanvas* c12 = new TCanvas("c12","c12",1200,600);
+	c12->Divide(3,3);
+	c12->cd(2);
+	HistPullThLd->Draw();
+	HistPullThLd->Fit("gaus");
+	c12->cd(3);
+	HistPullPhLd->Draw();
+	HistPullPhLd->Fit("gaus");
+	c12->cd(4);
+	HistPullPP->Draw();
+	HistPullPP->Fit("gaus");
+	c12->cd(5);
+	HistPullThP->Draw();
+	HistPullThP->Fit("gaus");
+	c12->cd(6);
+	HistPullPhP->Draw();
+	HistPullPhP->Fit("gaus");
+	c12->cd(7);
+	HistPullPPi1->Draw();
+	HistPullPPi1->Fit("gaus");
+	c12->cd(8);
+	HistPullThPi1->Draw();
+	HistPullThPi1->Fit("gaus");
+	c12->cd(9);
+	HistPullPhPi1->Draw();
+	HistPullPhPi1->Fit("gaus");
+	TCanvas* c13 = new TCanvas("c13","c13",1200,600);
+	c13->Divide(3,2);
+	c13->cd(1);
+	HistPullPLdCor->Draw();
+	HistPullPLdCor->Fit("gaus");
+	c13->cd(2);
+	HistPullThLdCor->Draw();
+	HistPullThLdCor->Fit("gaus");
+	c13->cd(3);
+	HistPullPhLdCor->Draw();
+	HistPullPhLdCor->Fit("gaus");
+	c13->cd(4);
+	HistPullPPi2->Draw();
+	HistPullPPi2->Fit("gaus");
+	c13->cd(5);
+	HistPullThPi2->Draw();
+	HistPullThPi2->Fit("gaus");
+	c13->cd(6);
+	HistPullPhPi2->Draw();
+	HistPullPhPi2->Fit("gaus");
+	TCanvas* c14 = new TCanvas("c14","c14",1200,600);
+	c14->Divide(8,8);
+		for(int col=0;col<8;++col){
+			for(int row=0;row<col;++row){
+				c14->cd(8*col + row + 1);
+				HistCor[8*col + row]->Draw("colz");
+			}
+		}
+	TCanvas* c15 = new TCanvas("c15","c15",1200,800);
+	c15->Divide(2,2);
+	c15->cd(1);
+	HistDPx->Draw();
+	HistDPx->SetLineColor(kRed);
+	HistPx->Draw("SAME");
+	c15->cd(2);
+	HistDPy->Draw();
+	HistDPy->SetLineColor(kRed);
+	HistPy->Draw("SAME");
+	c15->cd(3);
+	HistDPz->Draw();
+	HistDPz->SetLineColor(kRed);
+	HistPz->Draw("SAME");
+	c15->cd(4);
+	HistDE->Draw();
+	HistDE->SetLineColor(kRed);
+	HistE->Draw("SAME");
 }
+

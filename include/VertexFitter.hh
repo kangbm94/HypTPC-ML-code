@@ -1,8 +1,7 @@
-#ifndef FourVectorFitter_h
-#define FourVectorFitter_h
+#ifndef VertexFitter_h
+#define VertexFitter_h
 #include "KinFit2.hh"
-class FourVectorFitter: virtual public KinematicFitter{
-	//R -> P + Q;
+class VertexFitter: virtual public KinematicFitter{
 	protected:	
 		TLorentzVector P;
 		TVector3 Pres;
@@ -17,12 +16,10 @@ class FourVectorFitter: virtual public KinematicFitter{
 		TLorentzVector R;
 		TVector3 Rres;
 		TLorentzVector RCor;
-		vector<double> MassDiffs;
 		double mR;
 		bool MeasDir = false;
 	public:
-		FourVectorFitter(){}
-		FourVectorFitter(TLorentzVector P_,TLorentzVector Q_,TLorentzVector R_);
+		VertexFitter(TLorentzVector P_,TLorentzVector Q_,TLorentzVector R_);
 		void SetInvMass(double IM){
 			mR = IM;
 		}
@@ -31,12 +28,11 @@ class FourVectorFitter: virtual public KinematicFitter{
 			return ret;
 		}
 		void UseVertex(bool status,TVector3 Vert1,TVector3 Vert2);
-		void ToDecayPlane();
 	protected:
 		virtual void Initialize();
-		virtual void SampleStepPoint(int steps);
+		virtual void SampleStepPoint();
 		virtual void SetConstraints();
-		virtual void Rotate();
-		
+		virtual void Finalize();	
+
 };
 #endif

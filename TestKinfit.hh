@@ -1,9 +1,16 @@
 
-double ResP = 0.04;
-double ResPi1 = 0.03;
-double ResPi2 = 0.03;
-double ResTh = 0.01; 
-double ResPh = 0.01; 
+double mXi = 1.321;
+double mL = 1.115;
+double mP = 0.938;
+double mK = 0.493;
+double mPi = 0.139;
+double ResP = 0.1;
+double ResPi1 = 0.05;
+double ResPi2 = 0.05;
+double ResTh = 0.02; 
+double ResPh = 0.02; 
+double ResThP = 0.01; 
+double ResPhP = 0.01; 
 double ResThV = 0.05; 
 double ResPhV = 0.05; 
 
@@ -31,6 +38,8 @@ double PPi1Cor,ThPi1Cor,PhPi1Cor;
 double PPi2Cor,ThPi2Cor,PhPi2Cor; 
 double InvMLd,InvMXi,InvMLdCor,InvMXiCor;
 double Chi2,Chi2Xi;
+double PullThLd,PullPhLd,PullPP,PullThP,PullPhP,PullPPi1,PullThPi1,PullPhPi1;
+double PullPLdCor,PullThLdCor,PullPhLdCor,PullPPi2,PullThPi2,PullPhPi2;
 int NStep,BestStep;
 int Step[200];
 double StepChi2[200];
