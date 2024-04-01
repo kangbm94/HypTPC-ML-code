@@ -1,6 +1,6 @@
 #ifndef VertexFitter_h
 #define VertexFitter_h
-#include "KinFit2.hh"
+#include "KinFit.hh"
 class VertexFitter: virtual public KinematicFitter{
 	protected:	
 		TLorentzVector P;

@@ -42,14 +42,13 @@ double mpi = 139.570/1000;//GeV
 double mpi0 = 134.976/1000;//GeV
 double mk = 493.677/1000;
 double mp = 938.272/1000;
-double mL = 1115.683/1000;
-double mPhi = 1019.455/1000;
+double mL = 1115.677/1000;
 double mXi = 1321.71/1000;
 double mXi0 = 1314.86/1000;
 double mXiStar = 1535./1000;
 double mH = 2150./1000;
 int PDGPi= 211,PDGK=321;
-int PDGP = 2212, PDGN = 2112,PDGXi=3312,PDGXi0=3322,PDGXiStar=3314,PDGLd=3122,PDGPhi = 333;
+int PDGP = 2212, PDGN = 2112,PDGXi=3312,PDGXi0=3322,PDGXiStar=3314,PDGLd=3122;
 bool InTarget(TVector3 Vect){
 	double x = Vect.X();
 	double y = Vect.Y();
@@ -84,15 +83,15 @@ class Track :public TLorentzVector{
 		}
 
 		bool IsP(){
-			if(pid_%8/4) return true;//XXX1XX 
+			if(pid_%8/4) return true;
 			else return false;
 		}
 		bool IsK(){
-			if(pid_%4/2) return true;//XXXX1X
+			if(pid_%4/2) return true;
 			else return false;
 		}
 		bool IsPi(){
-			if(pid_%2/1) return true;//XXXXX1
+			if(pid_%2/1) return true;
 			else return false;
 		}
 		void SetP(){
@@ -181,10 +180,9 @@ class Recon{
 		double ReconTheta;
 		double ReconPhi;
 		void Initialize();
-		double mass;
 		vector<TMatrixD> Rotations;
 	public:
-		Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2,int charge_=0,int nh1=-1,int nh2=-1,double m = mL);
+		Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2,int charge_=0,int nh1=-1,int nh2=-1);
 		Recon(Recon P,Recon Q,double m1,double m2);
 		Recon(){}
 		void Clear(){ exist = false;LV.SetXYZM(0,0,0,0);Daughters.clear();Vert.SetXYZ(0,0,0);
@@ -286,8 +284,8 @@ class Vertex{
 		vector<Track> Tracks;
 		TVector3 vert;
 		vector<TVector3> verts;
-		vector<Track>P1Cand;
-		vector<Track>P2Cand;
+		vector<Track>PCand;
+		vector<Track>PiCand;
 		bool TrustCharge = true;
 		double cdcut = 10;
 		void SetVert(){
@@ -296,10 +294,9 @@ class Vertex{
 			for(int i=0;i<n;++i)vert+=verts[i] * (1./n);
 		}
 		int Vert_id=0;
-		double mass = mL;
-		vector<Recon>Cand;
-		vector<TVector3>P1mom;
-		vector<TVector3>P2mom;
+		vector<Recon>LdCand;
+		vector<TVector3>Pmom;
+		vector<TVector3>Pimom;
 		vector<TVector3>Ldmom;
 		vector<Recon>XiCand;
 		vector<Recon>XiCandLdCor;
@@ -311,34 +308,24 @@ class Vertex{
 			//			cout<<"Vertex"<<endl;
 		}
 		Vertex(){}
-		void SetMass(double m){
-			mass = m;
-		}
 		void TrustChargeInfo(bool flag){
 			TrustCharge = flag;
 		}
-		bool Counted(int trid){
-			return (Vert_id%int(pow(2,trid+1)))/int(pow(2,trid));//true if Reconstructed with track.
-		}
 		bool Counted(Track p){
 			int trid = p.GetID();
-			return Counted(trid);
+			return (Vert_id%int(pow(2,trid+1)))/int(pow(2,trid));//true if Reconstructed with track.
 		}
 		virtual int NTrack(){
 			return Tracks.size();}
 		virtual bool AddTrack(Track p);
-		Recon GetBestCandidate(){
+		void SearchLdCombination();
+		Recon GetLd(){
 			double comp = 9999;
 			Recon val ;
 			int num = 0;
-			for(auto cand : Cand){ if( abs(mass-cand.Mass())<comp) {comp=abs(mass-cand.Mass());val=cand;}}
+			for(auto ldc : LdCand){ if( abs(mL-ldc.Mass())<comp) {comp=abs(mL-ldc.Mass());val=ldc;}}
 			return val;
 		}
-		vector<Recon> GetCandidates(){
-			return Cand;
-		}
-		void SearchLdCombination();
-		void SearchPhiCombination();
 		void SetCdCut(double cd){
 			cdcut = cd;
 		}
@@ -410,6 +397,7 @@ class XiStarRecon: public Recon{
 		vector<TVector3>KPmom;
 		vector<TVector3>KPPos;	
 		TVector3 TargetPos = TVector3(0,0,-143);
+		double mass;
 		TVector3 IniMom;
 		int kpid = 0;
 		int kmid = 0;

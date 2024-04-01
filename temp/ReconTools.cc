@@ -23,7 +23,6 @@ Recon::Initialize(){
 	TVector3 P1 = Daughters.at(0).Vect();
 	TVector3 P2 = Daughters.at(1).Vect();
 	auto V_t = GlobalToTarget(Vert);
-	LV = TLorentzVector(0,0,0,0);
 	for(auto lv:Daughters) LV+=lv;
 	auto mom = LV.Vect();
 	auto dir_t = GlobalToTargetMom(mom);
@@ -46,7 +45,7 @@ Recon::Initialize(){
 	}
 	
 }
-Recon::Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2, int charge_,int nh1 = -1, int nh2 = -1, double m = mL){
+Recon::Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,int id2, int charge_,int nh1 = -1, int nh2 = -1){
 	charge = charge_;
 	LV.SetXYZM(0,0,0,0);
 	Daughters = D;
@@ -55,7 +54,6 @@ Recon::Recon(vector<TLorentzVector> D,TVector3 vertex,double clos_dist,int id1,i
 	CombID = pow(2,id1)+pow(2,id2);
 	exist = true;
 	trid1=id1;trid2=id2;
-	mass = m;
 	Initialize();	
 	DaughterNhits.push_back(nh1);
 	DaughterNhits.push_back(nh2);
@@ -76,10 +74,14 @@ bool Vertex::AddTrack(Track p){
 		int p2_q = p.GetQ();
 		double m_t1,M_t1,m_t2,M_t2;
 		pos = VertexPointHelix(par1,par2,cd,t1,t2); 
+	//	cout<<Form("(%d,%d)Close dist : %f, t1,t2 = (%f,%f)",Tracks[0].GetQ()*Tracks[0].GetID(),p.GetQ()*p.GetID(),cd,t1,t2)<<endl;
 		if(cd<cdcut){
 			Tracks.push_back(p);
 			verts.push_back(pos);
 			Vert_id+=pow(2,nt);
+//			SetVert();
+//			auto P = CalcHelixMom(p.GetPar(),pos.y());
+//			cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
 			return true;
 		}
 	}
@@ -100,6 +102,8 @@ bool Vertex::AddTrack(Track p){
 				verts.push_back(vec); 
 				SetVert();
 			}
+//			auto P = CalcHelixMom(p.GetPar(),vert.y());
+	//		cout<<Form("id, mom :  %d,(%f,%f,%f)",p.PID(),P.x(),P.y(),P.z())<<endl;
 			return true;
 		}
 	}
@@ -107,15 +111,17 @@ bool Vertex::AddTrack(Track p){
 }
 void Vertex::SearchLdCombination(){
 	int np = NTrack();
+//	vector<Track>PCand;PCand.clear();
+//	vector<Track>PiCand;PiCand.clear();
 	if(np < 2) return;
 	for(auto p:Tracks){
-		if( p.IsP())P1Cand.push_back(p);
-		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge))P2Cand.push_back(p);
+		if( p.IsP())PCand.push_back(p);
+		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge))PiCand.push_back(p);
 	}
 	double mom_cut = 2.2;//1.2  
 	double mom_cutMin = 0.0;//0.3  
-	for(auto p:P1Cand){
-		for(auto pi:P2Cand){
+	for(auto p:PCand){
+		for(auto pi:PiCand){
 			double cd_,t1_,t2_;
 			double m_t1=-4,m_t2=-4,M_t1=7,M_t2 = 7;
 			if(p.GetID() == pi.GetID()) continue;
@@ -130,6 +136,7 @@ void Vertex::SearchLdCombination(){
 				M_t2 = m_t2 + pi_dt; 
 			}
 			auto ppivert = VertexPointHelix(p.GetPar(),pi.GetPar(),cd_,t1_,t2_,m_t1,M_t1,m_t2,M_t2); 
+			//cout<<Form("(%d,%d)Close dist : %f, t1,t2 = (%f,%f)",p.GetID(),pi.GetID(),cd_,t1_,t2_)<<endl;
 			if(cd_>cdcut) continue;
 			auto p1 = CalcHelixMom(p.GetPar(),ppivert.y());
 			double p1_0=p.GetMom0();
@@ -141,60 +148,17 @@ void Vertex::SearchLdCombination(){
 			if(p2_0>0){
 				p2 = p2*p2_0 * (1./p2.Mag());
 			}
+//			auto p1 = CalcCircleMom(p.GetPar(),ppivert);
+//			auto p2 = CalcCircleMom(pi.GetPar(),ppivert);
 			auto pLV = TLorentzVector(p1,sqrt(mp*mp+p1.Mag2()));
 			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv1 = {pLV,piLV};
 			auto ldlv1 = pLV+piLV;
-			if(ldlv1.Vect().Mag()<mom_cut and ldlv1.Vect().Mag()>mom_cutMin and ! TrustCharge)Cand.push_back(Recon(lv1,ppivert,cd_,p.GetID(),pi.GetID()));//,p.GetNhits(),pi.GetNhits()));
+			if(ldlv1.Vect().Mag()<mom_cut and ldlv1.Vect().Mag()>mom_cutMin and ! TrustCharge)LdCand.push_back(Recon(lv1,ppivert,cd_,p.GetID(),pi.GetID(),p.GetNhits(),pi.GetNhits()));
 			auto piLVInv = TLorentzVector(-p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv2 = {pLV,piLVInv};
 			auto ldlv2 = pLV+piLVInv;
-			if(ldlv2.Vect().Mag()<mom_cut and ldlv2.Vect().Mag()>mom_cutMin)Cand.push_back(Recon(lv2,ppivert,cd_,p.GetID(),pi.GetID()));//,p.GetNhits(),pi.GetNhits()));
-		}
-	}
-}
-void Vertex::SearchPhiCombination(){
-	mass = mPhi;
-	int np = NTrack();
-	if(np < 2) return;
-	for(auto p:Tracks){
-		if( p.IsK() and p.GetQ() == 1)P1Cand.push_back(p);
-		if( p.IsK() and p.GetQ() == -1)P2Cand.push_back(p);
-	}
-	double mom_cut = 2.2;//1.2  
-	double mom_cutMin = 0.0;//0.3  
-	for(auto Kp:P1Cand){
-		for(auto Km:P2Cand){
-			double cd_,t1_,t2_;
-			double m_t1=-4,m_t2=-4,M_t1=7,M_t2 = 7;
-			if(Kp.GetID() == Km.GetID()) continue;
-			double Kp_dt =100./ Kp.GetPar()[3];//100 / radius;
-			double Km_dt =100./ Km.GetPar()[3];//100 / radius;
-			if(Kp.GetFirstHitT()!= - 9999){
-				M_t1 = Kp.GetFirstHitT();
-				m_t1 = m_t1 - Kp_dt;
-			}
-			if(Km.GetFirstHitT()!= - 9999){
-				m_t2 = Km.GetFirstHitT();
-				M_t2 = m_t2 + Km_dt; 
-			}
-			auto Phivert = VertexPointHelix(Kp.GetPar(),Km.GetPar(),cd_,t1_,t2_,m_t1,M_t1,m_t2,M_t2); 
-			if(cd_>cdcut) continue;
-			auto p1 = CalcHelixMom(Kp.GetPar(),Phivert.y());
-			double p1_0=Kp.GetMom0();
-			auto p2 = CalcHelixMom(Km.GetPar(),Phivert.y());
-			double p2_0=Km.GetMom0();
-			if(p1_0>0){
-				p1 = p1*p1_0 * (1./p1.Mag());
-			}
-			if(p2_0>0){
-				p2 = p2*p2_0 * (1./p2.Mag());
-			}
-			auto KpLV = TLorentzVector(p1,hypot(mk,p1_0));
-			auto KmLV = TLorentzVector(-p2,hypot(mk,p2_0));
-			vector<TLorentzVector> lv = {KpLV,KmLV};
-			auto PhiLV =KpLV+KmLV;
-			if(PhiLV.Vect().Mag()<mom_cut and PhiLV.Vect().Mag()>mom_cutMin)Cand.push_back(Recon(lv,Phivert,cd_,Kp.GetID(),Km.GetID()));//,p.GetNhits(),pi.GetNhits()));
+			if(ldlv2.Vect().Mag()<mom_cut and ldlv2.Vect().Mag()>mom_cutMin)LdCand.push_back(Recon(lv2,ppivert,cd_,p.GetID(),pi.GetID(),p.GetNhits(),pi.GetNhits()));
 		}
 	}
 }
@@ -208,13 +172,13 @@ void Vertex::SearchLdCombinationWOPID(){
 //		if(Tracks.at(0).IsP())cout<<"P"<<endl;
 	}
 	for(auto p:Tracks){
-		P1Cand.push_back(p);
-		if((p.GetQ()==-1 or !TrustCharge))P2Cand.push_back(p);
+		PCand.push_back(p);
+		if((p.GetQ()==-1 or !TrustCharge))PiCand.push_back(p);
 	}
 	double mom_cut = 9.9;//1.2  
 	double mom_cutMin = 0.0;//0.3  
-	for(auto p:P1Cand){
-		for(auto pi:P2Cand){
+	for(auto p:PCand){
+		for(auto pi:PiCand){
 			double cd_,t1_,t2_;
 			if(p.GetID() == pi.GetID()) continue;
 			auto ppivert = VertexPointHelix(p.GetPar(),pi.GetPar(),cd_,t1_,t2_); 
@@ -230,11 +194,11 @@ void Vertex::SearchLdCombinationWOPID(){
 			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv1 = {pLV,piLV};
 			auto ldlv1 = pLV+piLV;
-			if(ldlv1.Vect().Mag()<mom_cut and ldlv1.Vect().Mag()>mom_cutMin and ! TrustCharge)Cand.push_back(Recon(lv1,ppivert,cd_,p.GetID(),pi.GetID()));
+			if(ldlv1.Vect().Mag()<mom_cut and ldlv1.Vect().Mag()>mom_cutMin and ! TrustCharge)LdCand.push_back(Recon(lv1,ppivert,cd_,p.GetID(),pi.GetID()));
 			auto piLVInv = TLorentzVector(-p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv2 = {pLV,piLVInv};
 			auto ldlv2 = pLV+piLVInv;
-			if(ldlv2.Vect().Mag()<mom_cut and ldlv2.Vect().Mag()>mom_cutMin)Cand.push_back(Recon(lv2,ppivert,cd_,p.GetID(),pi.GetID()));
+			if(ldlv2.Vect().Mag()<mom_cut and ldlv2.Vect().Mag()>mom_cutMin)LdCand.push_back(Recon(lv2,ppivert,cd_,p.GetID(),pi.GetID()));
 		}
 	}
 }
@@ -260,16 +224,16 @@ bool VertexLH::AddTrack(Track p){
 }
 void VertexLH::SearchXiCombination(){
 	int np = NTrack();
-	Cand.clear();
-//	vector<Track>P2Cand;P2Cand.clear();
+	LdCand.clear();
+//	vector<Track>PiCand;PiCand.clear();
 	for(auto p:Tracks){
-		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge ))P2Cand.push_back(p);
+		if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge ))PiCand.push_back(p);
 	}
 	double mom_cut = 1.9;//Xi->0.9 
 	double mom_cutMin = 0.1;//Xi-> 0.4 
-	for(auto ld:Recons) Cand.push_back(ld);
-	for(auto ld:Cand){
-		for(auto pi:P2Cand){
+	for(auto ld:Recons) LdCand.push_back(ld);
+	for(auto ld:LdCand){
+		for(auto pi:PiCand){
 			double cd_,t1_,t2_;
 			if(ld.Counted(pi)) continue;
 			auto ldpivert = VertexPointHelixLinear(pi.GetPar(),ld.GetPar(),cd_,t1_,t2_); 
@@ -291,11 +255,11 @@ void VertexLH::SearchXiCombination(){
 			auto piLV = TLorentzVector(p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv1 = {ldLV,piLV};
 			auto xilv1 = ldLV+piLV;
-			if(xilv1.Vect().Mag()<mom_cut and xilv1.Vect().Mag()>mom_cutMin and !TrustCharge )XiCand.push_back(Recon(lv1,ldpivert,cd_,ld.GetID(),pi.GetID(),-1));//,-1,pi.GetNhits()));
+			if(xilv1.Vect().Mag()<mom_cut and xilv1.Vect().Mag()>mom_cutMin and !TrustCharge )XiCand.push_back(Recon(lv1,ldpivert,cd_,ld.GetID(),pi.GetID(),-1,-1,pi.GetNhits()));
 			auto piLVInv = TLorentzVector(-p2,sqrt(mpi*mpi+p2.Mag2()));
 			vector<TLorentzVector> lv2 = {ldLV,piLVInv};
 			auto xilv2 = ldLV+piLVInv;
-			if(xilv2.Vect().Mag()<mom_cut and xilv2.Vect().Mag()>mom_cutMin)XiCand.push_back(Recon(lv2,ldpivert,cd_,ld.GetID(),pi.GetID(),-1));//,-1,pi.GetNhits()));
+			if(xilv2.Vect().Mag()<mom_cut and xilv2.Vect().Mag()>mom_cutMin)XiCand.push_back(Recon(lv2,ldpivert,cd_,ld.GetID(),pi.GetID(),-1,-1,pi.GetNhits()));
 		
 			
 		}
@@ -305,6 +269,136 @@ void VertexLH::SearchXiCombination(){
 void VertexLH::AddKuramaTrack(Track p){
 	KuramaFlag = true;
 	KuramaTracks.push_back(p);
+}
+void
+XiStarRecon::Construct(vector<TVector3>KMX,vector<TVector3>KMP,vector<TVector3>KPX,vector<TVector3>KPP){
+	int ntK18 = KMX.size();
+	int ntKurama = KPX.size();
+	KMPos=KMX;
+	KMmom=KMP;
+	KPPos=KPX;
+	KPmom=KPP;
+	charge = -1;
+	vector<double>close_dists;
+	vector<double>MMs;
+	vector<TLorentzVector>LVs;
+	vector<TVector3> verts;
+	vector<int>kpids;
+	vector<int>kmids;
+	bool Correction = true;
+	if(!K18Track.GetQ() and !KuramaTrack.GetQ()) Correction = true;
+	Correction = false;
+	for(int ikm = 0;ikm<ntK18;++ikm){
+		auto xkm = KMX.at(ikm);
+		auto pkm = KMP.at(ikm);
+		
+		for(int ikp = 0;ikp<ntKurama;++ikp){
+			auto xkp = KPX.at(ikp);
+			auto pkp = KPP.at(ikp);
+			auto kkvert = VertexPoint(xkm, xkp, pkm, pkp);
+			double cd = CloseDist(xkm,xkp,pkm,pkp); 
+			if(!InTarget(kkvert,cd))continue;
+			TLorentzVector LVKM(pkm,sqrt(mk*mk+pkm*pkm));
+			TLorentzVector LVKP(pkp,sqrt(mk*mk+pkp*pkp));
+			TLorentzVector LVTarget(0,0,0,mp);
+			TLorentzVector LVMM = LVKM+LVTarget-LVKP;
+			double MM = LVMM.Mag();
+			verts.push_back(kkvert);
+			close_dists.push_back(cd);
+			LVs.push_back(LVMM);
+			MMs.push_back(MM);
+			kmids.push_back(ikm);
+			kpids.push_back(ikp);
+		}
+	}
+	double dif = 1e9;
+	int id = -1;
+	double mxistar = 0.;
+	for(int im=0;im<MMs.size();++im){
+		if(dif >abs( MMs.at(im) - mXiStar)){
+			dif = abs(MMs.at(im)-mXiStar);
+			id = im;
+			mxistar = MMs.at(im);
+			kmid=kmids.at(im);
+			kpid=kpids.at(im);
+		}
+	}
+	if(id>-1){
+		exist = true;
+		double cd,t1,t2;
+		if(Correction){
+			auto p1 = K18Track.GetPar();
+			auto p2 = KuramaTrack.GetPar();
+			/*
+			double xt = verts.at(id).x();
+			double yt = verts.at(id).y();
+			double zt = verts.at(id).z();
+			double dx = xt-( -p1[0]);//cx_helix = -cx_real
+			double dz = xt-( p1[1]+ZTarget);//cy_helix = cz_real+ZTarget
+			double t = atan2(dx,dz);
+			double vkm = p1[4];
+			double dirz = -sin(t)/sqrt(1+vkm*vkm);
+			double dirx = cos(t)/sqrt(1+vkm*vkm);
+			TVector3 KMDir(dirx,vkm,dirz); 
+			if(dirz<0)KMDir = -KMDir;
+			dx = xt-( -p2[0]);//cx_helix = -cx_real
+			dz = xt-( p2[1]+ZTarget);//cy_helix = cz_real+ZTarget
+			t=atan2(dx,dz);
+			double vkp = p2[4];
+			dirz = -sin(t)/sqrt(1+vkp*vkp);
+			dirx = cos(t)/sqrt(1+vkp*vkp);
+			TVector3 KPDir(dirx,vkp,dirz); 
+			if(dirz<0)KPDir = -KPDir;
+			TVector3 PK18 = KMDir*(KMP.at(kmid)).Mag();
+			TVector3 PKurama = KPDir*(KPP.at(kpid)).Mag();
+			Vert = TVector3(xt,yt,ZTarget);
+			*/
+						Vert = VertexPointHelix(K18Track.GetPar(),KuramaTrack.GetPar(), cd,t1,t2);
+			
+			auto PK18 = KMP.at(kmid);//= CalcHelixMom(K18Track.GetPar(),Vert.y());
+			if(PK18.z()<0) PK18 = -PK18;
+			PK18 = PK18 *( 1./(PK18.Mag()) )* KMP.at(kmid).Mag();
+			auto PKurama = KPP.at(kpid);
+
+	
+			cout<<Form("KM Mom = (%f,%f,%f)",PK18.X(),PK18.Y(),PK18.Z())<<endl;
+			cout<<Form("KP Mom = (%f,%f,%f)",PKurama.X(),PKurama.Y(),PKurama.Z())<<endl;
+
+			TLorentzVector LVKM(PK18,sqrt(mk*mk+PK18.Mag2()));
+			TLorentzVector LVKP(PKurama,sqrt(mk*mk+PKurama.Mag2()));
+			TLorentzVector LVTarget(0,0,0,mp);
+			TLorentzVector LV = LVKM+LVTarget-LVKP;
+			double MMraw = LV.Mag();
+			double angle = acos( PK18*PKurama /	PK18.Mag()/PKurama.Mag());
+			double diff = - sin(angle)*PK18.Mag()*PKurama.Mag()/sqrt(MMraw);
+			double dtheta = (MMraw-mXiStar)/diff; //diff*dtheta = MXi +dM =MM
+			cout<<"MMraw = "<<MMraw<<endl;
+			cout<<"CorAngle = "<<dtheta<<endl;
+			PKurama.RotateY(dtheta);
+			LVKP= TLorentzVector(PKurama,sqrt(mk*mk+PKurama.Mag2()));
+			LV = LVKM+LVTarget-LVKP;
+			double MM = LV.Mag();
+				
+			IniMom = LV.Vect();
+			cout<<"KMKP Recon Mass = "<<LV.Mag()<<endl;
+			cout<<Form("KMKP Mom = (%f,%f,%f)",IniMom.X(),IniMom.Y(),IniMom.Z())<<endl;
+			GetHelixParameter(Vert,IniMom,charge,par);
+		}
+		else{
+			auto vert_ = verts.at(id);
+			double x = vert_.X();	
+			double y = vert_.Y();	
+			double z = vert_.Z();	
+			z=ZTarget;
+			Vert= TVector3(x,y,z);
+			auto LV = LVs.at(id);	
+			IniMom = LV.Vect();
+			GetHelixParameter(Vert,IniMom,charge,par);
+			//		cout<<Form("Mom = (%f,%f,%f)",IniMom.X(),IniMom.Y(),IniMom.Z())<<endl;
+		}
+		auto momcal = CalcHelixMom(par,Vert.y());
+		cout<<Form("MomRecal = (%f,%f,%f)",momcal.X(),momcal.Y(),momcal.Z())<<endl;
+	}
 }
 Recon::Recon(Recon P,Recon Q,double m1,double m2){
 	// Q + L = P -> L = P - Q;
@@ -362,7 +456,7 @@ bool VertexXiPi::AddTrack(Track p){
 	if(p.IsPi() and (p.GetQ()==-1 or !TrustCharge)){
 		double close_dist = MinHelixDistance(p.GetPar(),vert);
 		if(close_dist < cdcut){
-			P2Cand.push_back(p);
+			PiCand.push_back(p);
 			return true;
 		}
 	}
@@ -394,7 +488,7 @@ double Recon::DoKinematicFit(double Mass  ,bool UseDirection ,double* variance,T
 
 
 void VertexXiPi::SearchXi0Combination(){
-	for(auto p:P2Cand){
+	for(auto p:PiCand){
 		auto PiMom = -CalcHelixMom(p.GetPar(),vert.y());
 		auto PiLV = TLorentzVector(PiMom,sqrt(mpi*mpi+PiMom.Mag2()));
 		auto MissLV = MissPart.GetLV();

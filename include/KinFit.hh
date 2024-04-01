@@ -1,82 +1,116 @@
 #ifndef KinFit_h
 #define KinFit_h
-namespace{
-	double gpar[16]={0};
-	void fcn(int& npar, double* grad, double& fval, double* par, int flag){
-		//Kinematic fitting of two particles, L ->  P + Q with invariant mass of InvM.
+// Author: Kang Byungmin, kangbmw2@naver.com
+// For the mathematics of the fitting, please refer to:
+// https://github.com/kangbm94/Notes-on-Kinematic-Fit
 
-		double lambda = par[0];//Lagrange Multiplier
-		double px = par[1];// Corrected X momentum of P
-		double py = par[2];
-		double pz = par[3];
-		double qx = par[4];// Corrected X momemtum of Q
-		double qy = par[5];
-		double qz = par[6];
-
-		double px0 = gpar[0];// Measured X momentum of P 
-		double py0 = gpar[1];
-		double pz0 = gpar[2];
-		double qx0 = gpar[3];
-		double qy0 = gpar[4];
-		double qz0 = gpar[5];
-
-		double psx = gpar[6];//sigma of px
-		double psy = gpar[7];
-		double psz = gpar[8];
-		double qsx = gpar[9];
-		double qsy = gpar[10];
-		double qsz = gpar[11];
-
-		double MP = gpar[12];
-		double MQ = gpar[13];
-		double InvM = gpar[14];
-		double InvMSig = gpar[15];
-		double P_E = sqrt(MP*MP+px*px+py*py+pz*pz); 
-		double Q_E = sqrt(MQ*MQ+qx*qx+qy*qy+qz*qz); 
-		double L_E = P_E+Q_E;
-		double L_M = sqrt(L_E*L_E -((px+qx)*(px+qx)+(py+qy)*(py+qy)+(pz+qz)*(pz+qz)));
-		
-		double eq_IM = (L_M - InvM);
-
-		double eq_px = px0 - px - psx*psx*lambda*(-qx+Q_E/P_E*px)/L_M * eq_IM/InvMSig/InvMSig; 
-		double eq_py = py0 - py - psy*psy*lambda*(-qy+Q_E/P_E*py)/L_M * eq_IM/InvMSig/InvMSig; 
-		double eq_pz = pz0 - pz - psz*psz*lambda*(-qz+Q_E/P_E*pz)/L_M * eq_IM/InvMSig/InvMSig; 
-
-		double eq_qx = qx0 - qx - qsx*qsx*lambda*(-px+P_E/Q_E*qx)/L_M * eq_IM/InvMSig/InvMSig; 
-		double eq_qy = qy0 - qy - qsy*qsy*lambda*(-py+P_E/Q_E*qy)/L_M * eq_IM/InvMSig/InvMSig; 
-		double eq_qz = qz0 - qz - qsz*qsz*lambda*(-pz+P_E/Q_E*qz)/L_M * eq_IM/InvMSig/InvMSig; 
-
-
-		fval = eq_px*eq_px + eq_py*eq_py + eq_pz*eq_pz
-			+ eq_qx*eq_qx + eq_qy*eq_qy + eq_qz*eq_qz
-			+ eq_IM*eq_IM;
-	}
-}
 class KinematicFitter{
-	private:
-		double InvMass;
+	protected:
+		// R -> P + Q;
+		int step = 0;
+		int step1st = 0;
+		int best_step = 0;
+		int nConst;
+		int nMeas;
+		int nUnkn;
+		double Chi2_cut = 0.1;
+		double Best_Chi2 = 1e18;
+		vector<double> best_pull ;
+		vector<double> best_Upull ;
+		int MaxStep = 100;
+		double Best_Chi22nd = 1e18;
+		double damping = 1.00;
+		vector<TMatrixD>ScalingMats;
 		
-		TLorentzVector P;
-		TVector3 Pres;
-		TLorentzVector PCor;
+		vector<vector<double>> Pulls;
+		vector<vector<double>> UPulls;
+		vector<double> Lambdas;
+		vector<double> Chi2s;
+		vector<TMatrixD> Measurements;
+		vector<TMatrixD> Unknowns;
+		vector<TMatrixD> Variancies;
+		vector<TMatrixD> VarianceInvs;
+		vector<TMatrixD> dVMats;
+		vector<TMatrixD> UHessians;//Maybe not used
 
-		TLorentzVector Q;
-		TVector3 Qres;
-		TLorentzVector QCor;
-		double lambda = 0;
-//		TMinuitMinimizer minimizer;
-		TMinuit* minimizer = new TMinuit(7);
+		vector<TMatrixD> FMats;
+		vector<TMatrixD> dFdMs;//\pdf{Constraint}{Measurement}
+		vector<TMatrixD> dFdUs;//\pdf{Constraint }{Unknown }
+		vector<TMatrixD> VarianciesU;
+		vector<vector<TMatrixD>> d2Fd2Us;//\pdf^2 Constraints / dU_idU_j. This is a 3D Tensor object that is contracted with the lambda vector, resulting in a Hesian matrix.
+		vector<TMatrixD> rMats;
+		vector<TMatrixD> sMats;
+		vector<double>	best_constraints;
+		vector<double>	initial_constraints;
+		bool UpdateVariancies = false;
+		bool ScaleParams = true;
+
 	public:
-		KinematicFitter(){}
-		KinematicFitter(double Mass){
-			InvMass = Mass;
+		KinematicFitter(){};
+		//Setters
+		void SetVariance(double* var);
+		void AddDiagonals(TMatrixD Cov);
+		void SetChi2DifCut(double cut){
+			Chi2_cut = cut; }
+		void SetMaximumStep(int max){
+			MaxStep = max;
 		}
-		void AssignLorentzVector(TLorentzVector P_,TLorentzVector Q_);
-		void SetResolution(TVector3 Pres_,TVector3 Qres_);
-		void DoKinematicFit();
-		double GetLambda(){
-			return lambda;
+		void UpdateVariance(bool status = true){
+			UpdateVariancies = status;
 		}
-		vector<TLorentzVector> GetFittedLV();
+		void ScaleParameters(bool status = true){
+			ScaleParams = status;
+		}
+		//Getters
+		double GetLambda(int ent = -1){
+			if(ent == -1) ent = step;
+			return Lambdas.at(ent);
+		}
+		void Clear();
+		virtual double DoKinematicFit(bool Do);
+		int GetNStep(){
+			return step;
+		}
+		int GetBestStep(){
+			return best_step;
+		}
+		vector<double>GetPull(){
+			return best_pull;		
+		}
+		vector<double>GetUPull(){
+			return best_Upull;		
+		}
+		TMatrixD GetUnmeasuredCovariance(){
+			auto UCov = VarianciesU.at(best_step);
+			return UCov;
+			//return Best_Chi2*(UCov.Invert());
+		}
+		vector<double>GetStepChi2(){
+			return Chi2s;
+		}
+		vector<vector<double>>GetStepPull(){
+			return Pulls;		
+		}
+		int GetNDF(){
+			return nConst - nUnkn;	
+		}
+		vector<double> GetKinematicConstraints(){
+			return best_constraints;
+		}
+		vector<double> GetInitialConstraints(){
+			return initial_constraints;
+		}
+	protected:
+		//User Part: Set variables and constraints as you want.
+		virtual void Initialize(){};
+		virtual void SampleStepPoint(int steps){};
+		virtual void SetConstraints(){};
+		virtual void CalcVariance(int istep){};
+		virtual void Rotate(){};//General methods for parameter transformation	
+		//Core Part. Do not modify unless necessary
+		void Finalize();	
+		TMatrixD TransposeMatrix(TMatrixD M);		
+		void ProcessStep();
+		void RotateVariance(TMatrixD Jacobian);
 };
 #endif

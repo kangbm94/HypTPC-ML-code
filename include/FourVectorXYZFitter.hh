@@ -1,10 +1,10 @@
-#ifndef FourVectorFitter_h
-#define FourVectorFitter_h
+#ifndef FourVectorXYZFitter_h
+#define FourVectorXYZFitter_h
 #include "KinFit.hh"
 // Author: Kang Byungmin, kangbmw2@naver.com
 // For the mathematics of the fitting, please refer to:
 // https://github.com/kangbm94/Notes-on-Kinematic-Fit
-class FourVectorFitter: virtual public KinematicFitter{
+class FourVectorXYZFitter: virtual public KinematicFitter{
 	//R -> P + Q;
 	protected:	
 		TLorentzVector P;
@@ -24,8 +24,8 @@ class FourVectorFitter: virtual public KinematicFitter{
 		double mR;
 		bool MeasDir = false;
 	public:
-		FourVectorFitter(){}
-		FourVectorFitter(TLorentzVector P_,TLorentzVector Q_,TLorentzVector R_);
+		FourVectorXYZFitter(){}
+		FourVectorXYZFitter(TLorentzVector P_,TLorentzVector Q_,TLorentzVector R_);
 		void SetInvMass(double IM){
 			mR = IM;
 		}
